@@ -2,8 +2,9 @@ import array
 import matplotlib.pyplot as plt
 from decimal import *
 from matplotlib.ticker import FormatStrFormatter
+import struct
 
-RADIOSET
+RADIOSET = None
 
 
 #A class to represent data with a time stamp

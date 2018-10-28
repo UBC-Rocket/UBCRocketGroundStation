@@ -3,12 +3,29 @@ import matplotlib.pyplot as plt
 from decimal import *
 from matplotlib.ticker import FormatStrFormatter
 
+RADIOSET
+
 
 #A class to represent data with a time stamp
 class DATA:
 	def __init__(self, data, time):
 		self.data = data
 		self.time = time
+#these functions are wrappers for the global variable
+def initialize():
+	global RADIOSET
+	RADIOSET = initializeRadioSet()
+	return
+
+def addData(data):
+	global RADIOSET
+	RADIOSET = addToRadioSet(data, RADIOSET)
+	return
+
+def printToFile():
+	radioSetToFile(RADIOSET)
+	return
+
 
 
 #given file name, returns 2d list where the rows are individual sensor's data and the first colomn is the name of the sensor and the rest are the data at timestamp column# 
@@ -143,8 +160,40 @@ def addToRadioSet(radioData, radioSet):
 def radioSetToFile(radioSet):
 	file = open("Radio_Data.csv", "w")
 	sensors = len(radioSet)-1
-	for i in range (0, sensors-1):
-		file.write(radioSet[i][0]+",", end="")
+	#write the titles
+	for i in range (0, sensors-2):
+		file.write(radioSet[i][0]+",")
+	file.write(radioSet[sensors-1][0]+"\n")
+
+	#write the data
+	#time is the first row
+	timestamps = len(radioSet[0])
+	#going through each time
+	for i in range (1, timestamps):
+		file.write(str(radioSet[0][i])+",")
+		#going down the row of sensors
+		for j in range (1, sensors):
+			datanum = len(radioSet[j])
+			#going through then sensor looking for correct timestamps
+			if datanum == 1:
+				if j < sensors-1:
+					file.write(",")
+				else:
+					file.write("\n")
+			for k in range (1, datanum):
+				if radioSet[j][k].time == radioSet[0][i]:
+					if j < sensors-1:
+						file.write(str(radioSet[j][k].data)+",")
+					else:
+						file.write(str(radioSet[j][k].data)+"\n")
+					#break
+				elif radioSet[j][k].time > radioSet[0][i]:
+					if j < sensors-1:
+						file.write(",")
+					else:
+						file.write("\n")
+					#break
+
 	return
 
 

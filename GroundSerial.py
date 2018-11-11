@@ -1,6 +1,6 @@
 import asyncio
 import aioconsole
-import keyboard
+#import keyboard
 import aioserial
 
 BYTEORDER='little'
@@ -35,9 +35,15 @@ def _byte_to_int(byte):
 
 
 async def _read_input():
+    global aioserial_com
     while True:
         word = await aioconsole.ainput()
-        print(word)
+        if word == "add":
+            await aioserial_com.write_async(b"add")
+            print("Sent!")
+        else:
+            await aioserial_com.write_async(word.encode('ascii'))
+            print("Sent!")
 
 
 def on_triggered():
@@ -81,7 +87,7 @@ while not com:
 print("Set to COM"+str(com))
 aioserial_com = aioserial.AioSerial(port="COM"+str(com))
 
-print('Press and release your desired shortcut: ')
-shortcut = keyboard.read_hotkey()
-print('Shortcut selected:', shortcut)
-keyboard.add_hotkey(shortcut, on_triggered)
+#print('Press and release your desired shortcut: ')
+#shortcut = keyboard.read_hotkey()
+#print('Shortcut selected:', shortcut)
+#keyboard.add_hotkey(shortcut, on_triggered)

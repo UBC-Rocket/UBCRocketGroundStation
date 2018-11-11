@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from decimal import *
 from matplotlib.ticker import FormatStrFormatter
 import struct
+import Plotter
 
 RADIOSET = None
 
@@ -95,18 +96,21 @@ def addToRadioSet(radioData, radioSet):
 	d=c[0]
 	if character == 't':
 		radioSet[0].append(d)
-		print(character + ": " + str(d))
 	else: 
 		length = len(radioSet[0])
 		time = radioSet[0][length-1]
 		#create a data point with the the latest time
 		length = len(radioSet)
 		addData = DATA(d, time)
+
+		# Plot new Pressure data
+		if character == 'P':
+			Plotter.plot(addData.time, addData.data)
+
 		for i in range (0, length): 
 			s = radioSet[i][0]
 			if s[0] == character:
 				radioSet[i].append(addData)
-				print(character + ": " + str(addData.data))
 				break
 
 	return radioSet

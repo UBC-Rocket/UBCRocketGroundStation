@@ -12,69 +12,20 @@ class DATA:
 	def __init__(self, data, time):
 		self.data = data
 		self.time = time
+
 #these functions are wrappers for the global variable
 def initialize():
 	global RADIOSET
 	RADIOSET = initializeRadioSet()
 	return
-
 def addData(data):
 	global RADIOSET
 	RADIOSET = addToRadioSet(data, RADIOSET)
 	return
-
 def printToFile():
 	radioSetToFile(RADIOSET)
 	return
 
-
-
-#given file name, returns 2d list where the rows are individual sensor's data and the first colomn is the name of the sensor and the rest are the data at timestamp column# 
-#The following 3 functions are all for getting data from the SD card
-#Format return dataset[Sensor][time/data]
-def sortDataFromSD(string):
-	file = open(string , "r")
-	line = file.readline()
-	dataSet = setUpDataSet(line)
-	name=""
-	commas=0
-	while 1:
-		line = file.readline()
-		if line == "":
-			break
-		dataSet = addDataToSet(dataSet, line)
-
-	return dataSet
-		
-#creates a 2d list with the titles 
-#SHOULD BE USED WITH THE FIRST TITLE LINE ONLY
-def setUpDataSet(line):
-	dataSet = list()
-	l = len(line)
-	name=""
-	for i in range (0, l-1):
-		if line[i] != ',':
-			name = name +line[i]
-		else:
-			newlist = list()
-			newlist.append(name)
-			dataSet.append(newlist)
-			name = ""
-	return dataSet
-#adds a line of data to an already established data set
-#SHOULD BE USED WITH DATA LINES ONLY FOR USEFUL DATA 
-def addDataToSet(dataSet ,line):
-	l=len(line)
-	name = ""
-	commas =0
-	for i in range (0, l-1):
-			if line[i] != ',':
-				name = name + line[i]
-			else:
-				dataSet[commas].append(name)
-				commas= commas+1
-				name=""
-	return dataSet
 
 #the following functions are for getting data from the radio connection
 #creates working radio set radioset[sensor][data]
@@ -144,107 +95,83 @@ def addToRadioSet(radioData, radioSet):
 	d=c[0]
 	if character == 't':
 		radioSet[0].append(d)
+		print(character + ": " + str(d))
 	else: 
 		length = len(radioSet[0])
 		time = radioSet[0][length-1]
 		#create a data point with the the latest time
 		length = len(radioSet)
 		addData = DATA(d, time)
-		for i in range (0, length-1): 
+		for i in range (0, length): 
 			s = radioSet[i][0]
 			if s[0] == character:
 				radioSet[i].append(addData)
+				print(character + ": " + str(addData.data))
 				break
 
 	return radioSet
 
+#creates a file names "Radio_Data.csv" which contains all values in the working radio set in csv format
+#currently there is no character for a sensor lacking data for a time, may need to change to a space
+#Will take a longish time to execute, only bother running if you are done reading data
 def radioSetToFile(radioSet):
 	file = open("Radio_Data.csv", "w")
 	sensors = len(radioSet)-1
 	#write the titles
-	for i in range (0, sensors-2):
-		file.write(radioSet[i][0]+",")
-	file.write(radioSet[sensors-1][0]+"\n")
+	string = ""
+	for i in range (0, sensors):
+		string = string + radioSet[i][0]+","
+	string = string + radioSet[sensors][0]+"\n"
+	file.write(string)
 
 	#write the data
 	#time is the first row
 	timestamps = len(radioSet[0])
 	#going through each time
 	for i in range (1, timestamps):
-		file.write(str(radioSet[0][i])+",")
+		string = str(radioSet[0][i]) + "," #set first part to time
+
 		#going down the row of sensors
-		for j in range (1, sensors):
-			datanum = len(radioSet[j])
-			#going through then sensor looking for correct timestamps
-			if datanum == 1:
-				if j < sensors-1:
-					file.write(",")
+		for j in range (1, sensors+1):
+			#now check each data point for the sensor to see if you can add data, else add just , 
+			datapoints = len(radioSet[j])
+			#there are no datapoints for the sensors
+			if datapoints == 1:
+				if j == sensors:
+					string = string + "\n"
 				else:
-					file.write("\n")
-			for k in range (1, datanum):
-				if radioSet[j][k].time == radioSet[0][i]:
-					if j < sensors-1:
-						file.write(str(radioSet[j][k].data)+",")
-					else:
-						file.write(str(radioSet[j][k].data)+"\n")
-					#break
-				elif radioSet[j][k].time > radioSet[0][i]:
-					if j < sensors-1:
-						file.write(",")
-					else:
-						file.write("\n")
-					#break
+					string = string + ","
+			#there are dtapoints for the sensors
+			else:
+				#go through all the datapoints and see if the time matches the time at the start of the row 
+				for k in range (1, datapoints):
+					#data time is equal to current time, add it to the row and leave the for loop
+					if radioSet[j][k].time == radioSet[0][i]:
+						if j == sensors:
+							string = string + str(radioSet[j][k].data) + "\n"
+						else :
+							string = string + str(radioSet[j][k].data) + ","
+						break
+					#data time has past current time, add no data  to the row and leave the loop
+					elif radioSet[j][k].time > radioSet[0][i]:
+						if j == sensors:
+							string = string + "\n"
+						else :
+							string = string + ","
+						break
+					#time has past data time so no data is added for sensor 
+					elif k == (datapoints-1):
+						if j == sensors:
+							string = string + "\n"
+						else :
+							string = string + ","
+		file.write(string)
+	file.close()
 
 	return
 
 
 
-
-
-#graph sensor data with time on the x axis
-def graphSensorVsTime(SensorNum, dataSet):
-	fig, ax = plt.subplots()
-	plt.ylabel(dataSet[SensorNum][0])
-	plt.xlabel('time')
-	#make a set that is only data without the title
-	Set = dataSet[SensorNum][1:]
-	length= len(Set)
-	
-
-	for i in range (0, length-1):
-		plt.plot(i, float(Set[i]), 'ro')
-	plt.show()
-	plt.draw()
-	return
-
-#graph sensornum1 on x axis and sensor num 2 on y axis 
-def graphSensorVsSensor(SensorNum1, SensorNum2, dataSet):
-	fig, ax = plt.subplots()
-	plt.xlabel(dataSet[SensorNum1][0])
-	plt.ylabel(dataSet[SensorNum2][0])
-
-	setX = dataSet[SensorNum1][1:]
-	setY = dataSet[SensorNum2][1:]
-	length= len(setX)
-
-	for i in range (0, length-1):
-		plt.plot(setX[i], float(setY[i]), 'ro')
-	plt.show()
-	plt.draw()
-	return
-
-
-def printSensors(dataSet):
-	for i in range (0, len(dataSet)-1):
-		print( "[" + str(i) + "] : " + dataSet[i][0])
-	return
-
-def printInstructions():
-	print("graph : Pick sensor to graph against time")
-	print("graph against : Pick sensor to grap against sensor")
-	print("get max 'int' : Gives the maximum value of the data from this sensor number")
-	print("get min 'int' : Gives the minimum value of the data from this sensor number")
-	return
 
 
 

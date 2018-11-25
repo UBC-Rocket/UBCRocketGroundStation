@@ -92,7 +92,8 @@ def addToRadioSet(radioData, radioSet):
 	#turns d into a float from decimal representation of 4 sepreate bytes in a list
 	data = radioData[1:5]
 	b= struct.pack('4B', *data)
-	c=struct.unpack('>f', b)
+	#should be in little endian format from the teensy?
+	c=struct.unpack('<f', b)
 	d=c[0]
 	if character == 't':
 		radioSet[0].append(d)

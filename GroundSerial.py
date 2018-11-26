@@ -6,6 +6,7 @@ import aioserial
 BYTEORDER='little'
 IDLENGTH=1
 DATALENGTH=4
+BAUDRATE=921600
 
 IdSet = None
 handle_data = None
@@ -85,7 +86,7 @@ while not com:
         print("bad int")
 
 print("Set to COM"+str(com))
-aioserial_com = aioserial.AioSerial(port="COM"+str(com))
+aioserial_com = aioserial.AioSerial(port="COM"+str(com), baudrate=BAUDRATE)
 
 #print('Press and release your desired shortcut: ')
 #shortcut = keyboard.read_hotkey()

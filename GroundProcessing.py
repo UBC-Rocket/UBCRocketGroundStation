@@ -105,8 +105,9 @@ def addToRadioSet(radioData, radioSet):
 		addData = DATA(d, time)
 
 		# Plot new Pressure data
-		if character == 'P':
+		if character == 'Z':
 			Plotter.plot(addData.time, addData.data)
+		print(character + " " + str(addData.data))
 
 		for i in range (0, length): 
 			s = radioSet[i][0]

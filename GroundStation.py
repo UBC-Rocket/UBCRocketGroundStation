@@ -1,5 +1,14 @@
 import GroundProcessing
 import GroundSerial
+import atexit
+
+def exit_handler():
+    print("Saving...")
+    GroundProcessing.printToFile()
+    print("Saved!")
+
+
+atexit.register(exit_handler)
 
 GroundProcessing.initialize()
 

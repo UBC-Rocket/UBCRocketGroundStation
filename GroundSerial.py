@@ -3,10 +3,25 @@ import aioconsole
 #import keyboard
 import aioserial
 
-BYTEORDER='little'
 IDLENGTH=1
 DATALENGTH=4
 BAUDRATE=921600
+
+COM_ID = {
+    "arm": 'A',
+    "cameras on": 'C',
+    "cameras off": 'O',
+    "apogee": 'Y',
+    "sensors": 'S',
+    "halo": 'H',
+    "gps": 'G',
+    "reset": 'R',
+    "ping": 'P'
+}
+
+COM_NAME = {}
+for x in COM_ID:
+    COM_NAME[COM_ID[x]] = x
 
 IdSet = None
 handle_data = None
@@ -32,16 +47,24 @@ async def _read_data():
 
 
 def _byte_to_int(byte):
-    return int.from_bytes(byte, byteorder=BYTEORDER, signed=False)
+    return int.from_bytes(byte, byteorder='little', signed=False)
 
 
 async def _read_input():
     global aioserial_com
+    global COM_ID
+
     while True:
         word = await aioconsole.ainput()
-        if word == "add":
-            await aioserial_com.write_async(b"add")
+        if word in COM_ID:
+            bytes = [COM_ID[word].encode('ascii')] * (IDLENGTH + DATALENGTH)
+            await aioserial_com.write_async(bytes)
             print("Sent!")
+
+        elif word == "quit":
+            print("Bye!")
+            exit()
+
         else:
             await aioserial_com.write_async(word.encode('ascii'))
             print("Sent!")

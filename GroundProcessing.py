@@ -7,6 +7,8 @@ import Plotter
 
 RADIOSET = None
 
+PRINTOUT = False
+
 
 #A class to represent data with a time stamp
 class DATA:
@@ -87,6 +89,7 @@ def initializeRadioSet():
 #The first byte is the identifier and the remainder are a float representing the data
 #returns the updated radioSet set
 def addToRadioSet(radioData, radioSet):
+	global PRINTOUT
 
 	character = chr(radioData[0])
 	#turns d into a float from decimal representation of 4 sepreate bytes in a list
@@ -97,6 +100,9 @@ def addToRadioSet(radioData, radioSet):
 	d=c[0]
 	if character == 't':
 		radioSet[0].append(d)
+
+		if PRINTOUT:
+			print("t " + str(d))
 	else: 
 		length = len(radioSet[0])
 		time = radioSet[0][length-1]
@@ -107,7 +113,9 @@ def addToRadioSet(radioData, radioSet):
 		# Plot new Pressure data
 		if character == 'Z':
 			Plotter.plot(addData.time, addData.data)
-		print(character + " " + str(addData.data))
+
+		if PRINTOUT:
+			print(character + " " + str(addData.data))
 
 		for i in range (0, length): 
 			s = radioSet[i][0]

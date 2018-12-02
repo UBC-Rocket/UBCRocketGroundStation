@@ -55,6 +55,8 @@ def initializeRadioSet():
 	q = ['L GPS - Latitude']
 	r = ['l GPS - Longitude']
 	s = ['A GPS - Altitude']
+	u = ['a Calculated Altitude']
+	v = ['s State']
 	t = ['t Time']
 
 	#time is always the first list for easy access 
@@ -78,6 +80,8 @@ def initializeRadioSet():
 	radioSet.append(q)
 	radioSet.append(r)
 	radioSet.append(s)
+	radioSet.append(u)
+	radioSet.append(v)
 	
 
 	return radioSet

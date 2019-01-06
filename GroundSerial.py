@@ -5,25 +5,32 @@ import aioserial
 
 IDLENGTH=1
 DATALENGTH=4
-BAUDRATE=921600
+#BAUDRATE=921600
+BAUDRATE=9600
+
+IdSet = None
 
 COM_ID = {
-    "arm": 'A',
+    "arm": 'r',
     "cameras on": 'C',
     "cameras off": 'O',
-    "apogee": 'Y',
-    "sensors": 'S',
     "halo": 'H',
-    "gps": 'G',
+    "satcom": 'S',
     "reset": 'R',
-    "ping": 'P'
+    "ping": 'p',
+    "main": 'm',
+    "drogue": 'd'
 }
+
+# Good response -> Gxxxx
+# Bad response -> BBBBB
+Good_ID = 'G'.encode('ascii')
+Bad_ID = 'B'.encode('ascii')
 
 COM_NAME = {}
 for x in COM_ID:
     COM_NAME[COM_ID[x]] = x
 
-IdSet = None
 handle_data = None
 
 
@@ -37,9 +44,18 @@ async def _read_data():
 
         while len(byteList)> chunkLength:
             if byteList[0] in IdSet and byteList[chunkLength] in IdSet:
-                chunk = byteList[0:chunkLength]
-                intChunk = list(map(_byte_to_int, chunk))
-                handle_data(intChunk)
+
+                if byteList[0] == Good_ID and byteList[IDLENGTH].decode("ascii") in COM_NAME.keys() and _are_all(byteList[IDLENGTH:DATALENGTH], byteList[IDLENGTH]):
+                    print("Successful " + COM_NAME[byteList[IDLENGTH].decode("ascii")])
+
+                elif _are_all(byteList[0:chunkLength], Bad_ID):
+                    print("Failure!")
+
+                else:
+                    chunk = byteList[0:chunkLength]
+                    intChunk = list(map(_byte_to_int, chunk))
+                    handle_data(intChunk)
+
                 del byteList[0:chunkLength]
             else:
                 del byteList[0]
@@ -49,6 +65,12 @@ async def _read_data():
 def _byte_to_int(byte):
     return int.from_bytes(byte, byteorder='little', signed=False)
 
+def _are_all(list, expected):
+    for x in list:
+        if x != expected:
+            return False
+    return True
+
 
 async def _read_input():
     global aioserial_com
@@ -57,7 +79,7 @@ async def _read_input():
     while True:
         word = await aioconsole.ainput()
         if word in COM_ID:
-            bytes = [COM_ID[word].encode('ascii')] * (IDLENGTH + DATALENGTH)
+            bytes = COM_ID[word].encode('ascii') * (IDLENGTH + DATALENGTH)
             await aioserial_com.write_async(bytes)
             print("Sent!")
 
@@ -66,7 +88,8 @@ async def _read_input():
             exit()
 
         else:
-            await aioserial_com.write_async(word.encode('ascii'))
+            bytes = word.encode('ascii')
+            await aioserial_com.write_async(bytes)
             print("Sent!")
 
 
@@ -98,6 +121,10 @@ def init(handler, dataIdSet):
     global IdSet
     handle_data = handler
     IdSet = dataIdSet
+
+    IdSet.add(Good_ID)
+    IdSet.add(Bad_ID)
+
     asyncio.run(_run())
 
 com = None

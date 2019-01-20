@@ -42,28 +42,31 @@ async def _read_data():
         newbyte = await aioserial_com.read_async(1)
         byteList.append(newbyte)
 
-        while len(byteList)> chunkLength:
-            if byteList[0] in IdSet and byteList[chunkLength] in IdSet:
-
-                if byteList[0] == Good_ID and byteList[IDLENGTH].decode("ascii") in COM_NAME.keys() and _are_all(byteList[IDLENGTH:DATALENGTH], byteList[IDLENGTH]):
-                    print("Successful " + COM_NAME[byteList[IDLENGTH].decode("ascii")])
-
-                elif _are_all(byteList[0:chunkLength], Bad_ID):
-                    print("Failure!")
-
-                else:
-                    chunk = byteList[0:chunkLength]
-                    intChunk = list(map(_byte_to_int, chunk))
-                    handle_data(intChunk)
-
+        while len(byteList)>= chunkLength:
+            if byteList[0] == Good_ID and byteList[IDLENGTH].decode("ascii") in COM_NAME.keys() and _are_all(byteList[IDLENGTH:DATALENGTH], byteList[IDLENGTH]):
+                print("Successful " + COM_NAME[byteList[IDLENGTH].decode("ascii")])
                 del byteList[0:chunkLength]
-            else:
+
+            elif _are_all(byteList[0:chunkLength], Bad_ID):
+                print("Failure!")
+                del byteList[0:chunkLength]
+
+            elif len(byteList) > chunkLength and byteList[0] in IdSet and byteList[chunkLength] in IdSet:
+                chunk = byteList[0:chunkLength]
+                intChunk = list(map(_byte_to_int, chunk))
+                handle_data(intChunk)
+                del byteList[0:chunkLength]
+
+            elif len(byteList) > chunkLength:
                 del byteList[0]
 
+            else:
+                break
 
 
 def _byte_to_int(byte):
     return int.from_bytes(byte, byteorder='little', signed=False)
+
 
 def _are_all(list, expected):
     for x in list:

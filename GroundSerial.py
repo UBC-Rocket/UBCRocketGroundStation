@@ -41,6 +41,7 @@ async def _read_data():
     while True:
         newbyte = await aioserial_com.read_async(1)
         byteList.append(newbyte)
+        #print("Byte buffer: " + str(len(byteList)))
 
         while len(byteList)>= chunkLength:
             if byteList[0] == Good_ID and byteList[IDLENGTH].decode("ascii") in COM_NAME.keys() and _are_all(byteList[IDLENGTH:DATALENGTH], byteList[IDLENGTH]):

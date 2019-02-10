@@ -110,6 +110,7 @@ def addToRadioSet(radioData, radioSet):
 	else: 
 		length = len(radioSet[0])
 		time = radioSet[0][length-1]
+
 		#create a data point with the the latest time
 		length = len(radioSet)
 		addData = DATA(d, time)
@@ -171,7 +172,7 @@ def radioSetToFile(radioSet):
 							string = string + str(radioSet[j][k].data) + ","
 						break
 					#data time has past current time, add no data  to the row and leave the loop
-					elif radioSet[j][k].time > radioSet[0][i]:
+					elif radioSet[j][k] != "t Time" && radioSet[j][k].time > radioSet[0][i]:
 						if j == sensors:
 							string = string + "\n"
 						else :

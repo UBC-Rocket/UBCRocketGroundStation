@@ -172,7 +172,7 @@ def radioSetToFile(radioSet):
 							string = string + str(radioSet[j][k].data) + ","
 						break
 					#data time has past current time, add no data  to the row and leave the loop
-					elif radioSet[j][k] != "t Time" && radioSet[j][k].time > radioSet[0][i]:
+					elif not isinstance(radioSet[j][k].time, str) and radioSet[j][k].time > radioSet[0][i]:
 						if j == sensors:
 							string = string + "\n"
 						else :

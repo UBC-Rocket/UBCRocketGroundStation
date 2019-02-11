@@ -57,6 +57,8 @@ async def _read_data():
                 intChunk = list(map(_byte_to_int, chunk))
                 handle_data(intChunk)
                 del byteList[0:chunkLength]
+                #if intChunk[0] == 116:
+                #   print("t " + str(intChunk))
 
             elif len(byteList) > chunkLength:
                 del byteList[0]

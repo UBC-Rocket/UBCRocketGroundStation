@@ -44,21 +44,16 @@ def initializeRadioSet():
 	d = ['P Barometer - Pressure (mbar)']
 	e = ['~ Barometer - Temperature (C)']
 	f = ['T Temperature Sensor - Temperature (C)']
-	g = ['x IMU - Acceleration X (g)']
-	h = ['y IMU - Acceleration Y (g)']
-	i = ['z IMU - Acceleration Z (g)']
-	j = ['@ IMU - Angular Velocity X (rad/s)']
-	k = ['# IMU - Angular Velocity Y (rad/s)']
-	l = ['$ IMU - Angular Velocity Z (rad/s)']
-	m = ['% IMU - Magnetism X (uT)']
-	n = ['^ IMU - Magnetism Y (uT)']
-	o = ['& IMU - Magnetism Z (uT)']
-	p = ['* IMU - Temperature (C)']
-	q = ['L GPS - Latitude']
-	r = ['l GPS - Longitude']
-	s = ['A GPS - Altitude']
-	u = ['a Calculated Altitude']
-	v = ['s State']
+	g = ['@ IMU - Yaw']
+	h = ['# IMU - Roll']
+	i = ['$ IMU - Pitch']
+	j = ['L GPS - Latitude']
+	k = ['l GPS - Longitude']
+	l = ['A GPS - Altitude']
+	m = ['a Calculated Altitude']
+	n = ['s State']
+	o = ['b Battery Voltage']
+	p = ['g Ground Altitude']
 	t = ['t Time']
 
 	#time is always the first list for easy access 
@@ -79,11 +74,8 @@ def initializeRadioSet():
 	radioSet.append(n)
 	radioSet.append(o)
 	radioSet.append(p)
-	radioSet.append(q)
-	radioSet.append(r)
-	radioSet.append(s)
-	radioSet.append(u)
-	radioSet.append(v)
+	
+	
 	
 
 	return radioSet

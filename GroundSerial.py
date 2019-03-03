@@ -15,7 +15,7 @@ COM_ID = {
     "cameras on": 'C',
     "cameras off": 'O',
     "halo": 'H',
-    "satcom": 'S',
+    "satcom": 's',
     "reset": 'R',
     "ping": 'p',
     "main": 'm',

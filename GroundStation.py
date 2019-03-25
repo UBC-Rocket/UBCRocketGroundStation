@@ -1,17 +1,12 @@
-import GroundProcessing
 import GroundSerial
-import atexit
 
-def exit_handler():
-    print("Saving...")
-    GroundProcessing.printToFile()
-    print("Saved!")
+window = None
 
 
-atexit.register(exit_handler)
 
-GroundProcessing.initialize()
 
-ids_set = set(map(lambda x: x[0][0].encode('ascii'), GroundProcessing.RADIOSET))
+def start(com, baud):
+    global window
 
-GroundSerial.init(GroundProcessing.addData, ids_set)
+    window = GroundSerial.MainApp(com, baud)
+    window.show()

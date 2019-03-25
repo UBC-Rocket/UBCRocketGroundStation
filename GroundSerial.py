@@ -1,148 +1,146 @@
-import asyncio
-import aioconsole
-#import keyboard
-import aioserial
+import atexit
+import time
 
-IDLENGTH=1
-DATALENGTH=4
-BAUDRATE=921600
-#BAUDRATE=9600
+import PyQt5
+from PyQt5 import QtCore, QtGui, uic, QtWidgets
+import os
 
-IdSet = None
+from PyQt5.QtCore import pyqtSignal
+import matplotlib.pyplot as plt
+from scipy.misc import imresize
 
-COM_ID = {
-    "arm": 'r',
-    "cameras on": 'C',
-    "cameras off": 'O',
-    "halo": 'H',
-    "satcom": 'S',
-    "reset": 'R',
-    "ping": 'p',
-    "main": 'm',
-    "drogue": 'd'
-}
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 
-# Good response -> Gxxxx
-# Bad response -> BBBBB
-Good_ID = 'G'.encode('ascii')
-Bad_ID = 'B'.encode('ascii')
+import SerialThread
+import GoogleMaps
+import RocketData
+from RocketData import RocketData as RD
 
-COM_NAME = {}
-for x in COM_ID:
-    COM_NAME[COM_ID[x]] = x
+if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
+    PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
 
-handle_data = None
+if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
+    PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
 
 
-async def _read_data():
-    global aioserial_com
-    chunkLength = IDLENGTH + DATALENGTH
-    byteList = []
-    while True:
-        newbyte = await aioserial_com.read_async(1)
-        byteList.append(newbyte)
-        #print("Byte buffer: " + str(len(byteList)))
+py_path = os.path.dirname(os.path.abspath(__file__))
+qtCreatorFile = os.path.join(py_path, "main.ui")  # Enter file here.
 
-        while len(byteList)>= chunkLength:
-            if byteList[0] == Good_ID and byteList[IDLENGTH].decode("ascii") in COM_NAME.keys() and _are_all(byteList[IDLENGTH:DATALENGTH], byteList[IDLENGTH]):
-                print("Successful " + COM_NAME[byteList[IDLENGTH].decode("ascii")])
-                del byteList[0:chunkLength]
+Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
-            elif _are_all(byteList[0:chunkLength], Bad_ID):
-                print("Failure!")
-                del byteList[0:chunkLength]
+TILES = 5
 
-            elif len(byteList) > chunkLength and byteList[0] in IdSet and byteList[chunkLength] in IdSet:
-                chunk = byteList[0:chunkLength]
-                intChunk = list(map(_byte_to_int, chunk))
-                handle_data(intChunk)
-                del byteList[0:chunkLength]
-                #if intChunk[0] == 116:
-                #   print("t " + str(intChunk))
+ZOOM = 19
 
-            elif len(byteList) > chunkLength:
-                del byteList[0]
+class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
+    sig_send = pyqtSignal(str)
 
-            else:
-                break
+    def __init__(self, com, baud):
+        self.data = RD()
+        atexit.register(self.exit_handler)
 
+        self.lastgps = time.time()
+        self.longitude = -1
+        self.latitude = -1
 
-def _byte_to_int(byte):
-    return int.from_bytes(byte, byteorder='little', signed=False)
+        QtWidgets.QMainWindow.__init__(self)
+        Ui_MainWindow.__init__(self)
+        self.setupUi(self)
 
+        self.sendButton.clicked.connect(self.sendButtonPressed)
+        self.actionSave.triggered.connect(self.data.save)
 
-def _are_all(list, expected):
-    for x in list:
-        if x != expected:
-            return False
-    return True
+        self.StatusButton.clicked.connect(lambda _: self.sendCommand("status"))
+        self.ArmButton.clicked.connect(lambda _: self.sendCommand("arm"))
+        self.HaloButton.clicked.connect(lambda _: self.sendCommand("halo"))
 
+        idSet = set(RocketData.chartoname.keys())
+        self.printToConsole("Starting Serial")
+        self.SThread = SerialThread.SThread(com, idSet, baud)
+        self.SThread.sig_received.connect(self.receiveData)
+        self.sig_send.connect(self.SThread.send)
+        self.SThread.sig_print.connect(self.printToConsole)
+        self.SThread.start()
 
-async def _read_input():
-    global aioserial_com
-    global COM_ID
-
-    while True:
-        word = await aioconsole.ainput()
-        if word in COM_ID:
-            bytes = COM_ID[word].encode('ascii') * (IDLENGTH + DATALENGTH)
-            await aioserial_com.write_async(bytes)
-            print("Sent!")
-
-        elif word == "quit":
-            print("Bye!")
-            exit()
-
-        else:
-            bytes = word.encode('ascii')
-            await aioserial_com.write_async(bytes)
-            print("Sent!")
+        local = os.path.dirname(os.path.realpath(__file__))
+        markerpath = os.path.join(local, "marker.png")
+        self.marker = imresize(plt.imread(markerpath), (12,12))
 
 
-def on_triggered():
-    global aioserial_com
-    asyncio.run(aioserial_com.write_async(b"add"))
-    print("Triggered!")
+    def receiveData(self, bytes):
+        self.data.addpoint(bytes)
+
+        fresh = False
+        if self.longitude == -1 or self.latitude == -1:
+            fresh = True
+
+        self.latitude = self.data.lastvalue("Latitude")
+        self.longitude = self.data.lastvalue("Longitude")
+
+        if fresh and self.longitude != -1 and self.latitude !=-1:
+            self.plotMap()
+
+        self.AltitudeLabel.setText(str(self.data.lastvalue("Calculated Altitude")))
+        self.GpsLabel.setText(str(self.latitude) + ", " + str(self.longitude))
+        self.StateLabel.setText(str(self.data.lastvalue("State")))
+        self.PressureLabel.setText(str(self.data.lastvalue("Pressure")))
+        self.AccelerationLabel.setText(str(max(self.data.lastvalue("Acceleration X"),self.data.lastvalue("Acceleration Y"),self.data.lastvalue("Acceleration Z"))))
+
+        self.updateMark()
+
+    def sendButtonPressed(self):
+        word = self.commandEdit.text()
+        self.sendCommand(word)
+        self.commandEdit.setText("")
 
 
-async def _run():
-    if handle_data is None or IdSet is None:
-        print("Bad init")
-        return
+    def printToConsole(self, text):
+        self.consoleText.setPlainText(self.consoleText.toPlainText() + text + "\n")
+        self.consoleText.moveCursor(QtGui.QTextCursor.End)
 
-    task1 = asyncio.create_task(
-        _read_data())
+    def sendCommand(self, command):
+        self.printToConsole(command)
+        self.sig_send.emit(command)
 
-    task2 = asyncio.create_task(
-        _read_input())
+    def plotMap(self):
 
-    print("Starting Serial")
+        location = GoogleMaps.MapPoint(self.longitude, self.latitude)
+        img = GoogleMaps.getMapImage(location, ZOOM, TILES, TILES)
 
-    await task1
-    await task2
+        self.plotWidget.canvas.ax.set_axis_off()
+        self.plotWidget.canvas.ax.set_ylim(TILES*GoogleMaps.TILE_SIZE,0)
+        self.plotWidget.canvas.ax.set_xlim(0,TILES * GoogleMaps.TILE_SIZE)
 
 
-def init(handler, dataIdSet):
-    global handle_data
-    global IdSet
-    handle_data = handler
-    IdSet = dataIdSet
+        self.plotWidget.canvas.fig.tight_layout(pad=0, w_pad=0, h_pad=0)
+        self.plotWidget.canvas.ax.imshow(img)
 
-    IdSet.add(Good_ID)
-    IdSet.add(Bad_ID)
+        self.plotWidget.canvas.draw()
 
-    asyncio.run(_run())
+    def updateMark(self):
+        newtime = time.time()
+        if newtime - self.lastgps < 4:
+            return
+        self.lastgps = newtime
 
-com = None
-while not com:
-    var = input("Please enter a COM #: ")
-    try:
-        com = int(var)
-    except:
-        print("bad int")
+        children = self.plotWidget.canvas.ax.get_children()
+        for c in children:
+            if isinstance(c, AnnotationBbox):
+                c.remove()
 
-print("Set to COM"+str(com))
-aioserial_com = aioserial.AioSerial(port="COM"+str(com), baudrate=BAUDRATE)
+        location = GoogleMaps.MapPoint(self.longitude, self.latitude)
+        mark = (location.getPixelX(ZOOM) % GoogleMaps.TILE_SIZE + TILES // 2 * GoogleMaps.TILE_SIZE,
+                location.getPixelY(ZOOM) % GoogleMaps.TILE_SIZE + TILES // 2 * GoogleMaps.TILE_SIZE)
+        ab = AnnotationBbox(OffsetImage(self.marker), mark, frameon=False)
+
+        self.plotWidget.canvas.ax.add_artist(ab)
+        self.plotWidget.canvas.draw()
+
+    def exit_handler(self):
+        print("Saving...")
+        self.data.save()
+        print("Saved!")
+
 
 #print('Press and release your desired shortcut: ')
 #shortcut = keyboard.read_hotkey()

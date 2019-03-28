@@ -1,4 +1,5 @@
 import atexit
+import sys
 import time
 
 import PyQt5
@@ -15,6 +16,7 @@ import SerialThread
 import GoogleMaps
 import RocketData
 from RocketData import RocketData as RD
+import mplwidget #DO NOT REMOVE pyinstller needs this
 
 if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
@@ -22,15 +24,16 @@ if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
 if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
 
+if getattr(sys, 'frozen', False):
+    local = os.path.dirname(sys.executable)
+elif __file__:
+    local = os.path.dirname(__file__)
 
-py_path = os.path.dirname(os.path.abspath(__file__))
-qtCreatorFile = os.path.join(py_path, "main.ui")  # Enter file here.
+qtCreatorFile = os.path.join(local, "main.ui")  # Enter file here.
 
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
-TILES = 5
-
-ZOOM = 19
+TILES = 14
 
 class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
     sig_send = pyqtSignal(str)
@@ -39,9 +42,10 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.data = RD()
         atexit.register(self.exit_handler)
 
+        self.zoom = 15
         self.lastgps = time.time()
-        self.longitude = -1
-        self.latitude = -1
+        self.xtile = None
+        self.ytile = None
 
         QtWidgets.QMainWindow.__init__(self)
         Ui_MainWindow.__init__(self)
@@ -62,31 +66,30 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.SThread.sig_print.connect(self.printToConsole)
         self.SThread.start()
 
-        local = os.path.dirname(os.path.realpath(__file__))
         markerpath = os.path.join(local, "marker.png")
         self.marker = imresize(plt.imread(markerpath), (12,12))
+
+        self.plotMap(51.852667, -111.646972)
 
 
     def receiveData(self, bytes):
         self.data.addpoint(bytes)
 
-        fresh = False
-        if self.longitude == -1 or self.latitude == -1:
-            fresh = True
-
-        self.latitude = self.data.lastvalue("Latitude")
-        self.longitude = self.data.lastvalue("Longitude")
-
-        if fresh and self.longitude != -1 and self.latitude !=-1:
-            self.plotMap()
+        latitude = self.data.lastvalue("Latitude")
+        longitude = self.data.lastvalue("Longitude")
 
         self.AltitudeLabel.setText(str(self.data.lastvalue("Calculated Altitude")))
-        self.GpsLabel.setText(str(self.latitude) + ", " + str(self.longitude))
+        self.GpsLabel.setText(str(latitude) + ", " + str(longitude))
         self.StateLabel.setText(str(self.data.lastvalue("State")))
         self.PressureLabel.setText(str(self.data.lastvalue("Pressure")))
         self.AccelerationLabel.setText(str(max(self.data.lastvalue("Acceleration X"),self.data.lastvalue("Acceleration Y"),self.data.lastvalue("Acceleration Z"))))
 
-        self.updateMark()
+        #self.plotMap(latitude, longitude) #Uncomment to make map recenter
+
+        newtime = time.time()
+        if newtime - self.lastgps >= 3:
+            self.updateMark(latitude, longitude)
+        self.lastgps = newtime
 
     def sendButtonPressed(self):
         word = self.commandEdit.text()
@@ -102,35 +105,36 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.printToConsole(command)
         self.sig_send.emit(command)
 
-    def plotMap(self):
+    def plotMap(self, latitude, longitude):
+        p = GoogleMaps.MapPoint(longitude, latitude)
+        if longitude is None or latitude is None or (p.getTileX(self.zoom) == self.xtile
+                                                               and p.getTileY(self.zoom) == self.ytile):
+            return
 
-        location = GoogleMaps.MapPoint(self.longitude, self.latitude)
-        img = GoogleMaps.getMapImage(location, ZOOM, TILES, TILES)
+        location = GoogleMaps.MapPoint(longitude, latitude)
+        img = GoogleMaps.getMapImage(location, self.zoom, TILES, TILES)
 
         self.plotWidget.canvas.ax.set_axis_off()
         self.plotWidget.canvas.ax.set_ylim(TILES*GoogleMaps.TILE_SIZE,0)
         self.plotWidget.canvas.ax.set_xlim(0,TILES * GoogleMaps.TILE_SIZE)
-
 
         self.plotWidget.canvas.fig.tight_layout(pad=0, w_pad=0, h_pad=0)
         self.plotWidget.canvas.ax.imshow(img)
 
         self.plotWidget.canvas.draw()
 
-    def updateMark(self):
-        newtime = time.time()
-        if newtime - self.lastgps < 4:
-            return
-        self.lastgps = newtime
+        self.xtile = location.getTileX(self.zoom)
+        self.ytile = location.getTileY(self.zoom)
 
+    def updateMark(self, latitude, longitude):
         children = self.plotWidget.canvas.ax.get_children()
         for c in children:
             if isinstance(c, AnnotationBbox):
                 c.remove()
 
-        location = GoogleMaps.MapPoint(self.longitude, self.latitude)
-        mark = (location.getPixelX(ZOOM) % GoogleMaps.TILE_SIZE + TILES // 2 * GoogleMaps.TILE_SIZE,
-                location.getPixelY(ZOOM) % GoogleMaps.TILE_SIZE + TILES // 2 * GoogleMaps.TILE_SIZE)
+        location = GoogleMaps.MapPoint(longitude, latitude)
+        mark = (location.getPixelX(self.zoom) % GoogleMaps.TILE_SIZE + (TILES // 2 + location.getTileX(self.zoom)-self.xtile) * GoogleMaps.TILE_SIZE,
+                location.getPixelY(self.zoom) % GoogleMaps.TILE_SIZE + (TILES // 2 + location.getTileY(self.zoom)-self.ytile) * GoogleMaps.TILE_SIZE)
         ab = AnnotationBbox(OffsetImage(self.marker), mark, frameon=False)
 
         self.plotWidget.canvas.ax.add_artist(ab)
@@ -141,8 +145,3 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.data.save()
         print("Saved!")
 
-
-#print('Press and release your desired shortcut: ')
-#shortcut = keyboard.read_hotkey()
-#print('Shortcut selected:', shortcut)
-#keyboard.add_hotkey(shortcut, on_triggered)

@@ -1,9 +1,16 @@
 import math
 import os
+import random
+import sys
 
 from matplotlib import pyplot as plt
 import numpy as np
 from urllib.request import urlopen
+
+if getattr(sys, 'frozen', False):
+    local = os.path.dirname(sys.executable)
+elif __file__:
+    local = os.path.dirname(__file__)
 
 TILE_SIZE = 256
 
@@ -31,6 +38,12 @@ class MapPoint:
     def getTileY(self,zoom):
         return int(self.getPixelY(zoom)/TILE_SIZE)
 
+    def getTile(self, zoom):
+        return MapTile(self.getTileX(), self.getTileY(), zoom)
+
+
+WORD = "Galileo"
+NUM = (0, 3)
 class MapTile:
 
     def __init__(self, x, y, z):
@@ -39,29 +52,35 @@ class MapTile:
         self.z = z
 
     def getURL(self):
-        return "http://khm3.google.com/kh/v=821&x=%d&y=%d&z=%d" % (self.x, self.y, self.z)
+        return "http://khm%d.google.com/kh/v=821&s=%s&x=%d&y=%d&z=%d" % (random.randint(NUM[0], NUM[1]),
+                                                                      WORD[:random.randint(0, len(WORD))],
+                                                                    self.x, self.y, self.z)
 
     def getName(self):
         return "x%dy%dz%d" % (self.x, self.y, self.z)
 
     def getImage(self):
-        local = os.path.dirname(os.path.realpath(__file__))
         tiles = os.path.join(local, "tiles")
         impath = os.path.join(tiles, self.getName() + ".png")
 
         if os.path.isfile(impath):
             return plt.imread(impath)
         else:
-            return np.zeros((TILE_SIZE, TILE_SIZE, 3))
-            #if not os.path.isdir(tiles):
-            #    os.mkdir(tiles)
 
-            #try:
-            #    img = plt.imread(urlopen(self.getURL()), format='jpeg')
-            #    plt.imsave(impath, img)
-            #    return img
-            #except:
-            #    return np.zeros((TILE_SIZE,TILE_SIZE,3))
+            return np.zeros((TILE_SIZE, TILE_SIZE, 3))
+
+            '''
+            if not os.path.isdir(tiles):
+                os.mkdir(tiles)
+            
+            try: ########################################################
+                img = plt.imread(urlopen(self.getURL()), format='jpeg')
+                plt.imsave(impath, img)
+                return img
+            except:
+                print(sys.exc_info()[0])
+                return np.zeros((TILE_SIZE,TILE_SIZE,3))
+            '''
 
 def getMapImage(point, zoom, xtiles, ytiles):
     img = None

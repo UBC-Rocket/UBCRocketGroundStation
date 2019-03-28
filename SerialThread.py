@@ -54,7 +54,6 @@ class SThread(QtCore.QThread):
         chunkLength = IDLENGTH + DATALENGTH
         byteList = []
         while self.running:
-            #self.sig1.emit(self.source_txt)
             newbyte = self.ser.read(1)
             byteList.append(newbyte)
             # print("Byte buffer: " + str(len(byteList)))

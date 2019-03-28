@@ -10,9 +10,12 @@ if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
 if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
 
+if getattr(sys, 'frozen', False):
+    local = os.path.dirname(sys.executable)
+elif __file__:
+    local = os.path.dirname(__file__)
 
-py_path = os.path.dirname(os.path.abspath(__file__))
-qtCreatorFile = os.path.join(py_path, "comWindow.ui")  # Enter file here.
+qtCreatorFile = os.path.join(local, "comWindow.ui")
 
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 

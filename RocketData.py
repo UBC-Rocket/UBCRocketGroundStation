@@ -1,7 +1,14 @@
 import os
 import struct
+import sys
+
 import numpy as np
 import time
+
+if getattr(sys, 'frozen', False):
+    local = os.path.dirname(sys.executable)
+elif __file__:
+    local = os.path.dirname(__file__)
 
 nametochar = {
     "Acceleration X": 'X'.encode('ascii'),
@@ -50,7 +57,7 @@ class RocketData:
         for i in range(len(times)):
             if chr(nametochar[name][0]) in self.timeset[times[i]]:
                 return self.timeset[times[i]][chr(nametochar[name][0])]
-        return -1
+        return None
 
     def fivetofloat(self, bytes):
         # turns d into a float from decimal representation of 4 sepreate bytes in a list
@@ -62,7 +69,9 @@ class RocketData:
         return c[0]
 
     def save(self):
-        local = os.path.dirname(os.path.realpath(__file__))
+        if len(self.timeset) <= 0:
+            return
+
         csvpath = os.path.join(local, str(int(time.time()))+".csv")
 
         data = np.empty((len(orderednames), len(self.timeset)+1), dtype=object)

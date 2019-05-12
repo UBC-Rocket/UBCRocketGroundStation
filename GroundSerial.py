@@ -1,4 +1,5 @@
 import atexit
+import math
 import sys
 import time
 
@@ -29,7 +30,7 @@ if getattr(sys, 'frozen', False):
 elif __file__:
     local = os.path.dirname(__file__)
 
-qtCreatorFile = os.path.join(local, "main.ui")  # Enter file here.
+qtCreatorFile = os.path.join(local, "main.ui")
 
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
@@ -58,6 +59,10 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.ArmButton.clicked.connect(lambda _: self.sendCommand("arm"))
         self.HaloButton.clicked.connect(lambda _: self.sendCommand("halo"))
 
+        markerpath = os.path.join(local, "marker.png")
+        self.marker = imresize(plt.imread(markerpath), (12,12))
+        self.plotMap(51.852667, -111.646972)
+
         idSet = set(RocketData.chartoname.keys())
         self.printToConsole("Starting Serial")
         self.SThread = SerialThread.SThread(com, idSet, baud)
@@ -66,11 +71,6 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.SThread.sig_print.connect(self.printToConsole)
         self.SThread.start()
 
-        markerpath = os.path.join(local, "marker.png")
-        self.marker = imresize(plt.imread(markerpath), (12,12))
-
-        self.plotMap(51.852667, -111.646972)
-
 
     def receiveData(self, bytes):
         self.data.addpoint(bytes)
@@ -78,11 +78,16 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         latitude = self.data.lastvalue("Latitude")
         longitude = self.data.lastvalue("Longitude")
 
+        nonezero = lambda x: 0 if x is None else x
+        accel = math.sqrt(nonezero(self.data.lastvalue("Acceleration X"))**2 +
+                          nonezero(self.data.lastvalue("Acceleration Y"))**2 +
+                            nonezero(self.data.lastvalue("Acceleration Z"))**2)
+
         self.AltitudeLabel.setText(str(self.data.lastvalue("Calculated Altitude")))
         self.GpsLabel.setText(str(latitude) + ", " + str(longitude))
         self.StateLabel.setText(str(self.data.lastvalue("State")))
         self.PressureLabel.setText(str(self.data.lastvalue("Pressure")))
-        self.AccelerationLabel.setText(str(max(self.data.lastvalue("Acceleration X"),self.data.lastvalue("Acceleration Y"),self.data.lastvalue("Acceleration Z"))))
+        self.AccelerationLabel.setText(str(accel))
 
         #self.plotMap(latitude, longitude) #Uncomment to make map recenter
 
@@ -127,6 +132,9 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.ytile = location.getTileY(self.zoom)
 
     def updateMark(self, latitude, longitude):
+        if longitude is None or latitude is None:
+            return
+
         children = self.plotWidget.canvas.ax.get_children()
         for c in children:
             if isinstance(c, AnnotationBbox):

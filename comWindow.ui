@@ -40,7 +40,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QSpinBox" name="comPortBox"/>
+       <widget class="QComboBox" name="comBox"/>
       </item>
      </layout>
     </item>

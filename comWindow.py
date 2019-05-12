@@ -3,6 +3,7 @@ import PyQt5
 from PyQt5 import QtCore, QtGui, uic, QtWidgets
 import os
 import GroundStation
+import serial.tools.list_ports
 
 if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
@@ -29,6 +30,8 @@ class comWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def MySetup(self):
         self.doneButton.clicked.connect(self.doneButtonPressed)
+        comlist = list(map(lambda x: x.device, serial.tools.list_ports.comports()))
+        self.comBox.addItems(comlist)
 
     def doneButtonPressed(self):
         '''
@@ -40,7 +43,7 @@ class comWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 print("bad int")
         '''
 
-        GroundStation.start(self.comPortBox.value(), int(self.baudBox.currentText()))
+        GroundStation.start(self.comBox.currentText(), int(self.baudBox.currentText()))
         self.close()
 
 if __name__ == "__main__":

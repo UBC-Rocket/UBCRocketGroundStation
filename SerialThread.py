@@ -32,7 +32,7 @@ class SThread(QtCore.QThread):
 
     def __init__(self, com, ids, baud, parent=None):
         QtCore.QThread.__init__(self, parent)
-        self.ser = serial.Serial("COM" + str(com), baud)
+        self.ser = serial.Serial(com, baud)
         self.IdSet = ids
         self.IdSet.add(Good_ID)
         self.IdSet.add(Bad_ID)
@@ -60,7 +60,7 @@ class SThread(QtCore.QThread):
 
             while len(byteList) >= chunkLength:
                 if byteList[0] == Good_ID and byteList[IDLENGTH].decode("ascii") in COM_NAME.keys() and _are_all(
-                        byteList[IDLENGTH:DATALENGTH], byteList[IDLENGTH]):
+                        byteList[IDLENGTH:DATALENGTH], byteList[IDLENGTH]): #Should be byteList[IDLENGTH:chunklength] ??
                     self.sig_print.emit("Successful " + COM_NAME[byteList[IDLENGTH].decode("ascii")])
                     del byteList[0:chunkLength]
 

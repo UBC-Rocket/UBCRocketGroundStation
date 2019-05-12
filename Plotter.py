@@ -29,7 +29,7 @@ def plot(newx, newy):
     plt.clf()
     plt.plot(x, y, marker="o")
     plt.draw()
-    pause(0.01)
+    #pause(0.01)
 
 def close():
     plt.close()

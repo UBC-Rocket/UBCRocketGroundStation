@@ -11,23 +11,23 @@ elif __file__:
     local = os.path.dirname(__file__)
 
 nametochar = {
-    "Acceleration X": 'X'.encode('ascii'),
-    "Acceleration Y": 'Y'.encode('ascii'),
-    "Acceleration Z": 'Z'.encode('ascii'),
-    "Pressure": 'P'.encode('ascii'),
-    "Barometer Temperature": '~'.encode('ascii'),
-    "Temperature": 'T'.encode('ascii'),
-    "Yaw": '@'.encode('ascii'),
-    "Roll": '#'.encode('ascii'),
-    "Pitch": '$'.encode('ascii'),
-    "Latitude": 'L'.encode('ascii'),
-    "Longitude": 'l'.encode('ascii'),
-    "GPS Altitude": 'A'.encode('ascii'),
-    "Calculated Altitude": 'a'.encode('ascii'),
-    "State": 's'.encode('ascii'),
-    "Voltage": 'b'.encode('ascii'),
-    "Ground Altitude": 'g'.encode('ascii'),
-    "Time": 't'.encode('ascii')
+    "Acceleration X": b'X',
+    "Acceleration Y": b'Y',
+    "Acceleration Z": b'Z',
+    "Pressure": b'P',
+    "Barometer Temperature": b'~',
+    "Temperature": b'T',
+    "Yaw": b'@',
+    "Roll": b'#',
+    "Pitch": b'$',
+    "Latitude": b'L',
+    "Longitude": b'l',
+    "GPS Altitude": b'A',
+    "Calculated Altitude": b'a',
+    "State": b's',
+    "Voltage": b'b',
+    "Ground Altitude": b'g',
+    "Time": b't'
 }
 
 chartoname = {}
@@ -37,6 +37,23 @@ for x in nametochar:
 orderednames = list(nametochar.keys())
 orderednames.sort()
 
+typemap = {
+    's':"state",
+    't':"int"
+}
+
+statemap = {
+ 0:"STANDBY",
+ 1:"ARMED",
+ 2:"ASCENT",
+ 3:"MACH_LOCK",
+ 4:"PRESSURE_DELAY",
+ 5:"INITIAL_DESCENT",
+ 6:"FINAL_DESCENT",
+ 7:"LANDED",
+ 8:"WINTER_CONTINGENCY"
+}
+
 class RocketData:
     def __init__(self):
         self.timeset = {}
@@ -44,12 +61,12 @@ class RocketData:
 
     def addpoint(self, bytes):
         if bytes[0] == nametochar["Time"][0]:
-            self.lasttime = self.fivetofloat(bytes)
+            self.lasttime = fivtoval(bytes)
         else:
             if self.lasttime not in self.timeset:
                 self.timeset[self.lasttime] = {}
 
-            (self.timeset[self.lasttime])[chr(bytes[0])] = self.fivetofloat(bytes)
+            (self.timeset[self.lasttime])[chr(bytes[0])] = fivtoval(bytes)
 
     def lastvalue(self, name):
         times = list(self.timeset.keys())
@@ -58,15 +75,6 @@ class RocketData:
             if chr(nametochar[name][0]) in self.timeset[times[i]]:
                 return self.timeset[times[i]][chr(nametochar[name][0])]
         return None
-
-    def fivetofloat(self, bytes):
-        # turns d into a float from decimal representation of 4 sepreate bytes in a list
-        data = bytes[1:5]
-        #data = data[::-1]#flips bytes
-        b = struct.pack('4B', *data)
-        # should be in little endian format from the teensy?
-        c = struct.unpack('<f', b)
-        return c[0]
 
     def save(self):
         if len(self.timeset) <= 0:
@@ -91,3 +99,39 @@ class RocketData:
                         data[ix, iy] = ""
 
         np.savetxt(csvpath, np.transpose(data), delimiter=',', fmt="%s")
+
+def bytelist(bytes):
+    return list(map(lambda x: x[0], bytes))
+
+def tostate(bytes):
+    return statemap[toint(bytes)]
+
+
+def toint(bytes):
+    return int.from_bytes(bytes, byteorder='little', signed=False)
+
+def fourtofloat(bytes):
+    data = bytes
+    # data = data[::-1]#flips bytes
+    b = struct.pack('4B', *data)
+    # should be in little endian format from the teensy?
+    c = struct.unpack('<f', b)
+    return c[0]
+
+def fivtoval(bytes):
+    data = bytes[1:5]
+    val = 0
+
+    try:
+        if chr(bytes[0]) in typemap:
+            datatype = typemap[chr(bytes[0])]
+
+            if datatype == "int":
+                return toint(data)
+            elif datatype == "state":
+                return tostate(data)
+
+        return fourtofloat(data)
+
+    except:
+        return -1

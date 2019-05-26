@@ -84,6 +84,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
                             nonezero(self.data.lastvalue("Acceleration Z"))**2)
 
         self.AltitudeLabel.setText(str(self.data.lastvalue("Calculated Altitude")))
+        self.MaxAltitudeLabel.setText(str(self.data.highest_altitude))
         self.GpsLabel.setText(str(latitude) + ", " + str(longitude))
         self.StateLabel.setText(str(self.data.lastvalue("State")))
         self.PressureLabel.setText(str(self.data.lastvalue("Pressure")))

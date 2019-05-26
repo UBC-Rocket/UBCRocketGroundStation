@@ -58,6 +58,7 @@ class RocketData:
     def __init__(self):
         self.timeset = {}
         self.lasttime = 0
+        self.highest_altitude = 0
 
     def addpoint(self, bytes):
         if bytes[0] == nametochar["Time"][0]:
@@ -67,6 +68,11 @@ class RocketData:
                 self.timeset[self.lasttime] = {}
 
             (self.timeset[self.lasttime])[chr(bytes[0])] = fivtoval(bytes)
+
+        if bytes[0] == nametochar["Calculated Altitude"][0]:
+            alt = fivtoval(bytes)
+            if alt > self.highest_altitude:
+                self.highest_altitude = alt
 
     def lastvalue(self, name):
         times = list(self.timeset.keys())

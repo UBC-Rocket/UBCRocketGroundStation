@@ -2,7 +2,7 @@ import sys
 import PyQt5
 from PyQt5 import QtCore, QtGui, uic, QtWidgets
 import os
-import GroundStation
+import start
 import serial.tools.list_ports
 
 if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
@@ -43,7 +43,7 @@ class comWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 print("bad int")
         '''
 
-        GroundStation.start(self.comBox.currentText(), int(self.baudBox.currentText()))
+        start.start(self.comBox.currentText(), int(self.baudBox.currentText()))
         self.close()
 
 if __name__ == "__main__":

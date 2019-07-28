@@ -5,6 +5,7 @@ from digi.xbee.devices import XBeeDevice
 from digi.xbee.devices import RemoteXBeeDevice
 from digi.xbee.devices import XBee64BitAddress
 from digi.xbee.exception import TimeoutException, XBeeException
+import queue
 
 IDLENGTH = 1
 DATALENGTH = 4
@@ -46,34 +47,48 @@ class SThread(QtCore.QThread):
         self.IdSet.add(Good_ID)
         self.IdSet.add(Bad_ID)
 
-    def send(self, word):
+        self.commandQueue = queue.Queue()
 
-        bytes = None
-        if word in COM_ID:
-            bytes = COM_ID[word].encode('ascii')
+        self.errored = False
 
-        else:
-            bytes = word.encode('ascii')
+    def queueMessage(self, word):
+        self.commandQueue.put_nowait(word)
 
+    def trySendMessage(self):
         try:
+            word = self.commandQueue.get_nowait()
+            self.commandQueue.task_done() #errored transmitions are not retried
+
+            bytes = None
+            if word in COM_ID:
+                bytes = COM_ID[word].encode('ascii')
+
+            else:
+                bytes = word.encode('ascii')
+
             #remote_device = RemoteXBeeDevice(self.device, XBee64BitAddress.from_hex_string("0013A20041678fb9"))
             #self.device.send_data(remote_device, bytes)
             self.device.send_data_broadcast(bytes)
+
+            self.sig_print.emit("Sent!")
+
         except TimeoutException:
             self.sig_print.emit("Message timed-out!")
+
+        except queue.Empty:
+            pass
+
         except:
             self.sig_print.emit("Unexpected error while sending!")
-
-        self.sig_print.emit("Sent!")
 
     def run(self):
         self.running = True
         chunkLength = IDLENGTH + DATALENGTH
         byteList = []
         while self.running:
+            self.trySendMessage()
+
             byteList = self.get_api_data()
-            #byteList.extend(newbytes)
-            # print("Byte buffer: " + str(len(byteList)))
 
             while len(byteList) > 0:
                 if byteList[0] == Good_ID: #Should be byteList[IDLENGTH:chunklength] ??
@@ -111,20 +126,20 @@ class SThread(QtCore.QThread):
     def get_api_data(self):
 
         message = None
-        errored = False
 
-        while message is None:
-            try:
-                message = self.device.read_data()
-                errored = False
-            except XBeeException:
-                if not errored:
-                    errored = True
-                    self.sig_print.emit("Error reading data! Radio disconnected?")
+        try:
+            message = self.device.read_data()
+            self.errored = False
+        except XBeeException:
+            if not self.errored:
+                self.errored = True
+                self.sig_print.emit("Error reading data! Radio disconnected?")
+
+        if not message:
+            return []
 
         data = message.data
         data = map(lambda x: bytes([x]), data)
-
 
         return list(data)
 

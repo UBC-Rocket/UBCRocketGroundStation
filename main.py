@@ -67,12 +67,12 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.printToConsole("Starting Serial")
         self.SThread = SerialThread.SThread(com, idSet, baud)
         self.SThread.sig_received.connect(self.receiveData)
-        self.sig_send.connect(self.SThread.send)
+        self.sig_send.connect(self.SThread.queueMessage)
         self.SThread.sig_print.connect(self.printToConsole)
         self.SThread.start()
 
 
-    def receiveData(self, bytes):
+    def receiveData(self, bytes): #TODO: ARE WE SURE THIS IS THREAD SAFE? USE QUEUE OR PUT IN SERIAL THREAD
         self.data.addpoint(bytes)
 
         latitude = self.data.lastvalue("Latitude")

@@ -1,4 +1,4 @@
-import GroundSerial
+import main
 
 window = None
 
@@ -8,5 +8,5 @@ window = None
 def start(com, baud):
     global window
 
-    window = GroundSerial.MainApp(com, baud)
+    window = main.MainApp(com, baud)
     window.show()

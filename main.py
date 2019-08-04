@@ -53,6 +53,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.setupUi(self)
 
         self.sendButton.clicked.connect(self.sendButtonPressed)
+        self.commandEdit.returnPressed.connect(self.sendButtonPressed)
         self.actionSave.triggered.connect(self.data.save)
 
         self.StatusButton.clicked.connect(lambda _: self.sendCommand("status"))

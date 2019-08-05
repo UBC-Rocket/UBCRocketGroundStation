@@ -3,9 +3,9 @@
 cd /D %~dp0
 
 IF EXIST .\venv\ (
-echo "Venv detected" 
+echo Venv detected
 ) ELSE (
-echo "Creating Venv" 
+echo Creating Venv
 python -m pip install --upgrade pip setuptools wheel
 python -m venv venv
 )

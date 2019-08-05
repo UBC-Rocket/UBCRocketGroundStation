@@ -1,5 +1,9 @@
 @ECHO OFF
 
+cd /D %~dp0
+
+.\venv\scripts\python.exe -m pip install --upgrade pip
+.\venv\scripts\python.exe -m pip install -r .\requirements.txt
 
 del .\dist\Station.exe
 .\venv\Scripts\pyinstaller.exe -F -n Station .\comWindow.py

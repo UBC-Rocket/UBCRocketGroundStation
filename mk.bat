@@ -2,7 +2,15 @@
 
 cd /D %~dp0
 
-.\venv\scripts\python.exe -m pip install --upgrade pip
+IF EXIST .\venv\ (
+echo "Venv detected" 
+) ELSE (
+echo "Creating Venv" 
+python -m pip install --upgrade pip setuptools wheel
+python -m venv venv
+)
+
+.\venv\scripts\python.exe -m pip install --upgrade pip setuptools
 .\venv\scripts\python.exe -m pip install -r .\requirements.txt
 
 del .\dist\Station.exe

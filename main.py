@@ -61,6 +61,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.HaloButton.clicked.connect(lambda _: self.sendCommand("halo"))
 
         markerpath = os.path.join(local, "marker.png")
+        # TODO: imresize removed in latest scipy since it's a duplicate from "Pillow". Update and replace.
         self.marker = imresize(plt.imread(markerpath), (12,12))
         self.plotMap(51.852667, -111.646972)
 

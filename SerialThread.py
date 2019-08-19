@@ -1,9 +1,5 @@
-import serial
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
-from digi.xbee.devices import XBeeDevice
-from digi.xbee.devices import RemoteXBeeDevice
-from digi.xbee.devices import XBee64BitAddress
 from digi.xbee.exception import TimeoutException, XBeeException
 import queue
 
@@ -38,11 +34,9 @@ class SThread(QtCore.QThread):
     sig_received = pyqtSignal(list)
     sig_print = pyqtSignal(str)
 
-    def __init__(self, com, ids, baud, parent=None):
+    def __init__(self, connection, ids, parent=None):
         QtCore.QThread.__init__(self, parent)
-        self.device = XBeeDevice(com, baud)
-        self.device.set_sync_ops_timeout(5) #5 seconds
-        self.device.open()
+        self.connection = connection
         self.IdSet = ids
         self.IdSet.add(Good_ID)
         self.IdSet.add(Bad_ID)
@@ -66,9 +60,7 @@ class SThread(QtCore.QThread):
             else:
                 bytes = word.encode('ascii')
 
-            #remote_device = RemoteXBeeDevice(self.device, XBee64BitAddress.from_hex_string("0013A20041678fb9"))
-            #self.device.send_data(remote_device, bytes)
-            self.device.send_data_broadcast(bytes)
+            self.connection.send(bytes)
 
             self.sig_print.emit("Sent!")
 
@@ -88,7 +80,7 @@ class SThread(QtCore.QThread):
         while self.running:
             self.trySendMessage()
 
-            byteList = self.get_api_data()
+            byteList = self.get_data()
 
             while len(byteList) > 0:
                 if byteList[0] == Good_ID: #Should be byteList[IDLENGTH:chunklength] ??
@@ -123,14 +115,14 @@ class SThread(QtCore.QThread):
                 else:
                     break
 
-    def get_api_data(self):
+    def get_data(self):
 
         message = None
 
         try:
-            message = self.device.read_data()
+            message = self.connection.get()
             self.errored = False
-        except XBeeException:
+        except XBeeException: #TODO: use general exception in IConnection
             if not self.errored:
                 self.errored = True
                 self.sig_print.emit("Error reading data! Radio disconnected?")
@@ -138,7 +130,7 @@ class SThread(QtCore.QThread):
         if not message:
             return []
 
-        data = message.data
+        data = message
         data = map(lambda x: bytes([x]), data)
 
         return list(data)

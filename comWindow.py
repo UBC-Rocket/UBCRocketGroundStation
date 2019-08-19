@@ -5,6 +5,9 @@ import os
 import start
 import serial.tools.list_ports
 
+from DebugConnectionFactory import DebugConnectionFactory
+from SerialConnectionFactory import SerialConnectionFactory
+
 if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
 
@@ -25,30 +28,39 @@ class comWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self):
         QtWidgets.QMainWindow.__init__(self)
         Ui_MainWindow.__init__(self)
+
+        self.ConnectionFactories = {
+            "Serial": SerialConnectionFactory(),
+            "Debug": DebugConnectionFactory()
+        }
         self.setupUi(self)
         self.MySetup()
 
     def MySetup(self):
+        self.typeBox.currentTextChanged.connect(self.connectionChanged)
+        self.typeBox.addItems(self.ConnectionFactories.keys())
+
         self.doneButton.clicked.connect(self.doneButtonPressed)
         comlist = list(map(lambda x: x.device, serial.tools.list_ports.comports()))
         self.comBox.addItems(comlist)
 
     def doneButtonPressed(self):
-        '''
-        while not com:
-            var = input("Please enter a COM #: ")
-            try:
-                com = int(var)
-            except:
-                print("bad int")
-        '''
-
-        start.start(self.comBox.currentText(), int(self.baudBox.currentText()))
+        factory = self.ConnectionFactories[self.typeBox.currentText()]
+        connection = factory.construct(comPort=self.comBox.currentText(), baudRate=int(self.baudBox.currentText()))
+        start.start(connection)
         self.close()
+
+    def connectionChanged(self):
+        text = self.typeBox.currentText()
+        factory = self.ConnectionFactories[text]
+
+        self.comBox.setEnabled(factory.requiresComPort)
+        self.baudBox.setEnabled(factory.requiresBaudRate)
+
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     window = comWindow()
     window.show()
     sys.exit(app.exec_())
-

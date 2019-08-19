@@ -5,8 +5,8 @@ window = None
 
 
 
-def start(com, baud):
+def start(connection): #TODO: does this need its own file??
     global window
 
-    window = main.MainApp(com, baud)
+    window = main.MainApp(connection)
     window.show()

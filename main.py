@@ -39,7 +39,7 @@ TILES = 14
 class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
     sig_send = pyqtSignal(str)
 
-    def __init__(self, com, baud):
+    def __init__(self, connection):
         self.data = RD()
         atexit.register(self.exit_handler)
 
@@ -66,8 +66,8 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.plotMap(51.852667, -111.646972)
 
         idSet = set(RocketData.chartoname.keys())
-        self.printToConsole("Starting Serial")
-        self.SThread = SerialThread.SThread(com, idSet, baud)
+        self.printToConsole("Starting Connection")
+        self.SThread = SerialThread.SThread(connection, idSet)
         self.SThread.sig_received.connect(self.receiveData)
         self.sig_send.connect(self.SThread.queueMessage)
         self.SThread.sig_print.connect(self.printToConsole)

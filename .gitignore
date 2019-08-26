@@ -1,6 +1,7 @@
 dist/
 build/
 __pycache__/
+.idea/
 venv/
 *.spec
 *.csv

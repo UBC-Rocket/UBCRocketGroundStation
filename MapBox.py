@@ -125,6 +125,10 @@ class TileGrid:
         self.p2 = p2
         self.scale = min(s, 18)
         self.ta = []
+        self.xMin = None
+        self.xMax = None
+        self.yMin = None
+        self.yMax = None
         self.genTileArray()
 
     def genTileArray(self):
@@ -134,6 +138,12 @@ class TileGrid:
         x2 = max(t1.x, t2.x)
         y1 = min(t1.y, t2.y)
         y2 = max(t1.y, t2.y)
+
+        self.xMin = x1/pow(2, self.scale)
+        self.xMax = (x2+1)/pow(2, self.scale)
+        self.yMin = y1/pow(2, self.scale)
+        self.yMax = (y2+1)/pow(2, self.scale)
+        # print(str(self.xMin) + "  " + str(self.xMax) + "  " + str(self.yMin) + "  " + str(self.yMax))
 
         ta = []
 

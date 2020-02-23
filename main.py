@@ -47,6 +47,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.data = RD()
         atexit.register(self.exit_handler)
 
+        self.lock = threading.Lock()
         self.zoom = 20
         self.lastgps = time.time()
         self.lastMapUpdate = time.time()
@@ -55,6 +56,8 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.x = None
         self.y = None
         self.radius = 0.1
+        self.latitude = 0
+        self.longitude = 0
         self.lastLatitude = 0
         self.lastLongitude = 0
 
@@ -84,6 +87,9 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.SThread.sig_print.connect(self.printToConsole)
         self.SThread.start()
 
+        thread = threading.Thread(target=self.threadLoop)
+        thread.start()
+
     def receiveData(self, bytes):  # TODO: ARE WE SURE THIS IS THREAD SAFE? USE QUEUE OR PUT IN SERIAL THREAD
         self.data.addpoint(bytes)
 
@@ -102,19 +108,20 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.PressureLabel.setText(str(self.data.lastvalue("Pressure")))
         self.AccelerationLabel.setText(str(accel))
 
-        # if (time.time() - self.lastMapUpdate > 5) and (abs((latitude - self.lastLatitude) * 110.574) < self.radius) and\
-        #         (abs((longitude - self.lastLongitude) * 110.574 * math.cos(longitude * math.pi/180.0)) < self.radius):
-        if time.time() - self.lastMapUpdate > 5:
-            self.plotMap(latitude, longitude)  # Uncomment to make map recenter
-            self.lastMapUpdate = time.time()
-            self.lastLatitude = latitude
-            self.lastLongitude = longitude
-        # self.plotMap(latitude, longitude) #Uncomment to make map recenter
+        self.latitude = latitude
+        self.longitude = longitude
 
-        newtime = time.time()
-        if newtime - self.lastgps >= 3:
-            self.updateMark(latitude, longitude)
-        self.lastgps = newtime
+        # if time.time() - self.lastMapUpdate > 5:
+        #     self.plotMap(latitude, longitude)  # Uncomment to make map recenter
+        #     self.lastMapUpdate = time.time()
+        #     self.lastLatitude = latitude
+        #     self.lastLongitude = longitude
+        # # self.plotMap(latitude, longitude) #Uncomment to make map recenter
+        #
+        # newtime = time.time()
+        # if newtime - self.lastgps >= 3:
+        #     self.updateMark(latitude, longitude)
+        # self.lastgps = newtime
 
     def sendButtonPressed(self):
         word = self.commandEdit.text()
@@ -189,14 +196,35 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         x = (p.x - location.xMin)/(location.xMax - location.xMin)
         y = (p.y - location.yMin)/(location.yMax - location.yMin)
 
-        print(str(x) + "   " + str(y))
-
         mark = (x * MapBox.TILE_SIZE * len(location.ta[0]), y * MapBox.TILE_SIZE * len(location.ta))
 
         ab = AnnotationBbox(OffsetImage(self.marker), mark, frameon=False)
 
         self.plotWidget.canvas.ax.add_artist(ab)
         self.plotWidget.canvas.draw()
+
+    def threadLoop(self):
+        while True:
+            with self.lock:
+                lat = self.latitude
+                lon = self.longitude
+                lmu = self.lastMapUpdate
+
+            if time.time() - lmu > 5:
+                self.plotMap(lat, lon)  # Uncomment to make map recenter
+                lmu = time.time()
+
+            with self.lock:
+                self.lastMapUpdate = lmu
+                lgps = self.lastgps
+
+            if time.time() - lgps >= 1:
+                self.updateMark(self.latitude, self.longitude)
+                lgps = time.time()
+
+            with self.lock:
+                self.lastgps = lgps
+
 
     def exit_handler(self):
         print("Saving...")

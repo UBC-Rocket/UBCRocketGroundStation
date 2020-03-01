@@ -21,22 +21,18 @@ TILE_SIZE = 512
 
 
 def readKey():
-    f = open(os.path.join(local, "apikey.txt"), "r")
-    contents = f.read()
-    return contents.strip()
+    if os.path.isfile(os.path.join(local, "apikey.txt")):
+        f = open(os.path.join(local, "apikey.txt"), "r")
+        contents = f.read()
+        return contents.strip()
+    else:
+        return None
 
 
-maps = mapbox.Maps(access_token=readKey())
-
-
-# Hennings Building Test
-# response = maps.tile("mapbox.satellite", 41322, 89729, 18, retina=True)
-#
-# print(response.status_code)
-#
-# if response.status_code == 200:
-#    with open("./0.png", "wb") as output:
-#        output.write(response.content)
+if not (readKey() is None):
+    maps = mapbox.Maps(access_token=readKey())
+else:
+    maps = None
 
 
 class MapPoint:
@@ -139,10 +135,10 @@ class TileGrid:
         y1 = min(t1.y, t2.y)
         y2 = max(t1.y, t2.y)
 
-        self.xMin = x1/pow(2, self.scale)
-        self.xMax = (x2+1)/pow(2, self.scale)
-        self.yMin = y1/pow(2, self.scale)
-        self.yMax = (y2+1)/pow(2, self.scale)
+        self.xMin = x1 / pow(2, self.scale)
+        self.xMax = (x2 + 1) / pow(2, self.scale)
+        self.yMin = y1 / pow(2, self.scale)
+        self.yMax = (y2 + 1) / pow(2, self.scale)
         # print(str(self.xMin) + "  " + str(self.xMax) + "  " + str(self.yMin) + "  " + str(self.yMax))
 
         ta = []

@@ -85,8 +85,9 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.SThread.sig_print.connect(self.printToConsole)
         self.SThread.start()
 
-        thread = threading.Thread(target=self.threadLoop, daemon=True)
-        thread.start()
+        if not (MapBox.maps is None):
+            thread = threading.Thread(target=self.threadLoop, daemon=True)
+            thread.start()
 
     def receiveData(self, bytes):  # TODO: ARE WE SURE THIS IS THREAD SAFE? USE QUEUE OR PUT IN SERIAL THREAD
         self.data.addpoint(bytes)
@@ -191,8 +192,8 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
 
         location = MapBox.TileGrid(p1, p2, self.zoom)
 
-        x = (p.x - location.xMin)/(location.xMax - location.xMin)
-        y = (p.y - location.yMin)/(location.yMax - location.yMin)
+        x = (p.x - location.xMin) / (location.xMax - location.xMin)
+        y = (p.y - location.yMin) / (location.yMax - location.yMin)
 
         mark = (x * MapBox.TILE_SIZE * len(location.ta[0]), y * MapBox.TILE_SIZE * len(location.ta))
 
@@ -203,39 +204,43 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def threadLoop(self):
         while True:
-            with self.lock:
-                lat = self.latitude
-                lon = self.longitude
-                lastLat = self.lastLatitude
-                lastLon = self.lastLongitude
-                lmu = self.lastMapUpdate
+            try:
+                with self.lock:
+                    lat = self.latitude
+                    lon = self.longitude
+                    lastLat = self.lastLatitude
+                    lastLon = self.lastLongitude
+                    lmu = self.lastMapUpdate
 
-            if (time.time() - lmu > 5) and not (lat is None or lon is None):
-                if lastLat is None or lastLon is None:
-                    self.plotMap(lat, lon)
-                    lastLat = lat
-                    lastLon = lon
-                    lmu = time.time()
-                else:
-                    if (abs(lat - lastLat) >= self.radius / 110.574) or (abs(lon - lastLon) >= self.radius / 111.320 / math.cos(lat * math.pi / 180.0)):
+                if (time.time() - lmu > 5) and not (lat is None or lon is None):
+                    if lastLat is None or lastLon is None:
                         self.plotMap(lat, lon)
                         lastLat = lat
                         lastLon = lon
                         lmu = time.time()
+                    else:
+                        if (abs(lat - lastLat) >= self.radius / 110.574) or (
+                                abs(lon - lastLon) >= self.radius / 111.320 / math.cos(lat * math.pi / 180.0)):
+                            self.plotMap(lat, lon)
+                            lastLat = lat
+                            lastLon = lon
+                            lmu = time.time()
 
-            with self.lock:
-                self.lastLatitude = lastLat
-                self.lastLongitude = lastLon
-                self.lastMapUpdate = lmu
-                lgps = self.lastgps
+                with self.lock:
+                    self.lastLatitude = lastLat
+                    self.lastLongitude = lastLon
+                    self.lastMapUpdate = lmu
+                    lgps = self.lastgps
 
-            if time.time() - lgps >= 1:
-                self.updateMark(self.latitude, self.longitude)
-                lgps = time.time()
+                if time.time() - lgps >= 1:
+                    self.updateMark(self.latitude, self.longitude)
+                    lgps = time.time()
 
-            with self.lock:
-                self.lastgps = lgps
+                with self.lock:
+                    self.lastgps = lgps
 
+            except:
+                print("Error in map thread loop.")
 
     def exit_handler(self):
         print("Saving...")

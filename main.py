@@ -85,9 +85,8 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.SThread.sig_print.connect(self.printToConsole)
         self.SThread.start()
 
-        if not (MapBox.maps is None):
-            thread = threading.Thread(target=self.threadLoop, daemon=True)
-            thread.start()
+        thread = threading.Thread(target=self.threadLoop, daemon=True)
+        thread.start()
 
     def receiveData(self, bytes):  # TODO: ARE WE SURE THIS IS THREAD SAFE? USE QUEUE OR PUT IN SERIAL THREAD
         self.data.addpoint(bytes)

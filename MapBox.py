@@ -98,7 +98,7 @@ class MapTile:
 
         impath = os.path.join(scalefolder, self.getName() + ".jpg")
 
-        if (not os.path.exists(impath)) or overwrite == True:
+        if ((not os.path.exists(impath)) or overwrite) and not (maps is None):
             response = maps.tile("mapbox.satellite", self.x, self.y, self.s, retina=True)
             if response.status_code == 200:
                 with open(impath, "wb") as output:
@@ -125,6 +125,8 @@ class TileGrid:
         self.xMax = None
         self.yMin = None
         self.yMax = None
+        self.width = None
+        self.height = None
         self.genTileArray()
 
     def genTileArray(self):
@@ -161,15 +163,12 @@ class TileGrid:
             for i in row:
                 a = attempts
                 while (not i.imageExists()) and (a > 0):
-                    if overwrite:
-                        i.getImage(overwrite=True)
-                    else:
-                        i.getImage(overwrite=False)
+                    i.getImage(overwrite=overwrite)
                     a = a - 1
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
             executor.map(getRow, self.ta)
-            executor.shutdown
+            executor.shutdown()
         t2 = time.perf_counter()
         print(f"Successfully downloaded size {str(self.scale)} tiles in {t2 - t1} seconds.")
 

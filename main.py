@@ -16,7 +16,6 @@ from scipy.misc import imresize
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 
 import SerialThread
-import GoogleMaps
 import MapBox
 import RocketData
 from RocketData import RocketData as RD
@@ -47,19 +46,18 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.data = RD()
         atexit.register(self.exit_handler)
 
-        self.lock = threading.Lock()
         self.zoom = 20
+        self.radius = 0.1
+
+        self.lock = threading.Lock()
         self.lastgps = time.time()
         self.lastMapUpdate = time.time()
-        self.xtile = None
-        self.ytile = None
+        self.latitude = None
+        self.longitude = None
+        self.lastLatitude = None
+        self.lastLongitude = None
         self.x = None
         self.y = None
-        self.radius = 0.1
-        self.latitude = 0
-        self.longitude = 0
-        self.lastLatitude = 0
-        self.lastLongitude = 0
 
         QtWidgets.QMainWindow.__init__(self)
         Ui_MainWindow.__init__(self)
@@ -87,7 +85,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.SThread.sig_print.connect(self.printToConsole)
         self.SThread.start()
 
-        thread = threading.Thread(target=self.threadLoop)
+        thread = threading.Thread(target=self.threadLoop, daemon=True)
         thread.start()
 
     def receiveData(self, bytes):  # TODO: ARE WE SURE THIS IS THREAD SAFE? USE QUEUE OR PUT IN SERIAL THREAD
@@ -138,8 +136,10 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def plotMap(self, latitude, longitude):
         p = MapBox.MapPoint(latitude, longitude)
-        if longitude is None or latitude is None or p.x == self.x and p.y == self.y:
-            return
+
+        with self.lock:
+            if longitude is None or latitude is None or p.x == self.x and p.y == self.y:
+                return
 
         lat1 = latitude + self.radius / 110.574
         lon1 = longitude - self.radius / 111.320 / math.cos(lat1 * math.pi / 180.0)
@@ -157,9 +157,6 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
 
         img = location.genStichedMap()
 
-        # oldlocation = GoogleMaps.MapPoint(longitude, latitude)
-        # oldimg = GoogleMaps.getMapImage(oldlocation, self.zoom, TILES, TILES)
-
         self.plotWidget.canvas.ax.set_axis_off()
         self.plotWidget.canvas.ax.set_ylim(location.height * MapBox.TILE_SIZE, 0)
         self.plotWidget.canvas.ax.set_xlim(0, location.width * MapBox.TILE_SIZE)
@@ -169,8 +166,9 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.plotWidget.canvas.draw()
 
-        self.x = p.x
-        self.y = p.y
+        with self.lock:
+            self.x = p.x
+            self.y = p.y
 
     def updateMark(self, latitude, longitude):
         if longitude is None or latitude is None:
@@ -208,11 +206,22 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
             with self.lock:
                 lat = self.latitude
                 lon = self.longitude
+                lastLat = self.lastLatitude
+                lastLon = self.lastLongitude
                 lmu = self.lastMapUpdate
 
-            if time.time() - lmu > 5:
-                self.plotMap(lat, lon)  # Uncomment to make map recenter
-                lmu = time.time()
+            if (time.time() - lmu > 5) and not (lat is None or lon is None):
+                if lastLat is None or lastLon is None:
+                    self.plotMap(lat, lon)
+                    lastLat = lat
+                    lastLon = lon
+                    lmu = time.time()
+                else:
+                    if (abs(lat - lastLat) >= self.radius / 110.574) or (abs(lon - lastLon) >= self.radius / 111.320 / math.cos(lat * math.pi / 180.0)):
+                        self.plotMap(lat, lon)
+                        lastLat = lat
+                        lastLon = lon
+                        lmu = time.time()
 
             with self.lock:
                 self.lastMapUpdate = lmu

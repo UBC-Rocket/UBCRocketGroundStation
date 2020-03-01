@@ -224,6 +224,8 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
                         lmu = time.time()
 
             with self.lock:
+                self.lastLatitude = lastLat
+                self.lastLongitude = lastLon
                 self.lastMapUpdate = lmu
                 lgps = self.lastgps
 

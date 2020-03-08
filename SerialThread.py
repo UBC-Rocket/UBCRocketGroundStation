@@ -3,8 +3,10 @@ from PyQt5.QtCore import pyqtSignal
 from digi.xbee.exception import TimeoutException, XBeeException
 import queue
 
-IDLENGTH = 1
-DATALENGTH = 4
+import RadioController
+
+IDLENGTH = 1  # TODO change these with new Radio protocol
+DATALENGTH = 4  # TODO change these with new Radio protocol
 
 COM_ID = {
     "arm": 'r',
@@ -75,45 +77,72 @@ class SThread(QtCore.QThread):
 
     def run(self):
         self.running = True
-        chunkLength = IDLENGTH + DATALENGTH
+        chunk_length = IDLENGTH + DATALENGTH
         byteList = []
         while self.running:
             self.trySendMessage()
 
             byteList = self.get_data()
-
             while len(byteList) > 0:
-                if byteList[0] == Good_ID: #Should be byteList[IDLENGTH:chunklength] ??
-                    if try_ascii_decode(byteList[IDLENGTH]) and byteList[IDLENGTH].decode("ascii") in COM_NAME:
-                        self.sig_print.emit("Successful " + COM_NAME[byteList[IDLENGTH].decode("ascii")])
-                    else:
-                        self.sig_print.emit("Successful 0x" + byteList[IDLENGTH].hex())
-                    del byteList[0:2]
+                # if byteList[0] == Good_ID: #Should be byteList[IDLENGTH:chunklength] ??
+                #     if try_ascii_decode(byteList[IDLENGTH]) and byteList[IDLENGTH].decode("ascii") in COM_NAME:
+                #         self.sig_print.emit("Successful " + COM_NAME[byteList[IDLENGTH].decode("ascii")])
+                #     else:
+                #         self.sig_print.emit("Successful 0x" + byteList[IDLENGTH].hex())
+                #     del byteList[0:2]
+                #
+                # elif byteList[0] == Bad_ID:
+                #     if try_ascii_decode(byteList[IDLENGTH]) and byteList[IDLENGTH].decode("ascii") in COM_NAME:
+                #         self.sig_print.emit("Failed " + COM_NAME[byteList[IDLENGTH].decode("ascii")])
+                #     else:
+                #         self.sig_print.emit("Failed 0x" + byteList[IDLENGTH].hex())
+                #     del byteList[0:2]
+                #
+                # elif byteList[0] == String_ID:
+                #     bytes = bytearray(map(_bytes_to_byte, byteList[1:len(byteList)]))
+                #     str = bytes.decode("ascii")
+                #     self.sig_print.emit(str)
+                #     del byteList[0:len(byteList)]
 
-                elif byteList[0] == Bad_ID:
-                    if try_ascii_decode(byteList[IDLENGTH]) and byteList[IDLENGTH].decode("ascii") in COM_NAME:
-                        self.sig_print.emit("Failed " + COM_NAME[byteList[IDLENGTH].decode("ascii")])
-                    else:
-                        self.sig_print.emit("Failed 0x" + byteList[IDLENGTH].hex())
-                    del byteList[0:2]
+                # calculate length (if possible)
+                data_and_info = {}
+                try:
+                    data_and_info = RadioController.extract_subpacket(byteList)
+                except ValueError:
+                    del byteList[0:1]
+                    continue
+                except:
+                    del byteList[0:1]
+                    continue
 
-                elif byteList[0] == String_ID:
-                    bytes = bytearray(map(_bytes_to_byte, byteList[1:len(byteList)]))
-                    str = bytes.decode("ascii")
-                    self.sig_print.emit(str)
-                    del byteList[0:len(byteList)]
+                chunk_length = data_and_info.length
+                data = bytearray( map(_bytes_to_byte, data_and_info.data_unit) )  # convert all of the data in the chunk to byte
 
-                elif len(byteList) >= chunkLength and byteList[0] in self.IdSet:
-                    chunk = byteList[0:chunkLength]
-                    data = list(map(_bytes_to_int, chunk))
-                    self.sig_received.emit(data)
-                    del byteList[0:chunkLength]
+                parsed_subpacket_data = RadioController.parse_data( data_and_info.type_id, data, data_and_info.length )
 
-                elif len(byteList) > chunkLength:
-                    del byteList[0]
+                # TODO call corresponding rocket data function to save?
+                self.sig_received.emit(data)  # transmit it
 
-                else:
-                    break
+                del byteList[0:chunk_length]
+
+
+                # if len(byteList) >= chunk_length and int.from_bytes(byteList[0], "big") in RadioController.PACKET_ID_TO_TYPE:  # TOD change to just working on any packet aka SECOND CONDITION ONLY?
+                #     data_and_info = RadioController.extract_subpacket(byteList)
+                #     data = bytearray(
+                #         map(_bytes_to_byte, data_and_info.data_unit)
+                #     )  # convert all of the data in the chunk to byte
+                #
+                #     RadioController.parse_data(
+                #         data_and_info.type_id, data, data_and_info.length
+                #     )  # TOD Pass along the parsed_data_Unit type and name info for
+                #     self.sig_received.emit(data)  # transmit it
+                #     del byteList[0:chunk_length]
+
+                # elif len(byteList) > chunkLength:
+                #     del byteList[0]
+                #
+                # else:
+                #     break
 
     def get_data(self):
 

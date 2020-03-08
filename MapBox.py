@@ -85,7 +85,7 @@ class MapTile:
         self.s = s
 
     def getName(self):
-        return f"{self.x}___{self.y}"
+        return f"{self.x}_{self.y}"
 
     def getImage(self, overwrite=False):
 

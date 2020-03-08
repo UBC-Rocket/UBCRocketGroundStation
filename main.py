@@ -17,7 +17,12 @@ import SerialThread
 import GoogleMaps
 import RocketData
 from RocketData import RocketData as RD
+
+import _thread
+import asyncio
 import mplwidget #DO NOT REMOVE pyinstller needs this
+
+import threading
 
 if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
@@ -35,6 +40,8 @@ qtCreatorFile = os.path.join(local, "main.ui")
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 TILES = 14
+
+lock = asyncio.Lock()
 
 class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
     sig_send = pyqtSignal(str)
@@ -54,6 +61,9 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.sendButton.clicked.connect(self.sendButtonPressed)
         self.commandEdit.returnPressed.connect(self.sendButtonPressed)
+
+        # TODO: Create auto saving thread
+        #thread.start_new_thread(self.actionSave.triggered.connect, self.data.save)
         self.actionSave.triggered.connect(self.data.save)
 
         self.StatusButton.clicked.connect(lambda _: self.sendCommand("status"))
@@ -73,8 +83,8 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.SThread.sig_print.connect(self.printToConsole)
         self.SThread.start()
 
-
-    def receiveData(self, bytes): #TODO: ARE WE SURE THIS IS THREAD SAFE? USE QUEUE OR PUT IN SERIAL THREAD
+    # TODO: ARE WE SURE THIS IS THREAD SAFE? USE QUEUE OR PUT IN SERIAL THREAD
+    def receiveData(self, bytes):
         self.data.addpoint(bytes)
 
         latitude = self.data.lastvalue("Latitude")
@@ -153,6 +163,5 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def exit_handler(self):
         print("Saving...")
-        self.data.save()
+        self.data.save("finalSave")
         print("Saved!")
-

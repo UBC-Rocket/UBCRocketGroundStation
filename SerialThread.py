@@ -111,14 +111,15 @@ class SThread(QtCore.QThread):
                 except ValueError:
                     del byteList[0:1]
                     continue
-                except:
+                except Exception as e:
+                    print(e)
                     del byteList[0:1]
                     continue
+                0
+                chunk_length = data_and_info['length']
+                data = byteList[0:chunk_length]  # convert all of the data in the chunk to byte
 
-                chunk_length = data_and_info.length
-                data = bytearray( map(_bytes_to_byte, data_and_info.data_unit) )  # convert all of the data in the chunk to byte
-
-                parsed_subpacket_data = RadioController.parse_data( data_and_info.type_id, data, data_and_info.length )
+                parsed_subpacket_data = RadioController.parse_data( data_and_info['type'], data, chunk_length )
 
                 # TODO call corresponding rocket data function to save?
                 self.sig_received.emit(data)  # transmit it

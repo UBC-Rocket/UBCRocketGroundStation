@@ -109,17 +109,6 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.latitude = latitude
         self.longitude = longitude
 
-        # if time.time() - self.lastMapUpdate > 5:
-        #     self.plotMap(latitude, longitude)  # Uncomment to make map recenter
-        #     self.lastMapUpdate = time.time()
-        #     self.lastLatitude = latitude
-        #     self.lastLongitude = longitude
-        # # self.plotMap(latitude, longitude) #Uncomment to make map recenter
-        #
-        # newtime = time.time()
-        # if newtime - self.lastgps >= 3:
-        #     self.updateMark(latitude, longitude)
-        # self.lastgps = newtime
 
     def sendButtonPressed(self):
         word = self.commandEdit.text()

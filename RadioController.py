@@ -23,9 +23,11 @@
 #     chartosensorname[sensornametochar[x]] = x
 
 # Constants
+import struct
 from typing import Dict, Any, Callable
 
 import RocketData
+import SerialThread
 
 MIN_SINGLE_SENSOR_ID = 0x10
 MAX_SINGLE_SENSOR_ID = 0x2F
@@ -74,7 +76,7 @@ for i in range(MIN_SINGLE_SENSOR_ID, MAX_SINGLE_SENSOR_ID):
     PACKET_ID_TO_CONST_LENGTH[i] = 5
 
 # Check if packet of given type has variable length
-def isPacketLengthVariable(packet_id):
+def isPacketLengthConst(packet_id):
     return packet_id in PACKET_ID_TO_CONST_LENGTH.keys()
 
 
@@ -91,25 +93,27 @@ def extract_subpacket(byte_list):
     # check that id is valid:
     if packet_id not in PACKET_ID_TO_TYPE:
         raise ValueError
-    if isPacketLengthVariable(packet_id):
+    if isPacketLengthConst(packet_id):
+        length = PACKET_ID_TO_CONST_LENGTH[int.from_bytes(byte_list[0], "big")]
+        data_unit = byte_list[1:length]
+        del byte_list[0:1]
+        length = length - 1
+    else:
         length = int.from_bytes(byte_list[1], "big")
         data_unit = byte_list[2:length]
-    else:
-        length = PACKET_ID_TO_CONST_LENGTH[byte_list[0]]
-        data_unit = byte_list[1:length]
+        del byte_list[0:2]
+        length = length - 2
     type_id = PACKET_ID_TO_TYPE[packet_id]
-    parsed_subpacket = {
-        packet_id,  # id in raw byte format
-        length,  # length
-        type_id,  # type
-        data_unit,  # data unit
-    }
+    parsed_subpacket = {}
+    parsed_subpacket['id'] = packet_id
+    parsed_subpacket['length'] = length # TODO NOTE data length not subpacket size
+    parsed_subpacket['type'] = type_id
     return parsed_subpacket
 
 
 # general data parser interface
 def parse_data(type_id, byte_list, length):
-    packetTypeToHandler[type_id](byte_list)
+    return packetTypeToHandler[type_id](byte_list, length)
 
 
 def status_ping(byte_list, length): #TODO
@@ -143,35 +147,68 @@ def single_sensor(byte_list, length): # TODO
 
 
 def bulk_sensor(byte_list, length):
-    time = RocketData.toint(byte_list[0:4])
-    altitude = RocketData.fourtofloat(byte_list[4:8])
-    accelx = RocketData.fourtofloat(byte_list[8:12])
-    accely = RocketData.fourtofloat(byte_list[12:16])
-    accelz = RocketData.fourtofloat(byte_list[16:20])
-    orient1 = RocketData.fourtofloat(byte_list[20:24])
-    orient2 = RocketData.fourtofloat(byte_list[24:28])
-    orient3 = RocketData.fourtofloat(byte_list[28:32])
-    gps1 = RocketData.fourtofloat(byte_list[32:36])
-    gps2 = RocketData.fourtofloat(byte_list[36:30])
-    state = byte_list[40:41]
-    data = {
-        time,
-        altitude,
-        accelx,
-        accely,
-        accelz,
-        orient1,
-        orient2,
-        orient3,
-        gps1,
-        gps2,
-        state,
-    }
+    data = {}
+
+    # # TODO Discuss ordering, to make it convenient to do this loop
+    # i = 0
+    # data["Time"] = RocketData.toint(byte_list[i:i+4])  # time
+    # i = i + 4
+    # floats = PACKET_ID_TO_TYPE.values
+    # del floats["Time"] # remove time
+    # del floats["State"] # remove state
+    # for type in PACKET_ID_TO_TYPE.values: # iterate through float names
+    #     data[type] = RocketData.fourtofloat(byte_list[i:i+4])
+    #     i = i + 4
+
+    #  TODO Ask about irregular irregular data such as Orientation 1
+    # # bytestest = bytearray(list(byte_list[0:4]))
+    # list(byte_list[0:4])
+    # print(byte_list[0:4])
+    # # encoded3 = str.encode(byte_list[0:4], 'utf-8')
+    # # print(encoded3)
+    # # bytestest2 = int.from_bytes(byte_list[0:4].decode("ascii"), byteorder='big', signed=False)
+    # ba = bytearray()
+    # for byte in byte_list:
+    #     ba.append(struct.unpack(">I", byte))
+    # raw_bytearray = SerialThread._byte_list_to_bytearray(byte_list)
+    # print(raw_bytearray)
+    # unpacked = struct.unpack('>I', byte_list[0:4])
+    # print(unpacked)
+    int_list = [int(x[0]) for x in byte_list]
+    print(int_list)
+
+
+    data["Time"] = RocketData.fourtoint(int_list[0:4])  # time
+    data["Altitude"] = RocketData.fourtofloat(int_list[4:8])
+    data["Acceleration X"] = RocketData.fourtofloat(int_list[8:12])
+    data["Acceleration Y"] = RocketData.fourtofloat(int_list[12:16])
+    data["Acceleration Z"] = RocketData.fourtofloat(int_list[16:20])
+    data["Orientation 1"] = RocketData.fourtofloat(int_list[20:24])
+    data["Orientation 2"] = RocketData.fourtofloat(int_list[24:28])
+    data["Orientation 3"] = RocketData.fourtofloat(int_list[28:32])
+    data["GPS 1"] = RocketData.fourtofloat(int_list[32:36])
+    data["GPS 2"] = RocketData.fourtofloat(int_list[36:40])
+    data["State"] = int_list[40:41]
+    print(data)
+    # data = []
+    # data = {
+    #     "time": 00, # TODO
+    #     altitude,
+    #     accelx,
+    #     accely,
+    #     accelz,
+    #     orient1,
+    #     orient2,
+    #     orient3,
+    #     gps1,
+    #     gps2,
+    #     state,
+    # }
     return data
 
 
 ########
-
+# TODO Uncomment when rest complete
 packetTypeToHandler: Dict[str, Callable[[Any, Any], float]] = {
     # "statusPing": RadioController.status_ping,
     # "message": RadioController.message,

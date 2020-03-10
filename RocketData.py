@@ -114,17 +114,25 @@ def tostate(bytes):
 
 
 def toint(bytes):
-    return int.from_bytes(bytes, byteorder='little', signed=False)
+    return int.from_bytes(bytes, byteorder='big', signed=False)  #TODO discuss this byteorder change
 
 def fourtofloat(bytes):
     data = bytes
     # data = data[::-1]#flips bytes
     b = struct.pack('4B', *data)
-    # should be in little endian format from the teensy?
+    # should be in little endian format from the teensy?  #TODO discuss this byteorder
     c = struct.unpack('<f', b)
     return c[0]
 
-def fivtoval(bytes):
+def fourtoint(bytes):
+    data = bytes
+    # data = data[::-1]#flips bytes
+    b = struct.pack('4B', *data)
+    # big endian  #TODO discuss this byteorder
+    c = struct.unpack('>I', b)
+    return c[0]
+
+def fivtoval(bytes):    # TODO Review this function
     data = bytes[1:5]
     val = 0
 

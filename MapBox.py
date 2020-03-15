@@ -40,15 +40,9 @@ class MapPoint:
     def __init__(self, latitude, longitude):
         self.latitude = latitude
         self.longitude = longitude
-        self.x = self.getX()
-        self.y = self.getY()
-
-    def getX(self):
-        return float(0.5 + self.longitude / 360)
-
-    def getY(self):
+        self.x = float(0.5 + self.longitude / 360)
         siny = math.sin(self.latitude * math.pi / 180)
-        return float((0.5 - math.log((1 + siny) / (1 - siny)) / (4 * math.pi)))
+        self.y = float((0.5 - math.log((1 + siny) / (1 - siny)) / (4 * math.pi)))
 
     def getPixelX(self, zoom):
         return int(math.floor(TILE_SIZE * (0.5 + self.longitude / 360) * math.pow(2, zoom)))

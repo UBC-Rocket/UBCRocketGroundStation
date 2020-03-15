@@ -127,7 +127,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         p = MapBox.MapPoint(latitude, longitude)
 
         with self.lock:
-            if longitude is None or latitude is None or p.x == self.x and p.y == self.y:
+            if longitude is None or latitude is None:
                 return
 
         lat1 = latitude + self.radius / 110.574
@@ -154,10 +154,6 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.plotWidget.canvas.ax.imshow(img)
 
         self.plotWidget.canvas.draw()
-
-        with self.lock:
-            self.x = p.x
-            self.y = p.y
 
     def updateMark(self, latitude, longitude):
         if longitude is None or latitude is None:

@@ -23,11 +23,15 @@ nametochar = {
     "Latitude": b'L',
     "Longitude": b'l',
     "GPS Altitude": b'A',
-    "Calculated Altitude": b'a',
+    "Calculated Altitude": b'a', # barometer altitude TODO Ensure that this is calculated and not just the pressure
     "State": b's',
     "Voltage": b'b',
     "Ground Altitude": b'g',
-    "Time": b't'
+    "Time": b't',
+    "Orientation 1": b'o', # TODO review this
+    "Orientation 2": b'p',
+    "Orientation 3": b'q',
+    # TODO 4th orientation value calculated since it is a quaternion?
 }
 
 chartoname = {}

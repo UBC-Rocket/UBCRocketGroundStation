@@ -4,6 +4,7 @@ from digi.xbee.exception import TimeoutException, XBeeException
 import queue
 
 import RadioController
+import RocketData
 
 IDLENGTH = 1  # TODO change these with new Radio protocol
 DATALENGTH = 4  # TODO change these with new Radio protocol
@@ -115,14 +116,14 @@ class SThread(QtCore.QThread):
                     print(e)
                     del byteList[0:1]
                     continue
-                0
+
                 chunk_length = data_and_info['length']
                 data = byteList[0:chunk_length]  # convert all of the data in the chunk to byte
 
-                parsed_subpacket_data = RadioController.parse_data( data_and_info['type'], data, chunk_length )
+                parsed_subpacket_data = RadioController.parse_data( data_and_info['id'], data, chunk_length )
 
                 # TODO call corresponding rocket data function to save?
-                self.sig_received.emit(data)  # transmit it
+                self.sig_received.emit(parsed_subpacket_data)  # transmit it
 
                 del byteList[0:chunk_length]
 
@@ -167,11 +168,16 @@ class SThread(QtCore.QThread):
 
 
 def _bytes_to_int(bytes):
-    return int.from_bytes(bytes, byteorder='little', signed=False)
+    return int.from_bytes(bytes, byteorder='little', signed=False)  # TODO review this byteorder
 
 def _bytes_to_byte(bytes):
     return bytes[0]
 
+def _byte_list_to_bytearray(byte_list):
+    ba = bytearray()
+    for byte in byte_list:
+        ba.append(int.from_bytes(byte, byteorder="big", signed='false')) # TODO review this byteorder
+    return ba
 
 def _are_all(list, expected):
     for x in list:

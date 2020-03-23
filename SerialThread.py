@@ -34,7 +34,8 @@ for x in COM_ID:
     COM_NAME[COM_ID[x]] = x
 
 class SThread(QtCore.QThread):
-    sig_received = pyqtSignal(list)
+    # sig_received = pyqtSignal(list)  # TODO Review this change with Andrei
+    sig_received = pyqtSignal(object)  # TODO is it safe to generalize
     sig_print = pyqtSignal(str)
 
     def __init__(self, connection, ids, parent=None):

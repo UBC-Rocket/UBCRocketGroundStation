@@ -73,9 +73,10 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.SThread.sig_print.connect(self.printToConsole)
         self.SThread.start()
 
-
-    def receiveData(self, bytes): #TODO: ARE WE SURE THIS IS THREAD SAFE? USE QUEUE OR PUT IN SERIAL THREAD
-        self.data.addpoint(bytes)
+    # Possible doc: receives from the serial thread loop of subpackets
+    def receiveData(self, dataBundle): #TODO: ARE WE SURE THIS IS THREAD SAFE? USE QUEUE OR PUT IN SERIAL THREAD
+        # self.data.addpoint(bytes)
+        self.data.addBundle(dataBundle)
 
         latitude = self.data.lastvalue("Latitude")
         longitude = self.data.lastvalue("Longitude")

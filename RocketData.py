@@ -1,6 +1,7 @@
 import os
 import struct
 import sys
+from typing import Dict, Union, Set
 
 import numpy as np
 import time
@@ -10,7 +11,8 @@ if getattr(sys, 'frozen', False):
 elif __file__:
     local = os.path.dirname(__file__)
 
-nametochar = {
+# Source of ```ORDERED``` sensor types. DO NOT MODIFY WITHOUT CONSIDERING EFFECTS ON ALL DATA PARSING AND SAVING.
+nametochar : Dict[str, bytes] = {
     "Acceleration X": b'X',
     "Acceleration Y": b'Y',
     "Acceleration Z": b'Z',
@@ -41,6 +43,9 @@ for x in nametochar:
 orderednames = list(nametochar.keys())
 orderednames.sort()
 
+# Set of the (sensor) names in the dictionary above. NOTE: Used in RadioController for knowing list of sensors/data types
+set_sensor_names: Set[str] = {name for name in nametochar.keys()}
+
 typemap = {
     's':"state",
     't':"int"
@@ -58,12 +63,30 @@ statemap = {
  8:"WINTER_CONTINGENCY"
 }
 
+# Supposedly a dictionary of all of the time points mapped to a dictionary of sensor id to value.
+    # Current implementation
+
 class RocketData:
     def __init__(self):
         self.timeset = {}
         self.lasttime = 0
         self.highest_altitude = 0
+        # dictionary designed to hold time - dictionary {sensor id - value} pairs. TODO Is time a float or int?
+        self.data: Dict[int, Dict[str, Union[int, float]]] = {}
 
+    # adding a bundle of data points
+    # Current implementation: adds to time given, otherwise will add to the last time recieved?
+    # TODO Review how this works eg if single sensor temperature comes in 3 times in a row, the first two are overwritten
+    def addBundle(self, incoming_data):
+        if "Time" in incoming_data.keys():
+            self.lasttime = incoming_data["Time"]
+        if self.lasttime not in incoming_data.keys():
+            self.data[self.lasttime] = {}
+
+        for id in incoming_data.keys():
+            self.data[self.lasttime][id] = incoming_data[id]
+
+    # In the previous version this is supposed to save very specifically formattec incoming data into RocketData
     def addpoint(self, bytes):
         if bytes[0] == nametochar["Time"][0]:
             self.lasttime = fivtoval(bytes)

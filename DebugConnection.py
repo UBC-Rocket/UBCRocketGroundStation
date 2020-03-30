@@ -27,26 +27,19 @@ class DebugConnection(IConnection):
             baL = bytearray(struct.pack("f", L))
             bal =bytearray(struct.pack("f", l))
 
-            bulk_sensor_arr = self.bulk_sensor_mock_random()
+            bulk_sensor_arr: bytearray = self.bulk_sensor_mock_random()
             return bulk_sensor_arr
             # return b"X"+bulk_sensor_arr  # original
             # return b"X"+bax+b"L"+baL+b"l"+bal  # Alex's map mock data? # TODO Discuss how our mocks can coexist
         else:
             return None
 
-    def bulk_sensor_mock_random(self):
-        bulk_sensor_arr = bytearray()
+    def bulk_sensor_mock_random(self) -> bytearray:
+        bulk_sensor_arr: bytearray = bytearray()
         bulk_sensor_arr.append(0x30)  # id
         bulk_sensor_arr.extend(random.randint(0, 1e9).to_bytes(length=4, byteorder='big'))  # time
-        bulk_sensor_arr.extend(struct.pack("f", random.uniform(0, 1e6)))
-        bulk_sensor_arr.extend(struct.pack("f", random.uniform(0, 1e6)))
-        bulk_sensor_arr.extend(struct.pack("f", random.uniform(0, 1e6)))
-        bulk_sensor_arr.extend(struct.pack("f", random.uniform(0, 1e6)))
-        bulk_sensor_arr.extend(struct.pack("f", random.uniform(0, 1e6)))
-        bulk_sensor_arr.extend(struct.pack("f", random.uniform(0, 1e6)))
-        bulk_sensor_arr.extend(struct.pack("f", random.uniform(0, 1e6)))
-        bulk_sensor_arr.extend(struct.pack("f", random.uniform(0, 1e6)))
-        bulk_sensor_arr.extend(struct.pack("f", random.uniform(0, 1e6)))
+        for x in range(0, 9):
+            bulk_sensor_arr.extend(struct.pack("f", random.uniform(0, 1e6)))
         bulk_sensor_arr.extend(random.randint(0, 100).to_bytes(length=1, byteorder='big'))  # state
         return bulk_sensor_arr
 

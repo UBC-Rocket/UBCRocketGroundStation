@@ -43,9 +43,6 @@ for x in nametochar:
 orderednames = list(nametochar.keys())
 orderednames.sort()
 
-# Set of the (sensor) names in the dictionary above. NOTE: Used in RadioController for knowing list of sensors/data types
-set_sensor_names: Set[str] = {name for name in nametochar.keys()}
-
 typemap = {
     's':"state",
     't':"int"
@@ -68,23 +65,23 @@ statemap = {
 
 class RocketData:
     def __init__(self):
-        self.timeset = {}
+        # dictionary designed to hold time - dictionary {sensor id - value} pairs. TODO Is time a float or int?
+                # essentially  self.data: Dict[int, Dict[str, Union[int, float]]] = {}
+        self.timeset: Dict[int, Dict[str, Union[int, float]]] = {}
         self.lasttime = 0
         self.highest_altitude = 0
-        # dictionary designed to hold time - dictionary {sensor id - value} pairs. TODO Is time a float or int?
-        self.data: Dict[int, Dict[str, Union[int, float]]] = {}
 
+    # TODO Review how this works eg if single sensor temperature comes in 3 times in a row, the first two are overwritten
     # adding a bundle of data points
     # Current implementation: adds to time given, otherwise will add to the last time recieved?
-    # TODO Review how this works eg if single sensor temperature comes in 3 times in a row, the first two are overwritten
     def addBundle(self, incoming_data):
         if "Time" in incoming_data.keys():
             self.lasttime = incoming_data["Time"]
-        if self.lasttime not in incoming_data.keys():
-            self.data[self.lasttime] = {}
+        if self.lasttime not in self.timeset.keys():
+            self.timeset[self.lasttime] = {}
 
         for id in incoming_data.keys():
-            self.data[self.lasttime][id] = incoming_data[id]
+            self.timeset[self.lasttime][id] = incoming_data[id]
 
     # In the previous version this is supposed to save very specifically formattec incoming data into RocketData
     def addpoint(self, bytes):

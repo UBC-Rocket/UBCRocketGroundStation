@@ -44,19 +44,19 @@ def extract_subpacket(byte_list: List):
     subpacket_id: int = int.from_bytes(byte_list[0], "big")
     length: int = 0
     # check that id is valid:
-    if subpacket_id not in PACKET_ID_TO_TYPE:
+    if not SubpacketIDs.isSubpacketID(subpacket_id):
         raise ValueError
     if isPacketLengthConst(subpacket_id):
         length = PACKET_ID_TO_CONST_LENGTH[int.from_bytes(byte_list[0], "big")]
         data_unit = byte_list[1:length]
         del byte_list[0:1]
-        length = length - 1 #TODO Fix this bad code somehow
+        length = length - 1  # TODO Fix this bad code somehow
     else:
         length = int.from_bytes(byte_list[1], "big")
         data_unit = byte_list[2:length]
         del byte_list[0:2]
-        length = length - 2 #TODO Fix this bad code somehow
-    parsed_subpacket: Dict[str, Union[int, str]] = {'id': subpacket_id, 'length': length}
+        length = length - 2  # TODO Fix this bad code somehow
+    parsed_subpacket: Dict[str, int] = {'id': subpacket_id, 'length': length}
     return parsed_subpacket
 
 

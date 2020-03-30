@@ -1,3 +1,5 @@
+from typing import Dict
+
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
 from digi.xbee.exception import TimeoutException, XBeeException
@@ -107,9 +109,8 @@ class SThread(QtCore.QThread):
                 #     del byteList[0:len(byteList)]
 
                 # calculate length (if possible)
-                data_and_info = {}
                 try:
-                    data_and_info = RadioController.extract_subpacket(byteList)
+                    data_and_info: Dict[str, int] = RadioController.extract_subpacket(byteList)
                 except ValueError:
                     del byteList[0:1]
                     continue

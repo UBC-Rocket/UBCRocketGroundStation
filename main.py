@@ -20,6 +20,7 @@ import MapBox
 import RocketData
 from RocketData import RocketData as RD
 import mplwidget  # DO NOT REMOVE pyinstller needs this
+from SubpacketIDs import SubpacketEnum
 
 if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
@@ -93,19 +94,19 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         # self.data.addpoint(bytes)
         self.data.addBundle(dataBundle)
 
-        latitude = self.data.lastvalue("Latitude")
-        longitude = self.data.lastvalue("Longitude")
+        latitude = self.data.lastvalue(SubpacketEnum.LATITUDE.value)
+        longitude = self.data.lastvalue(SubpacketEnum.LONGITUDE.value)
 
         nonezero = lambda x: 0 if x is None else x
-        accel = math.sqrt(nonezero(self.data.lastvalue("Acceleration X")) ** 2 +
-                          nonezero(self.data.lastvalue("Acceleration Y")) ** 2 +
-                          nonezero(self.data.lastvalue("Acceleration Z")) ** 2)
+        accel = math.sqrt(nonezero(self.data.lastvalue(SubpacketEnum.ACCELERATION_X.value)) ** 2 +
+                          nonezero(self.data.lastvalue(SubpacketEnum.ACCELERATION_Y.value)) ** 2 +
+                          nonezero(self.data.lastvalue(SubpacketEnum.ACCELERATION_Z.value)) ** 2)
 
-        self.AltitudeLabel.setText(str(self.data.lastvalue("Calculated Altitude")))
+        self.AltitudeLabel.setText(str(self.data.lastvalue(SubpacketEnum.CALCULATED_ALTITUDE.value)))
         self.MaxAltitudeLabel.setText(str(self.data.highest_altitude))
         self.GpsLabel.setText(str(latitude) + ", " + str(longitude))
-        self.StateLabel.setText(str(self.data.lastvalue("State")))
-        self.PressureLabel.setText(str(self.data.lastvalue("Pressure")))
+        self.StateLabel.setText(str(self.data.lastvalue(SubpacketEnum.STATE.value)))
+        self.PressureLabel.setText(str(self.data.lastvalue(SubpacketEnum.PRESSURE.value)))
         self.AccelerationLabel.setText(str(accel))
 
         self.latitude = latitude

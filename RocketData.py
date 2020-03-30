@@ -97,13 +97,13 @@ class RocketData:
             alt = fivtoval(bytes)
             if alt > self.highest_altitude:
                 self.highest_altitude = alt
-
-    def lastvalue(self, name):
+    # Gets the most recent value specified by the sensor_id given
+    def lastvalue(self, sensor_id):
         times = list(self.timeset.keys())
         times.sort(reverse=True)
         for i in range(len(times)):
-            if chr(nametochar[name][0]) in self.timeset[times[i]]:
-                return self.timeset[times[i]][chr(nametochar[name][0])]
+            if sensor_id in self.timeset[times[i]]:
+                return self.timeset[times[i]][sensor_id]
         return None
 
     def save(self):

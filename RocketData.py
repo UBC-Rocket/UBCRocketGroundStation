@@ -6,6 +6,9 @@ from typing import Dict, Union, Set
 import numpy as np
 import time
 
+from SubpacketIDs import SubpacketEnum
+import SubpacketIDs
+
 if getattr(sys, 'frozen', False):
     local = os.path.dirname(sys.executable)
 elif __file__:
@@ -75,8 +78,8 @@ class RocketData:
     # adding a bundle of data points
     # Current implementation: adds to time given, otherwise will add to the last time recieved?
     def addBundle(self, incoming_data):
-        if "Time" in incoming_data.keys():
-            self.lasttime = incoming_data["Time"]
+        if SubpacketEnum.TIME.value in incoming_data.keys():
+            self.lasttime = incoming_data[SubpacketEnum.TIME.value]
         if self.lasttime not in self.timeset.keys():
             self.timeset[self.lasttime] = {}
 
@@ -112,20 +115,19 @@ class RocketData:
             return
 
         csvpath = os.path.join(local, str(int(time.time()))+".csv")
-
-        data = np.empty((len(orderednames), len(self.timeset)+1), dtype=object)
+        data = np.empty((len(SubpacketIDs.get_list_of_sensor_IDs()), len(self.timeset)+1), dtype=object)
         times = list(self.timeset.keys())
         times.sort(reverse=False)
         for ix, iy in np.ndindex(data.shape):
+            # Make the first row a list of sensor names
             if iy == 0:
-                data[ix,iy] = orderednames[ix]
+                data[ix, iy] = SubpacketIDs.get_list_of_sensor_names()[ix]
             else:
-                if orderednames[ix] == "Time":
-                    data[ix, iy] = times[iy-1]
+                if SubpacketIDs.get_list_of_sensor_names()[ix] == SubpacketEnum.TIME.name:
+                    data[ix, iy] = times[iy - 1]
                 else:
-                    char = chr(nametochar[orderednames[ix]][0])
-                    if char in self.timeset[times[iy-1]]:
-                        data[ix, iy] = self.timeset[times[iy-1]][char]
+                    if SubpacketIDs.get_list_of_sensor_IDs()[ix] in self.timeset[times[iy-1]]:
+                        data[ix, iy] = self.timeset[times[iy-1]][SubpacketIDs.get_list_of_sensor_IDs()[ix]]
                     else:
                         data[ix, iy] = ""
 

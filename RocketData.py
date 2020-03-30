@@ -83,20 +83,21 @@ class RocketData:
         for id in incoming_data.keys():
             self.timeset[self.lasttime][id] = incoming_data[id]
 
-    # In the previous version this is supposed to save very specifically formattec incoming data into RocketData
-    def addpoint(self, bytes):
-        if bytes[0] == nametochar["Time"][0]:
-            self.lasttime = fivtoval(bytes)
-        else:
-            if self.lasttime not in self.timeset:
-                self.timeset[self.lasttime] = {}
+    # # In the previous version this is supposed to save very specifically formatted incoming data into RocketData
+    # def addpoint(self, bytes):
+    #     if bytes[0] == nametochar["Time"][0]:
+    #         self.lasttime = fivtoval(bytes)
+    #     else:
+    #         if self.lasttime not in self.timeset:
+    #             self.timeset[self.lasttime] = {}
+    #
+    #         (self.timeset[self.lasttime])[chr(bytes[0])] = fivtoval(bytes)
+    #
+    #     if bytes[0] == nametochar["Calculated Altitude"][0]:
+    #         alt = fivtoval(bytes)
+    #         if alt > self.highest_altitude:
+    #             self.highest_altitude = alt
 
-            (self.timeset[self.lasttime])[chr(bytes[0])] = fivtoval(bytes)
-
-        if bytes[0] == nametochar["Calculated Altitude"][0]:
-            alt = fivtoval(bytes)
-            if alt > self.highest_altitude:
-                self.highest_altitude = alt
     # Gets the most recent value specified by the sensor_id given
     def lastvalue(self, sensor_id):
         times = list(self.timeset.keys())
@@ -133,8 +134,8 @@ class RocketData:
 def bytelist(bytes):
     return list(map(lambda x: x[0], bytes))
 
-def tostate(bytes):
-    return statemap[toint(bytes)]
+# def tostate(bytes):
+#     return statemap[toint(bytes)]
 
 
 def toint(bytes):
@@ -156,20 +157,20 @@ def fourtoint(bytes):
     c = struct.unpack('>I', b)
     return c[0]
 
-def fivtoval(bytes):    # TODO Review this function
-    data = bytes[1:5]
-    val = 0
-
-    try:
-        if chr(bytes[0]) in typemap:
-            datatype = typemap[chr(bytes[0])]
-
-            if datatype == "int":
-                return toint(data)
-            elif datatype == "state":
-                return tostate(data)
-
-        return fourtofloat(data)
-
-    except:
-        return -1
+# def fivtoval(bytes):    # TODO Review this function
+#     data = bytes[1:5]
+#     val = 0
+#
+#     try:
+#         if chr(bytes[0]) in typemap:
+#             datatype = typemap[chr(bytes[0])]
+#
+#             if datatype == "int":
+#                 return toint(data)
+#             elif datatype == "state":
+#                 return tostate(data)
+#
+#         return fourtofloat(data)
+#
+#     except:
+#         return -1

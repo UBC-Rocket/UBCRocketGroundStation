@@ -4,23 +4,6 @@ import RocketData
 import SubpacketIDs
 from SubpacketIDs import SubpacketEnum
 
-# # map of packet ID to typename
-# PACKET_ID_TO_TYPE: Dict[int, str] = {
-#     0x00: "status_ping",
-#     0x01: "message",
-#     0x02: "event",
-#     0x03: "config",
-#     0x04: "single_sensor",
-#     0x05: "gps",
-#     0x06: "acknowledgement",
-#     0x30: "bulk_sensor",
-# }
-# # Add the single sensor id name pairs, using the dictionary of sensors in RocketData
-# # for name, id in zip(list(RocketData.nametochar.keys()), range(MIN_SINGLE_SENSOR_ID, MAX_SINGLE_SENSOR_ID)):
-# for name, subpacket_id in zip(list(RocketData.set_sensor_names), range(MIN_SINGLE_SENSOR_ID, MAX_SINGLE_SENSOR_ID)):
-#     PACKET_ID_TO_TYPE[subpacket_id] = name
-
-
 # Map subpacket id (int) to length (int) in bytes. Only includes types with CONSTANT lengths
 PACKET_ID_TO_CONST_LENGTH: Dict[int, int] = {
     0x00: 4,

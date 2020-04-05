@@ -38,7 +38,6 @@ Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 TILES = 14
 
-lock = asyncio.Lock()
 
 class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
     sig_send = pyqtSignal(str)

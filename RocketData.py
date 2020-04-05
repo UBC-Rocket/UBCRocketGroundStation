@@ -1,10 +1,10 @@
 import os
 import struct
 import sys
-from typing import Dict, Union, Set
-
+import threading
 import numpy as np
 import time
+from typing import Dict, Union, Set
 
 from SubpacketIDs import SubpacketEnum
 import SubpacketIDs
@@ -73,6 +73,19 @@ class RocketData:
         self.timeset: Dict[int, Dict[str, Union[int, float]]] = {}
         self.lasttime = 0
         self.highest_altitude = 0
+        self.sessionName = str(int(time.time()))
+        self.autosaveThread = threading.Thread(target=self.timer)
+        self.autosaveThread.start()
+        self.lock = threading.Lock()
+
+    def timer(self):
+        while True:
+            try:
+                self.save("")
+                print("Auto-Save successful.")
+            except:
+                print("FAILED TO SAVE. Something went wrong")
+            time.sleep(10)
 
     # TODO Review how this works eg if single sensor temperature comes in 3 times in a row, the first two are overwritten
     # adding a bundle of data points
@@ -88,57 +101,60 @@ class RocketData:
 
     # # In the previous version this is supposed to save very specifically formatted incoming data into RocketData
     # def addpoint(self, bytes):
-    #     if bytes[0] == nametochar["Time"][0]:
-    #         self.lasttime = fivtoval(bytes)
-    #     else:
-    #         if self.lasttime not in self.timeset:
-    #             self.timeset[self.lasttime] = {}
+    #     with self.lock:
+    #         if bytes[0] == nametochar["Time"][0]:
+    #             self.lasttime = fivtoval(bytes)
+    #         else:
+    #             if self.lasttime not in self.timeset:
+    #                 self.timeset[self.lasttime] = {}
     #
-    #         (self.timeset[self.lasttime])[chr(bytes[0])] = fivtoval(bytes)
+    #             (self.timeset[self.lasttime])[chr(bytes[0])] = fivtoval(bytes)
     #
-    #     if bytes[0] == nametochar["Calculated Altitude"][0]:
-    #         alt = fivtoval(bytes)
-    #         if alt > self.highest_altitude:
-    #             self.highest_altitude = alt
+    #         if bytes[0] == nametochar["Calculated Altitude"][0]:
+    #             alt = fivtoval(bytes)
+    #             if alt > self.highest_altitude:
+    #                 self.highest_altitude = alt
 
     # Gets the most recent value specified by the sensor_id given
     def lastvalue(self, sensor_id):
-        times = list(self.timeset.keys())
-        times.sort(reverse=True)
-        for i in range(len(times)):
-            if sensor_id in self.timeset[times[i]]:
-                return self.timeset[times[i]][sensor_id]
-        return None
+        with self.lock:
+            times = list(self.timeset.keys())
+            times.sort(reverse=True)
+            for i in range(len(times)):
+                if sensor_id in self.timeset[times[i]]:
+                    return self.timeset[times[i]][sensor_id]
+            return None
 
+    # Data saving function that creates csv
     def save(self):
-        if len(self.timeset) <= 0:
-            return
+        with self.lock:
+            if len(self.timeset) <= 0:
+                return
 
-        csvpath = os.path.join(local, str(int(time.time()))+".csv")
-        data = np.empty((len(SubpacketIDs.get_list_of_sensor_IDs()), len(self.timeset)+1), dtype=object)
-        times = list(self.timeset.keys())
-        times.sort(reverse=False)
-        for ix, iy in np.ndindex(data.shape):
-            # Make the first row a list of sensor names
-            if iy == 0:
-                data[ix, iy] = SubpacketIDs.get_list_of_sensor_names()[ix]
-            else:
-                if SubpacketIDs.get_list_of_sensor_names()[ix] == SubpacketEnum.TIME.name:
-                    data[ix, iy] = times[iy - 1]
+            csvpath = os.path.join(local, str(int(time.time()))+".csv")
+            data = np.empty((len(SubpacketIDs.get_list_of_sensor_IDs()), len(self.timeset)+1), dtype=object)
+            times = list(self.timeset.keys())
+            times.sort(reverse=False)
+            for ix, iy in np.ndindex(data.shape):
+                # Make the first row a list of sensor names
+                if iy == 0:
+                    data[ix, iy] = SubpacketIDs.get_list_of_sensor_names()[ix]
                 else:
-                    if SubpacketIDs.get_list_of_sensor_IDs()[ix] in self.timeset[times[iy-1]]:
-                        data[ix, iy] = self.timeset[times[iy-1]][SubpacketIDs.get_list_of_sensor_IDs()[ix]]
+                    if SubpacketIDs.get_list_of_sensor_names()[ix] == SubpacketEnum.TIME.name:
+                        data[ix, iy] = times[iy - 1]
                     else:
-                        data[ix, iy] = ""
+                        if SubpacketIDs.get_list_of_sensor_IDs()[ix] in self.timeset[times[iy-1]]:
+                            data[ix, iy] = self.timeset[times[iy-1]][SubpacketIDs.get_list_of_sensor_IDs()[ix]]
+                        else:
+                            data[ix, iy] = ""
 
-        np.savetxt(csvpath, np.transpose(data), delimiter=',', fmt="%s")
+            np.savetxt(csvpath, np.transpose(data), delimiter=',', fmt="%s")
 
 def bytelist(bytes):
     return list(map(lambda x: x[0], bytes))
 
 # def tostate(bytes):
 #     return statemap[toint(bytes)]
-
 
 def toint(bytes):
     return int.from_bytes(bytes, byteorder='big', signed=False)  #TODO discuss this byteorder change

@@ -1,25 +1,25 @@
-import atexit
-import math
+import os
 import sys
+import math
+import atexit
 import time
-
 import threading
 
 import PyQt5
 from PyQt5 import QtCore, QtGui, uic, QtWidgets
-import os
-
 from PyQt5.QtCore import pyqtSignal
+
 import matplotlib.pyplot as plt
 from scipy.misc import imresize
 
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+import mplwidget  # DO NOT REMOVE pyinstller needs this
+
+import MapBox
 
 import SerialThread
-import MapBox
 import RocketData
 from RocketData import RocketData as RD
-import mplwidget  # DO NOT REMOVE pyinstller needs this
 from SubpacketIDs import SubpacketEnum
 
 if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
@@ -231,5 +231,5 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def exit_handler(self):
         print("Saving...")
-        self.data.save()
+        self.data.save("finalSave")
         print("Saved!")

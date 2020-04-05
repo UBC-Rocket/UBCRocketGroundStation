@@ -66,9 +66,6 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.sendButton.clicked.connect(self.sendButtonPressed)
         self.commandEdit.returnPressed.connect(self.sendButtonPressed)
-
-        # TODO: Create auto saving thread
-        #thread.start_new_thread(self.actionSave.triggered.connect, self.data.save)
         self.actionSave.triggered.connect(self.data.save)
 
         self.StatusButton.clicked.connect(lambda _: self.sendCommand("status"))

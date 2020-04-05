@@ -60,8 +60,8 @@ class RocketData:
         self.lasttime = 0
         self.highest_altitude = 0
         self.sessionName = str(int(time.time()))
-        t = threading.Thread(target=self.timer)
-        t.start()
+        self.autosaveThread = threading.Thread(target=self.timer)
+        self.autosaveThread.start()
         self.lock = threading.Lock()
 
     def timer(self):

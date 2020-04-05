@@ -33,6 +33,7 @@ class SubpacketEnum(Enum):
     ORIENTATION_1 = 0x27
     ORIENTATION_2 = 0x28
     ORIENTATION_3 = 0x29
+    # TODO 4th orientation value calculated since it is a quaternion?
 
 def get_list_of_IDs():
     return [subpacket.value for subpacket in SubpacketEnum]
@@ -53,26 +54,3 @@ def isSubpacketID(subpacket_id: int):
 # Check if is singleSensor data
 def isSingleSensorData(subpacket_id):
     return MIN_SINGLE_SENSOR_ID <= subpacket_id <= MAX_SINGLE_SENSOR_ID
-
-
-# For reference, the sensor part mapping
-#     0x10: "Acceleration X",
-#     0x11: "Acceleration Y",
-#     0x12: "Acceleration Z",
-#     0x13: "Pressure",
-#     0x14: "Barometer Temperature",
-#     0x15: "Temperature",
-#     0x16: "Yaw",
-#     0x17: "Roll",
-#     0x18: "Pitch",
-#     0x19: "Latitude",
-#     0x20: "Longitude",
-#     0x21: "GPS Altitude",
-#     0x22: "Calculated Altitude",
-#     0x23: "State",
-#     0x24: "Voltage",
-#     0x25: "Ground Altitude",
-#     0x26: "Time",
-#     0x27: "Orientation 1",
-#     0x28: "Orientation 2",
-#     0x29: "Orientation 3"

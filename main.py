@@ -91,7 +91,6 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
 
     # Possible doc: receives from the serial thread loop of subpackets
     def receiveData(self, dataBundle):  # TODO: ARE WE SURE THIS IS THREAD SAFE? USE QUEUE OR PUT IN SERIAL THREAD
-        # self.data.addpoint(bytes)
         self.data.addBundle(dataBundle)
 
         latitude = self.data.lastvalue(SubpacketEnum.LATITUDE.value)

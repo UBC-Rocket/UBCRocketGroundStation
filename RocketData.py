@@ -4,7 +4,7 @@ import sys
 import threading
 import numpy as np
 import time
-from typing import Dict, Union, Set
+from typing import Dict, Union
 
 from SubpacketIDs import SubpacketEnum
 import SubpacketIDs
@@ -14,44 +14,42 @@ if getattr(sys, 'frozen', False):
 elif __file__:
     local = os.path.dirname(__file__)
 
-# Source of ```ORDERED``` sensor types. DO NOT MODIFY WITHOUT CONSIDERING EFFECTS ON ALL DATA PARSING AND SAVING.
-nametochar : Dict[str, bytes] = {
-    "Acceleration X": b'X',
-    "Acceleration Y": b'Y',
-    "Acceleration Z": b'Z',
-    "Pressure": b'P',
-    "Barometer Temperature": b'~',
-    "Temperature": b'T',
-    "Yaw": b'@',
-    "Roll": b'#',
-    "Pitch": b'$',
-    "Latitude": b'L',
-    "Longitude": b'l',
-    "GPS Altitude": b'A',
-    "Calculated Altitude": b'a', # barometer altitude TODO Ensure that this is calculated and not just the pressure
-    "State": b's',
-    "Voltage": b'b',
-    "Ground Altitude": b'g',
-    "Time": b't',
-    "Orientation 1": b'o', # TODO review this
-    "Orientation 2": b'p',
-    "Orientation 3": b'q',
-    # TODO 4th orientation value calculated since it is a quaternion?
-}
+# nametochar : Dict[str, bytes] = { # TODO Delete since replaced with enum?
+#     "Acceleration X": b'X',
+#     "Acceleration Y": b'Y',
+#     "Acceleration Z": b'Z',
+#     "Pressure": b'P',
+#     "Barometer Temperature": b'~',
+#     "Temperature": b'T',
+#     "Yaw": b'@',
+#     "Roll": b'#',
+#     "Pitch": b'$',
+#     "Latitude": b'L',
+#     "Longitude": b'l',
+#     "GPS Altitude": b'A',
+#     "Calculated Altitude": b'a', # barometer altitude TODO Ensure that this is calculated and not just the pressure
+#     "State": b's',
+#     "Voltage": b'b',
+#     "Ground Altitude": b'g',
+#     "Time": b't',
+#     "Orientation 1": b'o',
+#     "Orientation 2": b'p',
+#     "Orientation 3": b'q',
+# }
+#
+# chartoname = {}
+# for x in nametochar:
+#     chartoname[nametochar[x]] = x
+#
+# orderednames = list(nametochar.keys())
+# orderednames.sort()
 
-chartoname = {}
-for x in nametochar:
-    chartoname[nametochar[x]] = x
-
-orderednames = list(nametochar.keys())
-orderednames.sort()
-
-typemap = {
+typemap = {  # TODO Review usage of this
     's':"state",
     't':"int"
 }
 
-statemap = {
+statemap = {  # TODO Review usage of this
  0:"STANDBY",
  1:"ARMED",
  2:"ASCENT",
@@ -64,7 +62,6 @@ statemap = {
 }
 
 # Supposedly a dictionary of all of the time points mapped to a dictionary of sensor id to value.
-    # Current implementation
 
 class RocketData:
     def __init__(self):

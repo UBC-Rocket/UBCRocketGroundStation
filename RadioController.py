@@ -95,12 +95,11 @@ def bulk_sensor(byte_list: List, length: int):
     data[SubpacketEnum.LONGITUDE.value] = RocketData.fourtofloat(int_list[36:40])
     data[SubpacketEnum.LATITUDE.value] = RocketData.fourtofloat(int_list[32:36]) # TODO Check that order is correct for long/lat
     data[SubpacketEnum.STATE.value] = int_list[40]
-    print(data)  # TODO remove
     return data
 
 
 # Dictionary of subpacket id - function to parse that data
-packetTypeToParser: Dict[int, Callable[[list, int], Any]] = { # TODO review this type hint
+packetTypeToParser: Dict[int, Callable[[list, int], Any]] = {  # TODO review this type hint
     # SubpacketEnum.STATUS_PING.value: status_ping,
     # SubpacketEnum.MESSAGE.value: message,
     # SubpacketEnum.EVENT.value: event,

@@ -19,12 +19,7 @@ import SerialThread
 import MapBox
 import RocketData
 from RocketData import RocketData as RD
-
-import _thread
-import asyncio
 import mplwidget #DO NOT REMOVE pyinstller needs this
-
-import threading
 
 if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
@@ -240,4 +235,3 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         print("Saving...")
         self.data.save("finalSave")
         print("Saved!")
-

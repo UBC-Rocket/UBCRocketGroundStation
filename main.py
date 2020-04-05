@@ -19,7 +19,7 @@ import SerialThread
 import MapBox
 import RocketData
 from RocketData import RocketData as RD
-import mplwidget  # DO NOT REMOVE pyinstller needs this
+import mplwidget #DO NOT REMOVE pyinstller needs this
 
 if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
@@ -89,6 +89,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         thread.start()
 
     def receiveData(self, bytes):  # TODO: ARE WE SURE THIS IS THREAD SAFE? USE QUEUE OR PUT IN SERIAL THREAD
+
         self.data.addpoint(bytes)
 
         latitude = self.data.lastvalue("Latitude")
@@ -228,5 +229,5 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def exit_handler(self):
         print("Saving...")
-        self.data.save()
+        self.data.save("finalSave")
         print("Saved!")

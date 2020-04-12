@@ -4,13 +4,14 @@ import RocketData
 import SubpacketIDs
 from SubpacketIDs import SubpacketEnum
 
+# CONSTANTS
 # Map subpacket id (int) to length (int) in bytes. Only includes types with CONSTANT lengths
 PACKET_ID_TO_CONST_LENGTH: Dict[int, int] = {
-    0x00: 4,
-    0x02: 2,
-    0x04: 25,
-    0x05: 0000,  # TODO ack length?
-    0x30: 42,
+    SubpacketEnum.STATUS_PING: 4,
+    SubpacketEnum.EVENT: 2,
+    SubpacketEnum.GPS: 25,
+    SubpacketEnum.ACKNOWLEDGEMENT: 0000,  # TODO ack length?
+    SubpacketEnum.BULK_SENSOR: 42,
 }
 for i in SubpacketIDs.get_list_of_sensor_IDs():
     PACKET_ID_TO_CONST_LENGTH[i] = 5
@@ -19,6 +20,7 @@ for i in SubpacketIDs.get_list_of_sensor_IDs():
 # Check if packet of given type has constant length
 def isPacketLengthConst(subpacket_id):
     return subpacket_id in PACKET_ID_TO_CONST_LENGTH.keys()
+
 
 
 # Return dict of subpacket id, length of subpacket in byte_list, subpacket typename, data_unit
@@ -82,16 +84,14 @@ def bulk_sensor(byte_list: List, length: int):
     # TODO Note how this is required to convert from List[bytes] to List[int]
     int_list: List[int] = [int(x[0]) for x in byte_list]
 
-    # Alternative that only uses id to prevent bugs in future
     data[SubpacketEnum.TIME.value] = RocketData.fourtoint(int_list[0:4])
-    # without hardcoding something else like id
     data[SubpacketEnum.CALCULATED_ALTITUDE.value] = RocketData.fourtofloat(int_list[4:8]) # Double check it is calculated barometer altitude with firmware
     data[SubpacketEnum.ACCELERATION_X.value] = RocketData.fourtofloat(int_list[8:12])
     data[SubpacketEnum.ACCELERATION_Y.value] = RocketData.fourtofloat(int_list[12:16])
     data[SubpacketEnum.ACCELERATION_Z.value] = RocketData.fourtofloat(int_list[16:20])
     data[SubpacketEnum.ORIENTATION_1.value] = RocketData.fourtofloat(int_list[20:24])
     data[SubpacketEnum.ORIENTATION_2.value] = RocketData.fourtofloat(int_list[24:28])
-    data[SubpacketEnum.ORIENTATION_3.value] = RocketData.fourtofloat(int_list[28:32])  # TODO Remember to use these in calculating quaternion
+    data[SubpacketEnum.ORIENTATION_3.value] = RocketData.fourtofloat(int_list[28:32])
     data[SubpacketEnum.LONGITUDE.value] = RocketData.fourtofloat(int_list[36:40])
     data[SubpacketEnum.LATITUDE.value] = RocketData.fourtofloat(int_list[32:36]) # TODO Check that order is correct for long/lat
     data[SubpacketEnum.STATE.value] = int_list[40]

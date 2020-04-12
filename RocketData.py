@@ -14,7 +14,7 @@ if getattr(sys, 'frozen', False):
 elif __file__:
     local = os.path.dirname(__file__)
 
-# nametochar : Dict[str, bytes] = { # TODO Delete since replaced with enum?
+# nametochar : Dict[str, bytes] = { # TODO Deal with old mixed up data types and conversions. Delete dead code when done.
 #     "Acceleration X": b'X',
 #     "Acceleration Y": b'Y',
 #     "Acceleration Z": b'Z',
@@ -27,7 +27,7 @@ elif __file__:
 #     "Latitude": b'L',
 #     "Longitude": b'l',
 #     "GPS Altitude": b'A',
-#     "Calculated Altitude": b'a', # barometer altitude TODO Ensure that this is calculated and not just the pressure
+#     "Calculated Altitude": b'a', # barometer altitude
 #     "State": b's',
 #     "Voltage": b'b',
 #     "Ground Altitude": b'g',
@@ -44,12 +44,12 @@ elif __file__:
 # orderednames = list(nametochar.keys())
 # orderednames.sort()
 
-typemap = {  # TODO Review usage of this
+typemap = {  # TODO Review usage of this, like with dead code above.
     's':"state",
     't':"int"
 }
 
-statemap = {  # TODO Review usage of this
+statemap = {  # TODO Review usage of this, like with dead code above.
  0:"STANDBY",
  1:"ARMED",
  2:"ASCENT",
@@ -65,7 +65,7 @@ statemap = {  # TODO Review usage of this
 
 class RocketData:
     def __init__(self):
-        # dictionary designed to hold time - dictionary {sensor id - value} pairs. TODO Is time a float or int?
+        # dictionary designed to hold time - dictionary {sensor id - value} pairs.
                 # essentially  self.data: Dict[int, Dict[str, Union[int, float]]] = {}
         self.timeset: Dict[int, Dict[str, Union[int, float]]] = {}
         self.lasttime = 0
@@ -84,9 +84,9 @@ class RocketData:
                 print("FAILED TO SAVE. Something went wrong")
             time.sleep(10)
 
-    # TODO Review how this works eg if single sensor temperature comes in 3 times in a row, the first two are overwritten
     # adding a bundle of data points
-    # Current implementation: adds to time given, otherwise will add to the last time recieved?
+    # Current implementation: adds to time given, otherwise will add to the last time received?
+    # NOTE how this works without a new time eg if single sensor temperature comes in 3 times in a row, the first two are overwritten
     def addBundle(self, incoming_data):
         if SubpacketEnum.TIME.value in incoming_data.keys():
             self.lasttime = incoming_data[SubpacketEnum.TIME.value]

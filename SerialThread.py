@@ -87,26 +87,20 @@ class SThread(QtCore.QThread):
             self.trySendMessage()
 
             byteList = self.get_data()
+            # loop that quickly runs through entire data list and extracts subpackets where possible
             while len(byteList) > 0:
-                # calculate length (if possible)
+                parsed_data: Dict[int, any] = {} # generally any is floats and ints
+                length: int = 0
                 try:
-                    data_and_info: Dict[str, int] = RadioController.extract_subpacket(byteList)
-                except ValueError:
-                    del byteList[0:1]
-                    continue
+                    parsed_data, length = RadioController.extract(byteList)
                 except Exception as e:
-                    print(e)
+                    print(e)  # TODO change this to error log
                     del byteList[0:1]
                     continue
+                print("parsed data about to be emitted", parsed_data)
+                self.sig_received.emit(parsed_data)  # transmit it back to main, where function waits on this
+                del byteList[0:length]
 
-                chunk_length = data_and_info['length']
-                data = byteList[0:chunk_length]  # convert all of the data in the chunk to byte
-
-                parsed_subpacket_data = RadioController.parse_data( data_and_info['id'], data, chunk_length )
-
-                self.sig_received.emit(parsed_subpacket_data)  # transmit it back to main, where function waits on this
-
-                del byteList[0:chunk_length]
 
 
     def get_data(self):

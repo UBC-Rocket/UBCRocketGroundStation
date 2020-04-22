@@ -14,35 +14,35 @@ if getattr(sys, 'frozen', False):
 elif __file__:
     local = os.path.dirname(__file__)
 
-# nametochar : Dict[str, bytes] = { # TODO Deal with old mixed up data types and conversions. Delete dead code when done.
-#     "Acceleration X": b'X',
-#     "Acceleration Y": b'Y',
-#     "Acceleration Z": b'Z',
-#     "Pressure": b'P',
-#     "Barometer Temperature": b'~',
-#     "Temperature": b'T',
-#     "Yaw": b'@',
-#     "Roll": b'#',
-#     "Pitch": b'$',
-#     "Latitude": b'L',
-#     "Longitude": b'l',
-#     "GPS Altitude": b'A',
-#     "Calculated Altitude": b'a', # barometer altitude
-#     "State": b's',
-#     "Voltage": b'b',
-#     "Ground Altitude": b'g',
-#     "Time": b't',
-#     "Orientation 1": b'o',
-#     "Orientation 2": b'p',
-#     "Orientation 3": b'q',
-# }
-#
-# chartoname = {}
-# for x in nametochar:
-#     chartoname[nametochar[x]] = x
-#
-# orderednames = list(nametochar.keys())
-# orderednames.sort()
+nametochar : Dict[str, bytes] = { # TODO Deal with old mixed up data types and conversions. Delete dead code when done.
+    "Acceleration X": b'X',
+    "Acceleration Y": b'Y',
+    "Acceleration Z": b'Z',
+    "Pressure": b'P',
+    "Barometer Temperature": b'~',
+    "Temperature": b'T',
+    "Yaw": b'@',
+    "Roll": b'#',
+    "Pitch": b'$',
+    "Latitude": b'L',
+    "Longitude": b'l',
+    "GPS Altitude": b'A',
+    "Calculated Altitude": b'a', # barometer altitude
+    "State": b's',
+    "Voltage": b'b',
+    "Ground Altitude": b'g',
+    "Time": b't',
+    "Orientation 1": b'o',
+    "Orientation 2": b'p',
+    "Orientation 3": b'q',
+}
+
+chartoname = {}
+for x in nametochar:
+    chartoname[nametochar[x]] = x
+
+orderednames = list(nametochar.keys())
+orderednames.sort()
 
 typemap = {  # TODO Review usage of this, like with dead code above.
     's':"state",

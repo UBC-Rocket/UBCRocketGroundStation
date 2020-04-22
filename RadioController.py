@@ -5,44 +5,62 @@ import SubpacketIDs
 from SubpacketIDs import SubpacketEnum
 
 # CONSTANTS
+
+# TODO Review these based on spec
 # Map subpacket id (int) to length (int) in bytes. Only includes types with CONSTANT lengths
 PACKET_ID_TO_CONST_LENGTH: Dict[int, int] = {
-    SubpacketEnum.STATUS_PING: 4,
-    SubpacketEnum.EVENT: 2,
-    SubpacketEnum.GPS: 25,
-    SubpacketEnum.ACKNOWLEDGEMENT: 0000,  # TODO ack length?
-    SubpacketEnum.BULK_SENSOR: 42,
+    SubpacketEnum.STATUS_PING.value: 4,
+    SubpacketEnum.EVENT.value: 2,
+    SubpacketEnum.GPS.value: 25,
+    SubpacketEnum.ACKNOWLEDGEMENT.value: 0000,  # TODO ack length?
+    SubpacketEnum.BULK_SENSOR.value: 42,
 }
 for i in SubpacketIDs.get_list_of_sensor_IDs():
     PACKET_ID_TO_CONST_LENGTH[i] = 5
-
 
 # Check if packet of given type has constant length
 def isPacketLengthConst(subpacket_id):
     return subpacket_id in PACKET_ID_TO_CONST_LENGTH.keys()
 
 
+# TODO Update this when timestamp is going to be included in header
+# Map subpacket id to header size in bytes. Only includes types with CONSTANT lengths
+PACKET_ID_TO_HEADER_SIZE: Dict[int, int] = {
+    SubpacketEnum.STATUS_PING.value: 1,
+    SubpacketEnum.MESSAGE.value: 6,
+    SubpacketEnum.EVENT.value: 1,
+    SubpacketEnum.CONFIG.value: 1,
+    SubpacketEnum.GPS.value: 1,
+    SubpacketEnum.ACKNOWLEDGEMENT.value: 1,
+    SubpacketEnum.BULK_SENSOR.value: 1,
+}
+for i in SubpacketIDs.get_list_of_sensor_IDs():
+    PACKET_ID_TO_HEADER_SIZE[i] = 1
 
-# Return dict of subpacket id, length of subpacket in byte_list, subpacket typename, data_unit
-# Current implementation strips off subpacket id + length (if included), returning dictionary of id and data length
-def extract_subpacket(byte_list: List):
-    subpacket_id: int = int.from_bytes(byte_list[0], "big")
-    length: int = 0
+
+
+
+# Return dict of parsed subpacket data and length of subpacket
+def extract(byte_list: List):
+    subpacket_id: SubpacketEnum.value = extract_subpacket_ID(byte_list[0])
+    if isPacketLengthConst(subpacket_id):
+        length: int = PACKET_ID_TO_CONST_LENGTH[int.from_bytes(byte_list[0], "big")]
+    else:
+        length: int = int.from_bytes(byte_list[1], "big")  # todo modify this to handle differently positioned length bytes
+    data_unit = byte_list[PACKET_ID_TO_HEADER_SIZE[subpacket_id]:length]
+    data_length = length - PACKET_ID_TO_HEADER_SIZE[subpacket_id]
+    parsed_data: Dict[any, any] = parse_data(subpacket_id, data_unit, data_length)
+    return parsed_data, length
+
+
+# Helper to convert byte to subpacket id as is in the SubpacketID enum, throws error otherwise
+def extract_subpacket_ID(byte: List):
+    subpacket_id: int = int.from_bytes(byte, "big")
     # check that id is valid:
     if not SubpacketIDs.isSubpacketID(subpacket_id):
+        # TODO Error log here?
         raise ValueError
-    if isPacketLengthConst(subpacket_id):
-        length = PACKET_ID_TO_CONST_LENGTH[int.from_bytes(byte_list[0], "big")]
-        data_unit = byte_list[1:length]
-        del byte_list[0:1]
-        length = length - 1  # TODO Fix this bad code somehow
-    else:
-        length = int.from_bytes(byte_list[1], "big")
-        data_unit = byte_list[2:length]
-        del byte_list[0:2]
-        length = length - 2  # TODO Fix this bad code somehow
-    parsed_subpacket: Dict[str, int] = {'id': subpacket_id, 'length': length}
-    return parsed_subpacket
+    return SubpacketEnum(subpacket_id).value
 
 
 # general data parser interface
@@ -51,27 +69,27 @@ def parse_data(type_id, byte_list, length):
 
 
 def status_ping(byte_list, length):  # TODO
-    converted = 0.0
+    converted = {0.0}
     return converted
 
 def message(byte_list, length):  # TODO
-    converted = 0.0  # STUB
+    converted = {0.0}  # STUB
     return converted
 
 def event(byte_list, length):  # TODO
-    converted = 0.0  # STUB
+    converted = {0.0}  # STUB
     return converted
 
 def config(byte_list, length):  # TODO
-    converted = 0.0  # STUB
+    converted = {0.0}  # STUB
     return converted
 
 def single_sensor(byte_list, length):  # TODO
-    converted = 0.0  # STUB
+    converted = {0.0}  # STUB
     return converted
 
 def gps(byte_list, length):  # TODO
-    converted = 0.0  # STUB
+    converted = {0.0}  # STUB
     return converted
 
 # def acknowledgement(byte_list, length):  # TODO ?
@@ -79,7 +97,7 @@ def gps(byte_list, length):  # TODO
 #     return converted
 
 def bulk_sensor(byte_list: List, length: int):
-    data: Dict[str: Union[float, int]] = {}
+    data: Dict[int, any] = {}
 
     # TODO Note how this is required to convert from List[bytes] to List[int]
     int_list: List[int] = [int(x[0]) for x in byte_list]
@@ -100,12 +118,12 @@ def bulk_sensor(byte_list: List, length: int):
 
 # Dictionary of subpacket id - function to parse that data
 packetTypeToParser: Dict[int, Callable[[list, int], Any]] = {  # TODO review this type hint
-    # SubpacketEnum.STATUS_PING.value: status_ping,
-    # SubpacketEnum.MESSAGE.value: message,
-    # SubpacketEnum.EVENT.value: event,
-    # SubpacketEnum.CONFIG.value: config,
-    # SubpacketEnum.SINGLE_SENSOR.value: single_sensor,
-    # SubpacketEnum.GPS.value: gps,
-    # SubpacketEnum.ACKNOWLEDGEMENT.value: acknowledgement, # TODO Uncomment when rest complete
+    SubpacketEnum.STATUS_PING.value: status_ping,
+    SubpacketEnum.MESSAGE.value: message,
+    SubpacketEnum.EVENT.value: event,
+    SubpacketEnum.CONFIG.value: config,
+    # SubpacketEnum.SINGLE_SENSOR.value: single_sensor, # Todo make this a range of keys?
+    SubpacketEnum.GPS.value: gps,
+    # SubpacketEnum.ACKNOWLEDGEMENT.value: acknowledgement, # TODO Uncomment when complete
     SubpacketEnum.BULK_SENSOR.value: bulk_sensor,
 }

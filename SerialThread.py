@@ -1,3 +1,4 @@
+import time
 from typing import Dict
 
 from PyQt5 import QtCore
@@ -84,6 +85,7 @@ class SThread(QtCore.QThread):
         chunk_length = IDLENGTH + DATALENGTH
         byteList = []
         while self.running:
+            time.sleep(0.01)  # TODO: REMOVE ME ( https://trello.com/c/KQ02vWL3 )
             self.trySendMessage()
 
             byteList = self.get_data()
@@ -97,7 +99,6 @@ class SThread(QtCore.QThread):
                     print(e)  # TODO change this to error log
                     del byteList[0:1]
                     continue
-                print("SerialThread.run loop emitted data again")  # TODO delete print statement
                 self.sig_received.emit(parsed_data)  # transmit it back to main, where function waits on this
                 del byteList[0:length]
 

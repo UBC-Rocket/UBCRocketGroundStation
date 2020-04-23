@@ -9,8 +9,9 @@ import queue
 import RadioController
 import RocketData
 
-IDLENGTH = 1  # TODO change these with new Radio protocol
-DATALENGTH = 4  # TODO change these with new Radio protocol
+# TODO change this section with new Radio protocol type refactoring
+IDLENGTH = 1
+DATALENGTH = 4
 
 COM_ID = {
     "arm": 'r',
@@ -95,14 +96,11 @@ class SThread(QtCore.QThread):
                 length: int = 0
                 try:
                     parsed_data, length = RadioController.extract(byteList)
-                except Exception as e:
-                    print(e)  # TODO change this to error log
+                except:
                     del byteList[0:1]
                     continue
                 self.sig_received.emit(parsed_data)  # transmit it back to main, where function waits on this
                 del byteList[0:length]
-
-
 
     def get_data(self):
 
@@ -124,6 +122,8 @@ class SThread(QtCore.QThread):
 
         return list(data)
 
+
+# TODO REVIEW/REMOVE this section once data types refactored
 
 def _bytes_to_int(bytes):
     return int.from_bytes(bytes, byteorder='little', signed=False)  # TODO review this byteorder

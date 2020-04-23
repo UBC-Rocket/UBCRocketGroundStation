@@ -99,11 +99,11 @@ def gps(byte_list, length):  # TODO
 def bulk_sensor(byte_list: List, length: int):
     data: Dict[int, any] = {}
 
-    # TODO Note how this is required to convert from List[bytes] to List[int]
+    # TODO REVIEW/CHANGE in type refactoring: how this is required to convert from List[bytes] to List[int]
     int_list: List[int] = [int(x[0]) for x in byte_list]
 
     data[SubpacketEnum.TIME.value] = RocketData.fourtoint(int_list[0:4])
-    data[SubpacketEnum.CALCULATED_ALTITUDE.value] = RocketData.fourtofloat(int_list[4:8]) # Double check it is calculated barometer altitude with firmware
+    data[SubpacketEnum.CALCULATED_ALTITUDE.value] = RocketData.fourtofloat(int_list[4:8])  # TODO Double check it is calculated barometer altitude with firmware
     data[SubpacketEnum.ACCELERATION_X.value] = RocketData.fourtofloat(int_list[8:12])
     data[SubpacketEnum.ACCELERATION_Y.value] = RocketData.fourtofloat(int_list[12:16])
     data[SubpacketEnum.ACCELERATION_Z.value] = RocketData.fourtofloat(int_list[16:20])
@@ -111,7 +111,7 @@ def bulk_sensor(byte_list: List, length: int):
     data[SubpacketEnum.ORIENTATION_2.value] = RocketData.fourtofloat(int_list[24:28])
     data[SubpacketEnum.ORIENTATION_3.value] = RocketData.fourtofloat(int_list[28:32])
     data[SubpacketEnum.LONGITUDE.value] = RocketData.fourtofloat(int_list[36:40])
-    data[SubpacketEnum.LATITUDE.value] = RocketData.fourtofloat(int_list[32:36]) # TODO Check that order is correct for long/lat
+    data[SubpacketEnum.LATITUDE.value] = RocketData.fourtofloat(int_list[32:36])
     data[SubpacketEnum.STATE.value] = int_list[40]
     return data
 

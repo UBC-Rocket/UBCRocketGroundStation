@@ -69,7 +69,7 @@ class RocketData:
     def __init__(self):
         self.lock = threading.Lock() # acquire lock ASAP since self.lock needs to be defined when autosave starts
         self.timeset: Dict[int, Dict[str, Union[int, float]]] = {}
-        self.lasttime = 0
+        self.lasttime = 0   # TODO REVIEW/CHANGE THIS, once all subpackets have their own timestamp.
         self.highest_altitude = 0
         self.sessionName = str(int(time.time()))
         self.autosaveThread = threading.Thread(target=self.timer, daemon=True)
@@ -80,7 +80,8 @@ class RocketData:
             try:
                 self.save("")
                 print("Auto-Save successful.")
-            except:
+            except Exception as e:
+                print(e)
                 print("FAILED TO SAVE. Something went wrong")
             time.sleep(10)
 
@@ -88,14 +89,16 @@ class RocketData:
     # Current implementation: adds to time given, otherwise will add to the last time received?
     # NOTE how this works without a new time eg if single sensor temperature comes in 3 times in a row, the first two are overwritten
     def addBundle(self, incoming_data):
-        if SubpacketEnum.TIME.value in incoming_data.keys():
-            self.lasttime = incoming_data[SubpacketEnum.TIME.value]
-        if self.lasttime not in self.timeset.keys():
-            self.timeset[self.lasttime] = {}
+        with self.lock:
+            if SubpacketEnum.TIME.value in incoming_data.keys():
+                self.lasttime = incoming_data[SubpacketEnum.TIME.value]
+            if self.lasttime not in self.timeset.keys():
+                self.timeset[self.lasttime] = {}
 
-        for id in incoming_data.keys():
-            self.timeset[self.lasttime][id] = incoming_data[id]
+            for id in incoming_data.keys():
+                self.timeset[self.lasttime][id] = incoming_data[id]
 
+    # TODO REMOVE this function once data types refactored
     # # In the previous version this is supposed to save very specifically formatted incoming data into RocketData
     # def addpoint(self, bytes):
     #     with self.lock:
@@ -112,6 +115,7 @@ class RocketData:
     #             if alt > self.highest_altitude:
     #                 self.highest_altitude = alt
 
+    # TODO REVIEW/IMPROVE THIS, once all subpackets have their own timestamp.
     # Gets the most recent value specified by the sensor_id given
     def lastvalue(self, sensor_id):
         with self.lock:
@@ -124,9 +128,7 @@ class RocketData:
 
     # Data saving function that creates csv
     def save(self, name):
-        print("entering save---")  # TODO delete print statement
         with self.lock:
-            print("got mutex lock---")  # TODO delete print statement
             if len(self.timeset) <= 0:
                 return
 
@@ -147,9 +149,10 @@ class RocketData:
                         else:
                             data[ix, iy] = ""
 
-            print("gonna save to csv---")  # TODO delete print statement
             np.savetxt(csvpath, np.transpose(data), delimiter=',', fmt="%s")
-            print("saved---")  # TODO delete print statement
+
+
+# TODO REVIEW/REMOVE this section once data types refactored
 
 def bytelist(bytes):
     return list(map(lambda x: x[0], bytes))
@@ -158,13 +161,13 @@ def bytelist(bytes):
 #     return statemap[toint(bytes)]
 
 def toint(bytes):
-    return int.from_bytes(bytes, byteorder='big', signed=False)  # TODO discuss this byteorder change
+    return int.from_bytes(bytes, byteorder='big', signed=False)
 
 def fourtofloat(bytes):
     data = bytes
     # data = data[::-1]#flips bytes
     b = struct.pack('4B', *data)
-    # should be in little endian format from the teensy?  #TODO discuss this byteorder
+    # should be in little endian format from the teensy?
     c = struct.unpack('<f', b)
     return c[0]
 
@@ -172,11 +175,11 @@ def fourtoint(bytes):
     data = bytes
     # data = data[::-1]#flips bytes
     b = struct.pack('4B', *data)
-    # big endian  #TODO discuss this byteorder
+    # big endian
     c = struct.unpack('>I', b)
     return c[0]
 
-# def fivtoval(bytes):    # TODO Review this function
+# def fivtoval(bytes):    # TODO REMOVE this function once data types refactored
 #     data = bytes[1:5]
 #     val = 0
 #

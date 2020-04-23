@@ -62,18 +62,18 @@ statemap = {  # TODO Review usage of this, like with dead code above.
 }
 
 # Supposedly a dictionary of all of the time points mapped to a dictionary of sensor id to value.
+# self.data:    dictionary designed to hold time - dictionary {sensor id - value} pairs.
+        # essentially  self.data: Dict[int, Dict[str, Union[int, float]]] = {}
 
 class RocketData:
     def __init__(self):
-        # dictionary designed to hold time - dictionary {sensor id - value} pairs.
-                # essentially  self.data: Dict[int, Dict[str, Union[int, float]]] = {}
+        self.lock = threading.Lock() # acquire lock ASAP since self.lock needs to be defined when autosave starts
         self.timeset: Dict[int, Dict[str, Union[int, float]]] = {}
         self.lasttime = 0
         self.highest_altitude = 0
         self.sessionName = str(int(time.time()))
-        self.autosaveThread = threading.Thread(target=self.timer)
+        self.autosaveThread = threading.Thread(target=self.timer, daemon=True)
         self.autosaveThread.start()
-        self.lock = threading.Lock()
 
     def timer(self):
         while True:
@@ -123,8 +123,10 @@ class RocketData:
             return None
 
     # Data saving function that creates csv
-    def save(self):
+    def save(self, name):
+        print("entering save---")  # TODO delete print statement
         with self.lock:
+            print("got mutex lock---")  # TODO delete print statement
             if len(self.timeset) <= 0:
                 return
 
@@ -145,7 +147,9 @@ class RocketData:
                         else:
                             data[ix, iy] = ""
 
+            print("gonna save to csv---")  # TODO delete print statement
             np.savetxt(csvpath, np.transpose(data), delimiter=',', fmt="%s")
+            print("saved---")  # TODO delete print statement
 
 def bytelist(bytes):
     return list(map(lambda x: x[0], bytes))
@@ -154,7 +158,7 @@ def bytelist(bytes):
 #     return statemap[toint(bytes)]
 
 def toint(bytes):
-    return int.from_bytes(bytes, byteorder='big', signed=False)  #TODO discuss this byteorder change
+    return int.from_bytes(bytes, byteorder='big', signed=False)  # TODO discuss this byteorder change
 
 def fourtofloat(bytes):
     data = bytes

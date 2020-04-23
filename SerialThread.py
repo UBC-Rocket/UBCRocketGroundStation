@@ -97,7 +97,7 @@ class SThread(QtCore.QThread):
                     print(e)  # TODO change this to error log
                     del byteList[0:1]
                     continue
-                print("parsed data about to be emitted", parsed_data)
+                print("SerialThread.run loop emitted data again")  # TODO delete print statement
                 self.sig_received.emit(parsed_data)  # transmit it back to main, where function waits on this
                 del byteList[0:length]
 

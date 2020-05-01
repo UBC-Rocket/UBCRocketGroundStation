@@ -1,25 +1,26 @@
-import atexit
-import math
+import os
 import sys
+import math
+import atexit
 import time
-
 import threading
 
 import PyQt5
 from PyQt5 import QtCore, QtGui, uic, QtWidgets
-import os
-
 from PyQt5.QtCore import pyqtSignal
+
 import matplotlib.pyplot as plt
 from scipy.misc import imresize
 
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+import mplwidget  # DO NOT REMOVE pyinstller needs this
+
+import MapBox
 
 import SerialThread
-import MapBox
 import RocketData
 from RocketData import RocketData as RD
-import mplwidget #DO NOT REMOVE pyinstller needs this
+from SubpacketIDs import SubpacketEnum
 
 if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
@@ -88,23 +89,23 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         thread = threading.Thread(target=self.threadLoop, daemon=True)
         thread.start()
 
-    def receiveData(self, bytes):  # TODO: ARE WE SURE THIS IS THREAD SAFE? USE QUEUE OR PUT IN SERIAL THREAD
+    # Possible doc: receives from the serial thread loop of subpackets
+    def receiveData(self, dataBundle):  # TODO: ARE WE SURE THIS IS THREAD SAFE? USE QUEUE OR PUT IN SERIAL THREAD
+        self.data.addBundle(dataBundle)
 
-        self.data.addpoint(bytes)
-
-        latitude = self.data.lastvalue("Latitude")
-        longitude = self.data.lastvalue("Longitude")
+        latitude = self.data.lastvalue(SubpacketEnum.LATITUDE.value)
+        longitude = self.data.lastvalue(SubpacketEnum.LONGITUDE.value)
 
         nonezero = lambda x: 0 if x is None else x
-        accel = math.sqrt(nonezero(self.data.lastvalue("Acceleration X")) ** 2 +
-                          nonezero(self.data.lastvalue("Acceleration Y")) ** 2 +
-                          nonezero(self.data.lastvalue("Acceleration Z")) ** 2)
+        accel = math.sqrt(nonezero(self.data.lastvalue(SubpacketEnum.ACCELERATION_X.value)) ** 2 +
+                          nonezero(self.data.lastvalue(SubpacketEnum.ACCELERATION_Y.value)) ** 2 +
+                          nonezero(self.data.lastvalue(SubpacketEnum.ACCELERATION_Z.value)) ** 2)
 
-        self.AltitudeLabel.setText(str(self.data.lastvalue("Calculated Altitude")))
+        self.AltitudeLabel.setText(str(self.data.lastvalue(SubpacketEnum.CALCULATED_ALTITUDE.value)))
         self.MaxAltitudeLabel.setText(str(self.data.highest_altitude))
         self.GpsLabel.setText(str(latitude) + ", " + str(longitude))
-        self.StateLabel.setText(str(self.data.lastvalue("State")))
-        self.PressureLabel.setText(str(self.data.lastvalue("Pressure")))
+        self.StateLabel.setText(str(self.data.lastvalue(SubpacketEnum.STATE.value)))
+        self.PressureLabel.setText(str(self.data.lastvalue(SubpacketEnum.PRESSURE.value)))
         self.AccelerationLabel.setText(str(accel))
 
         self.latitude = latitude

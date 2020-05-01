@@ -17,19 +17,31 @@ class DebugConnection(IConnection):
         if currentTime - self.lastSend > 1:
             self.lastSend = currentTime
 
-            accx = random.uniform(0, 1)
-            # L = random.uniform(49.239184, 49.284162) # UBC
-            # l = random.uniform(-123.2766960, -123.210088) # UBC
-            L = random.uniform(49.264940, 49.268063)  # HENN
-            l = random.uniform(-123.255216, -123.249734) # HENN
+            # accx = random.uniform(0, 1)
+            # # L = random.uniform(49.239184, 49.284162) # UBC
+            # # l = random.uniform(-123.2766960, -123.210088) # UBC
+            # L = random.uniform(49.264940, 49.268063)  # HENN
+            # l = random.uniform(-123.255216, -123.249734) # HENN
+            #
+            # bax = bytearray(struct.pack("f", accx))
+            # baL = bytearray(struct.pack("f", L))
+            # bal =bytearray(struct.pack("f", l))
+            # return b"X"+bax+b"L"+baL+b"l"+bal  # Alex's map mock data?
 
-            bax = bytearray(struct.pack("f", accx))
-            baL = bytearray(struct.pack("f", L))
-            bal =bytearray(struct.pack("f", l))
-
-            return b"X"+bax+b"L"+baL+b"l"+bal
+            bulk_sensor_arr: bytearray = self.bulk_sensor_mock_random()
+            return bulk_sensor_arr
+            # return b"X"+bulk_sensor_arr  # original
         else:
             return None
+
+    def bulk_sensor_mock_random(self) -> bytearray:
+        bulk_sensor_arr: bytearray = bytearray()
+        bulk_sensor_arr.append(0x30)  # id
+        bulk_sensor_arr.extend((int(time.time())).to_bytes(length=4, byteorder='big'))  # use current integer time
+        for x in range(0, 9):
+            bulk_sensor_arr.extend(struct.pack("f", random.uniform(0, 1e6)))
+        bulk_sensor_arr.extend(random.randint(0, 100).to_bytes(length=1, byteorder='big'))  # state
+        return bulk_sensor_arr
 
     def send(self, data):
         pass

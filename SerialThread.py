@@ -1,8 +1,15 @@
+import time
+from typing import Dict
+
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
 from digi.xbee.exception import TimeoutException, XBeeException
 import queue
 
+import RadioController
+import RocketData
+
+# TODO change this section with new Radio protocol type refactoring
 IDLENGTH = 1
 DATALENGTH = 4
 
@@ -31,7 +38,8 @@ for x in COM_ID:
     COM_NAME[COM_ID[x]] = x
 
 class SThread(QtCore.QThread):
-    sig_received = pyqtSignal(list)
+    # sig_received = pyqtSignal(list)  # TODO Review this change with Andrei
+    sig_received = pyqtSignal(object)  # TODO is it safe to generalize
     sig_print = pyqtSignal(str)
 
     def __init__(self, connection, ids, parent=None):
@@ -75,45 +83,24 @@ class SThread(QtCore.QThread):
 
     def run(self):
         self.running = True
-        chunkLength = IDLENGTH + DATALENGTH
+        chunk_length = IDLENGTH + DATALENGTH
         byteList = []
         while self.running:
+            time.sleep(0.01)  # TODO: REMOVE ME ( https://trello.com/c/KQ02vWL3 )
             self.trySendMessage()
 
             byteList = self.get_data()
-
+            # loop that quickly runs through entire data list and extracts subpackets where possible
             while len(byteList) > 0:
-                if byteList[0] == Good_ID: #Should be byteList[IDLENGTH:chunklength] ??
-                    if try_ascii_decode(byteList[IDLENGTH]) and byteList[IDLENGTH].decode("ascii") in COM_NAME:
-                        self.sig_print.emit("Successful " + COM_NAME[byteList[IDLENGTH].decode("ascii")])
-                    else:
-                        self.sig_print.emit("Successful 0x" + byteList[IDLENGTH].hex())
-                    del byteList[0:2]
-
-                elif byteList[0] == Bad_ID:
-                    if try_ascii_decode(byteList[IDLENGTH]) and byteList[IDLENGTH].decode("ascii") in COM_NAME:
-                        self.sig_print.emit("Failed " + COM_NAME[byteList[IDLENGTH].decode("ascii")])
-                    else:
-                        self.sig_print.emit("Failed 0x" + byteList[IDLENGTH].hex())
-                    del byteList[0:2]
-
-                elif byteList[0] == String_ID:
-                    bytes = bytearray(map(_bytes_to_byte, byteList[1:len(byteList)]))
-                    str = bytes.decode("ascii")
-                    self.sig_print.emit(str)
-                    del byteList[0:len(byteList)]
-
-                elif len(byteList) >= chunkLength and byteList[0] in self.IdSet:
-                    chunk = byteList[0:chunkLength]
-                    data = list(map(_bytes_to_int, chunk))
-                    self.sig_received.emit(data)
-                    del byteList[0:chunkLength]
-
-                elif len(byteList) > chunkLength:
-                    del byteList[0]
-
-                else:
-                    break
+                parsed_data: Dict[int, any] = {} # generally any is floats and ints
+                length: int = 0
+                try:
+                    parsed_data, length = RadioController.extract(byteList)
+                except:
+                    del byteList[0:1]
+                    continue
+                self.sig_received.emit(parsed_data)  # transmit it back to main, where function waits on this
+                del byteList[0:length]
 
     def get_data(self):
 
@@ -136,12 +123,19 @@ class SThread(QtCore.QThread):
         return list(data)
 
 
+# TODO REVIEW/REMOVE this section once data types refactored
+
 def _bytes_to_int(bytes):
-    return int.from_bytes(bytes, byteorder='little', signed=False)
+    return int.from_bytes(bytes, byteorder='little', signed=False)  # TODO review this byteorder
 
 def _bytes_to_byte(bytes):
     return bytes[0]
 
+def _byte_list_to_bytearray(byte_list):
+    ba = bytearray()
+    for byte in byte_list:
+        ba.append(int.from_bytes(byte, byteorder="big", signed='false')) # TODO review this byteorder
+    return ba
 
 def _are_all(list, expected):
     for x in list:

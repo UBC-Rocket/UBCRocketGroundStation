@@ -2,16 +2,19 @@ import os
 import struct
 import sys
 import threading
-
 import numpy as np
 import time
+from typing import Dict, Union
+
+from SubpacketIDs import SubpacketEnum
+import SubpacketIDs
 
 if getattr(sys, 'frozen', False):
     local = os.path.dirname(sys.executable)
 elif __file__:
     local = os.path.dirname(__file__)
 
-nametochar = {
+nametochar : Dict[str, bytes] = { # TODO Deal with old mixed up data types and conversions. Delete dead code when done.
     "Acceleration X": b'X',
     "Acceleration Y": b'Y',
     "Acceleration Z": b'Z',
@@ -24,11 +27,14 @@ nametochar = {
     "Latitude": b'L',
     "Longitude": b'l',
     "GPS Altitude": b'A',
-    "Calculated Altitude": b'a',
+    "Calculated Altitude": b'a', # barometer altitude
     "State": b's',
     "Voltage": b'b',
     "Ground Altitude": b'g',
-    "Time": b't'
+    "Time": b't',
+    "Orientation 1": b'o',
+    "Orientation 2": b'p',
+    "Orientation 3": b'q',
 }
 
 chartoname = {}
@@ -38,12 +44,12 @@ for x in nametochar:
 orderednames = list(nametochar.keys())
 orderednames.sort()
 
-typemap = {
+typemap = {  # TODO Review usage of this, like with dead code above.
     's':"state",
     't':"int"
 }
 
-statemap = {
+statemap = {  # TODO Review usage of this, like with dead code above.
  0:"STANDBY",
  1:"ARMED",
  2:"ASCENT",
@@ -54,84 +60,108 @@ statemap = {
  7:"LANDED",
  8:"WINTER_CONTINGENCY"
 }
+
+# Supposedly a dictionary of all of the time points mapped to a dictionary of sensor id to value.
+# self.data:    dictionary designed to hold time - dictionary {sensor id - value} pairs.
+        # essentially  self.data: Dict[int, Dict[str, Union[int, float]]] = {}
+
 class RocketData:
     def __init__(self):
-        self.timeset = {}
-        self.lasttime = 0
+        self.lock = threading.Lock() # acquire lock ASAP since self.lock needs to be defined when autosave starts
+        self.timeset: Dict[int, Dict[str, Union[int, float]]] = {}
+        self.lasttime = 0   # TODO REVIEW/CHANGE THIS, once all subpackets have their own timestamp.
         self.highest_altitude = 0
         self.sessionName = str(int(time.time()))
-        self.autosaveThread = threading.Thread(target=self.timer)
+        self.autosaveThread = threading.Thread(target=self.timer, daemon=True)
         self.autosaveThread.start()
-        self.lock = threading.Lock()
 
     def timer(self):
         while True:
             try:
                 self.save("")
                 print("Auto-Save successful.")
-            except:
+            except Exception as e:
+                print(e)
                 print("FAILED TO SAVE. Something went wrong")
             time.sleep(10)
 
-    def addpoint(self, bytes):
+    # adding a bundle of data points
+    # Current implementation: adds to time given, otherwise will add to the last time received?
+    # NOTE how this works without a new time eg if single sensor temperature comes in 3 times in a row, the first two are overwritten
+    def addBundle(self, incoming_data):
         with self.lock:
-            if bytes[0] == nametochar["Time"][0]:
-                self.lasttime = fivtoval(bytes)
-            else:
-                if self.lasttime not in self.timeset:
-                    self.timeset[self.lasttime] = {}
+            if SubpacketEnum.TIME.value in incoming_data.keys():
+                self.lasttime = incoming_data[SubpacketEnum.TIME.value]
+            if self.lasttime not in self.timeset.keys():
+                self.timeset[self.lasttime] = {}
 
-                (self.timeset[self.lasttime])[chr(bytes[0])] = fivtoval(bytes)
+            for id in incoming_data.keys():
+                self.timeset[self.lasttime][id] = incoming_data[id]
 
-            if bytes[0] == nametochar["Calculated Altitude"][0]:
-                alt = fivtoval(bytes)
-                if alt > self.highest_altitude:
-                    self.highest_altitude = alt
+    # TODO REMOVE this function once data types refactored
+    # # In the previous version this is supposed to save very specifically formatted incoming data into RocketData
+    # def addpoint(self, bytes):
+    #     with self.lock:
+    #         if bytes[0] == nametochar["Time"][0]:
+    #             self.lasttime = fivtoval(bytes)
+    #         else:
+    #             if self.lasttime not in self.timeset:
+    #                 self.timeset[self.lasttime] = {}
+    #
+    #             (self.timeset[self.lasttime])[chr(bytes[0])] = fivtoval(bytes)
+    #
+    #         if bytes[0] == nametochar["Calculated Altitude"][0]:
+    #             alt = fivtoval(bytes)
+    #             if alt > self.highest_altitude:
+    #                 self.highest_altitude = alt
 
-    def lastvalue(self, name):
+    # TODO REVIEW/IMPROVE THIS, once all subpackets have their own timestamp.
+    # Gets the most recent value specified by the sensor_id given
+    def lastvalue(self, sensor_id):
         with self.lock:
             times = list(self.timeset.keys())
             times.sort(reverse=True)
             for i in range(len(times)):
-                if chr(nametochar[name][0]) in self.timeset[times[i]]:
-                    return self.timeset[times[i]][chr(nametochar[name][0])]
+                if sensor_id in self.timeset[times[i]]:
+                    return self.timeset[times[i]][sensor_id]
             return None
 
-    ###   AUTO SAVE   ###
-
+    # Data saving function that creates csv
     def save(self, name):
         with self.lock:
             if len(self.timeset) <= 0:
                 return
 
-            csvpath = os.path.join(local, str(name+"_"+str(time.time()))+".csv")
-
-            data = np.empty((len(orderednames), len(self.timeset)+1), dtype=object)
+            csvpath = os.path.join(local, str(int(time.time()))+".csv")
+            data = np.empty((len(SubpacketIDs.get_list_of_sensor_IDs()), len(self.timeset)+1), dtype=object)
             times = list(self.timeset.keys())
             times.sort(reverse=False)
             for ix, iy in np.ndindex(data.shape):
+                # Make the first row a list of sensor names
                 if iy == 0:
-                    data[ix,iy] = orderednames[ix]
+                    data[ix, iy] = SubpacketIDs.get_list_of_sensor_names()[ix]
                 else:
-                    if orderednames[ix] == "Time":
-                        data[ix, iy] = times[iy-1]
+                    if SubpacketIDs.get_list_of_sensor_names()[ix] == SubpacketEnum.TIME.name:
+                        data[ix, iy] = times[iy - 1]
                     else:
-                        char = chr(nametochar[orderednames[ix]][0])
-                        if char in self.timeset[times[iy-1]]:
-                            data[ix, iy] = self.timeset[times[iy-1]][char]
+                        if SubpacketIDs.get_list_of_sensor_IDs()[ix] in self.timeset[times[iy-1]]:
+                            data[ix, iy] = self.timeset[times[iy-1]][SubpacketIDs.get_list_of_sensor_IDs()[ix]]
                         else:
                             data[ix, iy] = ""
 
             np.savetxt(csvpath, np.transpose(data), delimiter=',', fmt="%s")
 
+
+# TODO REVIEW/REMOVE this section once data types refactored
+
 def bytelist(bytes):
     return list(map(lambda x: x[0], bytes))
 
-def tostate(bytes):
-    return statemap[toint(bytes)]
+# def tostate(bytes):
+#     return statemap[toint(bytes)]
 
 def toint(bytes):
-    return int.from_bytes(bytes, byteorder='little', signed=False)
+    return int.from_bytes(bytes, byteorder='big', signed=False)
 
 def fourtofloat(bytes):
     data = bytes
@@ -141,20 +171,28 @@ def fourtofloat(bytes):
     c = struct.unpack('<f', b)
     return c[0]
 
-def fivtoval(bytes):
-    data = bytes[1:5]
-    val = 0
+def fourtoint(bytes):
+    data = bytes
+    # data = data[::-1]#flips bytes
+    b = struct.pack('4B', *data)
+    # big endian
+    c = struct.unpack('>I', b)
+    return c[0]
 
-    try:
-        if chr(bytes[0]) in typemap:
-            datatype = typemap[chr(bytes[0])]
-
-            if datatype == "int":
-                return toint(data)
-            elif datatype == "state":
-                return tostate(data)
-
-        return fourtofloat(data)
-
-    except:
-        return -1
+# def fivtoval(bytes):    # TODO REMOVE this function once data types refactored
+#     data = bytes[1:5]
+#     val = 0
+#
+#     try:
+#         if chr(bytes[0]) in typemap:
+#             datatype = typemap[chr(bytes[0])]
+#
+#             if datatype == "int":
+#                 return toint(data)
+#             elif datatype == "state":
+#                 return tostate(data)
+#
+#         return fourtofloat(data)
+#
+#     except:
+#         return -1

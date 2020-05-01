@@ -8,3 +8,4 @@ venv/
 *.spec
 *.csv
 apikey.txt
+.DS_Store

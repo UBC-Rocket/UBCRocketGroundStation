@@ -14,52 +14,52 @@ if getattr(sys, 'frozen', False):
 elif __file__:
     local = os.path.dirname(__file__)
 
-nametochar : Dict[str, bytes] = { # TODO Deal with old mixed up data types and conversions. Delete dead code when done.
-    "Acceleration X": b'X',
-    "Acceleration Y": b'Y',
-    "Acceleration Z": b'Z',
-    "Pressure": b'P',
-    "Barometer Temperature": b'~',
-    "Temperature": b'T',
-    "Yaw": b'@',
-    "Roll": b'#',
-    "Pitch": b'$',
-    "Latitude": b'L',
-    "Longitude": b'l',
-    "GPS Altitude": b'A',
-    "Calculated Altitude": b'a', # barometer altitude
-    "State": b's',
-    "Voltage": b'b',
-    "Ground Altitude": b'g',
-    "Time": b't',
-    "Orientation 1": b'o',
-    "Orientation 2": b'p',
-    "Orientation 3": b'q',
-}
-
-chartoname = {}
-for x in nametochar:
-    chartoname[nametochar[x]] = x
-
-orderednames = list(nametochar.keys())
-orderednames.sort()
-
-typemap = {  # TODO Review usage of this, like with dead code above.
-    's':"state",
-    't':"int"
-}
-
-statemap = {  # TODO Review usage of this, like with dead code above.
- 0:"STANDBY",
- 1:"ARMED",
- 2:"ASCENT",
- 3:"MACH_LOCK",
- 4:"PRESSURE_DELAY",
- 5:"INITIAL_DESCENT",
- 6:"FINAL_DESCENT",
- 7:"LANDED",
- 8:"WINTER_CONTINGENCY"
-}
+# nametochar : Dict[str, bytes] = { # TODO Deal with legacy data types and conversions. Delete dead code when done.
+#     "Acceleration X": b'X',
+#     "Acceleration Y": b'Y',
+#     "Acceleration Z": b'Z',
+#     "Pressure": b'P',
+#     "Barometer Temperature": b'~',
+#     "Temperature": b'T',
+#     "Yaw": b'@',
+#     "Roll": b'#',
+#     "Pitch": b'$',
+#     "Latitude": b'L',
+#     "Longitude": b'l',
+#     "GPS Altitude": b'A',
+#     "Calculated Altitude": b'a', # barometer altitude
+#     "State": b's',
+#     "Voltage": b'b',
+#     "Ground Altitude": b'g',
+#     "Time": b't',
+#     "Orientation 1": b'o',
+#     "Orientation 2": b'p',
+#     "Orientation 3": b'q',
+# }
+#
+# chartoname = {}
+# for x in nametochar:
+#     chartoname[nametochar[x]] = x
+#
+# orderednames = list(nametochar.keys())
+# orderednames.sort()
+#
+# typemap = {  # TODO Review legacy data format
+#     's':"state",
+#     't':"int"
+# }
+#
+# statemap = {  # TODO Review legacy data format
+#  0:"STANDBY",
+#  1:"ARMED",
+#  2:"ASCENT",
+#  3:"MACH_LOCK",
+#  4:"PRESSURE_DELAY",
+#  5:"INITIAL_DESCENT",
+#  6:"FINAL_DESCENT",
+#  7:"LANDED",
+#  8:"WINTER_CONTINGENCY"
+# }
 
 # Supposedly a dictionary of all of the time points mapped to a dictionary of sensor id to value.
 # self.data:    dictionary designed to hold time - dictionary {sensor id - value} pairs.

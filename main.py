@@ -17,7 +17,8 @@ import mplwidget  # DO NOT REMOVE pyinstller needs this
 
 import MapBox
 
-import SerialThread
+import ReadThread
+import SendThread
 import RocketData
 from RocketData import RocketData as RD
 from SubpacketIDs import SubpacketEnum
@@ -76,20 +77,26 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         # self.plotMap(51.852667, -111.646972, self.radius, self.zoom)
         # self.plotMap(49.266430, -123.252162, self.radius, self.zoom)
 
-        # Init and connection of SerialThread and send and receive tasks
         self.printToConsole("Starting Connection")
-        self.SThread = SerialThread.SThread(connection)
-        self.SThread.sig_received.connect(self.receiveData)
-        self.sig_send.connect(self.SThread.queueMessage)
-        self.SThread.sig_print.connect(self.printToConsole)
-        self.SThread.start()
+
+        # Init and connection of ReadThread
+        self.ReadThread = ReadThread.ReadThread(connection)
+        self.ReadThread.sig_received.connect(self.receiveData)
+        self.ReadThread.sig_print.connect(self.printToConsole)
+        self.ReadThread.start()
+
+        # Init and connection of SendThread
+        self.SendThread = SendThread.SendThread(connection)
+        self.sig_send.connect(self.SendThread.queueMessage)
+        self.SendThread.sig_print.connect(self.printToConsole)
+        self.SendThread.start()
 
         # Mapping thread init and start
         thread = threading.Thread(target=self.threadLoop, daemon=True)
         thread.start()
 
     # Possible doc: receives from the serial thread loop of subpackets
-    def receiveData(self, dataBundle):  # TODO: ARE WE SURE THIS IS THREAD SAFE? USE QUEUE OR PUT IN SERIAL THREAD
+    def receiveData(self, dataBundle):
         self.data.addBundle(dataBundle)
 
         latitude = self.data.lastvalue(SubpacketEnum.LATITUDE.value)

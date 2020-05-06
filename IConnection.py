@@ -3,11 +3,11 @@ import abc
 
 class IConnection:
     @abc.abstractmethod
-    def get(self):  # Non blocking
+    def registerCallback(self, fn):  # fn(bytes) must be non-blocking and thread safe
         pass
 
     @abc.abstractmethod
-    def send(self, data):
+    def send(self, data):  # must be thead safe
         pass
 
 

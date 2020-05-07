@@ -1,6 +1,7 @@
 import random
 import struct
 import time
+import threading
 
 from IConnection import IConnection
 
@@ -8,31 +9,37 @@ from IConnection import IConnection
 class DebugConnection(IConnection):
     def __init__(self):
         self.lastSend = time.time() #float seconds
+        self.callback = None
+        self.lock = threading.RLock() #Protects callback variable and any other "state" variables
+        self.connectionThread = threading.Thread(target=self._run, daemon=True)
+        self.connectionThread.start()
 
+    # Register callback to which we will send new data
+    def registerCallback(self, fn):
+        with self.lock:
+            self.callback = fn
 
-    def get(self):
-        currentTime = time.time()
+    # Thread loop that creates fake data at constant interval and returns it via callback
+    def _run(self):
+        while True:
+            time.sleep(1)
+            with self.lock:
+                if not self.callback:
+                    continue
+                # accx = random.uniform(0, 1)
+                # # L = random.uniform(49.239184, 49.284162) # UBC
+                # # l = random.uniform(-123.2766960, -123.210088) # UBC
+                # L = random.uniform(49.264940, 49.268063)  # HENN
+                # l = random.uniform(-123.255216, -123.249734) # HENN
+                #
+                # bax = bytearray(struct.pack("f", accx))
+                # baL = bytearray(struct.pack("f", L))
+                # bal =bytearray(struct.pack("f", l))
+                # return b"X"+bax+b"L"+baL+b"l"+bal  # Alex's map mock data?
 
-        # TODO: without this, UI gets swamped ("not responding") with updates. Should implement UI updater with rate limiter
-        if currentTime - self.lastSend > 1:
-            self.lastSend = currentTime
-
-            # accx = random.uniform(0, 1)
-            # # L = random.uniform(49.239184, 49.284162) # UBC
-            # # l = random.uniform(-123.2766960, -123.210088) # UBC
-            # L = random.uniform(49.264940, 49.268063)  # HENN
-            # l = random.uniform(-123.255216, -123.249734) # HENN
-            #
-            # bax = bytearray(struct.pack("f", accx))
-            # baL = bytearray(struct.pack("f", L))
-            # bal =bytearray(struct.pack("f", l))
-            # return b"X"+bax+b"L"+baL+b"l"+bal  # Alex's map mock data?
-
-            bulk_sensor_arr: bytearray = self.bulk_sensor_mock_random()
-            return bulk_sensor_arr
-            # return b"X"+bulk_sensor_arr  # original
-        else:
-            return None
+                bulk_sensor_arr: bytearray = self.bulk_sensor_mock_random()
+                self.callback(bulk_sensor_arr)
+                # return b"X"+bulk_sensor_arr  # original
 
     def bulk_sensor_mock_random(self) -> bytearray:
         bulk_sensor_arr: bytearray = bytearray()
@@ -43,5 +50,7 @@ class DebugConnection(IConnection):
         bulk_sensor_arr.extend(random.randint(0, 100).to_bytes(length=1, byteorder='big'))  # state
         return bulk_sensor_arr
 
+    # Send data to connection
     def send(self, data):
-        pass
+        with self.lock: #Currently not needed, but good to have for future
+            print("%s sent to DebugConnection" % data)

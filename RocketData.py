@@ -71,14 +71,14 @@ class RocketData:
         self.timeset: Dict[int, Dict[str, Union[int, float]]] = {}
         self.lasttime = 0   # TODO REVIEW/CHANGE THIS, once all subpackets have their own timestamp.
         self.highest_altitude = 0
-        self.sessionName = str(int(time.time()))
+        self.sessionName = os.path.join(local, "autosave_"+str(int(time.time()))+".csv")
         self.autosaveThread = threading.Thread(target=self.timer, daemon=True)
         self.autosaveThread.start()
 
     def timer(self):
         while True:
             try:
-                self.save("")
+                self.save(self.sessionName)
                 print("Auto-Save successful.")
             except Exception as e:
                 print(e)
@@ -127,12 +127,11 @@ class RocketData:
             return None
 
     # Data saving function that creates csv
-    def save(self, name):
+    def save(self, csvpath):
         with self.lock:
             if len(self.timeset) <= 0:
                 return
 
-            csvpath = os.path.join(local, str(int(time.time()))+".csv")
             data = np.empty((len(SubpacketIDs.get_list_of_sensor_IDs()), len(self.timeset)+1), dtype=object)
             times = list(self.timeset.keys())
             times.sort(reverse=False)
@@ -149,7 +148,7 @@ class RocketData:
                         else:
                             data[ix, iy] = ""
 
-            np.savetxt(csvpath, np.transpose(data), delimiter=',', fmt="%s")
+        np.savetxt(csvpath, np.transpose(data), delimiter=',', fmt="%s") #Can free up the lock while we save since were no longer accessing the original data
 
 
 # TODO REVIEW/REMOVE this section once data types refactored

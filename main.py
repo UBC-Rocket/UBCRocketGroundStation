@@ -17,7 +17,8 @@ import mplwidget  # DO NOT REMOVE pyinstller needs this
 
 import MapBox
 
-import SerialThread
+import ReadThread
+import SendThread
 import RocketData
 from RocketData import RocketData as RD
 from SubpacketIDs import SubpacketEnum
@@ -60,7 +61,8 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         # Attach functions for buttons
         self.sendButton.clicked.connect(self.sendButtonPressed)
         self.commandEdit.returnPressed.connect(self.sendButtonPressed)
-        self.actionSave.triggered.connect(self.data.save)
+        self.actionSave.setShortcut("Ctrl+S")
+        self.actionSave.triggered.connect(self.saveFile)
 
         self.StatusButton.clicked.connect(lambda _: self.sendCommand("status"))
         self.ArmButton.clicked.connect(lambda _: self.sendCommand("arm"))
@@ -76,20 +78,26 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         # self.plotMap(51.852667, -111.646972, self.radius, self.zoom)
         # self.plotMap(49.266430, -123.252162, self.radius, self.zoom)
 
-        # Init and connection of SerialThread and send and receive tasks
         self.printToConsole("Starting Connection")
-        self.SThread = SerialThread.SThread(connection)
-        self.SThread.sig_received.connect(self.receiveData)
-        self.sig_send.connect(self.SThread.queueMessage)
-        self.SThread.sig_print.connect(self.printToConsole)
-        self.SThread.start()
+
+        # Init and connection of ReadThread
+        self.ReadThread = ReadThread.ReadThread(connection)
+        self.ReadThread.sig_received.connect(self.receiveData)
+        self.ReadThread.sig_print.connect(self.printToConsole)
+        self.ReadThread.start()
+
+        # Init and connection of SendThread
+        self.SendThread = SendThread.SendThread(connection)
+        self.sig_send.connect(self.SendThread.queueMessage)
+        self.SendThread.sig_print.connect(self.printToConsole)
+        self.SendThread.start()
 
         # Mapping thread init and start
         thread = threading.Thread(target=self.threadLoop, daemon=True)
         thread.start()
 
     # Possible doc: receives from the serial thread loop of subpackets
-    def receiveData(self, dataBundle):  # TODO: ARE WE SURE THIS IS THREAD SAFE? USE QUEUE OR PUT IN SERIAL THREAD
+    def receiveData(self, dataBundle):
         self.data.addBundle(dataBundle)
 
         latitude = self.data.lastvalue(SubpacketEnum.LATITUDE.value)
@@ -124,6 +132,17 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
     def sendCommand(self, command):
         self.printToConsole(command)
         self.sig_send.emit(command)
+
+    def saveFile(self):
+        result = QtWidgets.QFileDialog.getSaveFileName(None, 'Save File', directory=local, filter='.csv')
+        if result[0]:
+            if result[0][-len(result[1]):] == result[1]:
+                name = result[0]
+            else:
+                name = result[0] + result[1]
+
+            self.data.save(name)
+
 
     # Draw and show the map on the UI
     def plotMap(self, latitude, longitude):
@@ -236,5 +255,5 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def exit_handler(self):
         print("Saving...")
-        self.data.save("finalSave")
+        self.data.save(os.path.join(local, "finalsave_"+str(int(time.time()))+".csv"))
         print("Saved!")

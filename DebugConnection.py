@@ -14,10 +14,12 @@ class DebugConnection(IConnection):
         self.connectionThread = threading.Thread(target=self._run, daemon=True)
         self.connectionThread.start()
 
+    # Register callback to which we will send new data
     def registerCallback(self, fn):
         with self.lock:
             self.callback = fn
 
+    # Thread loop that creates fake data at constant interval and returns it via callback
     def _run(self):
         while True:
             time.sleep(1)
@@ -48,6 +50,7 @@ class DebugConnection(IConnection):
         bulk_sensor_arr.extend(random.randint(0, 100).to_bytes(length=1, byteorder='big'))  # state
         return bulk_sensor_arr
 
+    # Send data to connection
     def send(self, data):
         with self.lock: #Currently not needed, but good to have for future
             print("%s sent to DebugConnection" % data)

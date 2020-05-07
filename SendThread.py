@@ -17,7 +17,7 @@ COM_ID = {  # TODO ASK Are we going to continue to send single characters accord
     "ping": 'p'
 }
 
-class SendThread(QtCore.QThread):
+class SendThread(QtCore.QThread): #Updates GUI, therefore needs to be a QThread and use signals/slots
     sig_print = pyqtSignal(str)
 
     def __init__(self, connection, parent=None):
@@ -32,6 +32,7 @@ class SendThread(QtCore.QThread):
     def queueMessage(self, word):
         self.commandQueue.put_nowait(word)
 
+    # Thread loop that waits for new commands to be queued and sends them when available
     def run(self):
         while True:
             try:

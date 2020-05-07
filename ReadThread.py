@@ -6,9 +6,8 @@ import queue
 
 import RadioController
 
-class ReadThread(QtCore.QThread):
-    # sig_received = pyqtSignal(list)  # TODO Review this change with Andrei
-    sig_received = pyqtSignal(object)  # TODO is it safe to generalize
+class ReadThread(QtCore.QThread): #Updates GUI, therefore needs to be a QThread and use signals/slots
+    sig_received = pyqtSignal(object)
     sig_print = pyqtSignal(str)
 
     def __init__(self, connection, parent=None):
@@ -20,10 +19,11 @@ class ReadThread(QtCore.QThread):
 
         self.errored = False
 
+    # IConnection calls back to this function, this is where we get all our new data
     def _newData(self, data):
         self.dataQueue.put_nowait(data)
 
-    # Function that is run by the thread when it is not blocked
+    # This thread loop waits for new data and processes it when available
     def run(self):
         self.running = True  # TODO Review purpose of this
         # Loop that attempts a message send and gets+parses data repeatedly

@@ -25,9 +25,7 @@ class ReadThread(QtCore.QThread): #Updates GUI, therefore needs to be a QThread 
 
     # This thread loop waits for new data and processes it when available
     def run(self):
-        self.running = True  # TODO Review purpose of this
-        # Loop that attempts a message send and gets+parses data repeatedly
-        while self.running:
+        while True:
 
             data = self.dataQueue.get(block=True, timeout=None) # Block until something new
             self.dataQueue.task_done()

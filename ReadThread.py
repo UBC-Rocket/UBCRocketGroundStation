@@ -4,20 +4,25 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
 import queue
 
-import RadioController
+from RadioController import RadioController
 
 class ReadThread(QtCore.QThread): #Updates GUI, therefore needs to be a QThread and use signals/slots
-    sig_received = pyqtSignal(object)
+    sig_received = pyqtSignal()
     sig_print = pyqtSignal(str)
 
-    def __init__(self, connection, parent=None):
+    def __init__(self, connection, rocketData, parent=None):
         QtCore.QThread.__init__(self, parent)
         self.connection = connection
-        self.connection.registerCallback(self._newData)
+        self.rocketData = rocketData
+
+        self.radioController = RadioController(self.connection.isIntBigEndian(), self.connection.isFloatBigEndian())
 
         self.dataQueue = queue.Queue()
 
         self.errored = False
+
+        self.connection.registerCallback(self._newData) # Must be done last to prevent race condition if IController
+                                                        # returns new data before ReadThread constructor is done
 
     # IConnection calls back to this function, this is where we get all our new data
     def _newData(self, data):
@@ -36,39 +41,12 @@ class ReadThread(QtCore.QThread): #Updates GUI, therefore needs to be a QThread 
                 parsed_data: Dict[int, any] = {} # generally any is floats and ints
                 length: int = 0
                 try:
-                    parsed_data, length = RadioController.extract(byteList)
+                    parsed_data, length = self.radioController.extract(byteList)
+                    self.rocketData.addBundle(parsed_data)
+
+                    #notify UI that new data is available to be displayed
+                    self.sig_received.emit()
                 except:
-                    del byteList[0:1]
-                    continue
-                self.sig_received.emit(parsed_data)  # transmit it back to main, where function waits on this
+                    print("Error decoding new data!")
+
                 del byteList[0:length]
-
-
-# TODO REVIEW/REMOVE this section once data types refactored
-
-def _bytes_to_int(bytes):
-    return int.from_bytes(bytes, byteorder='little', signed=False)  # TODO review this byteorder
-
-def _bytes_to_byte(bytes):
-    return bytes[0]
-
-def _byte_list_to_bytearray(byte_list):
-    ba = bytearray()
-    for byte in byte_list:
-        ba.append(int.from_bytes(byte, byteorder="big", signed='false'))  # TODO review this byteorder
-    return ba
-
-def _are_all(list, expected):
-    for x in list:
-        if x != expected:
-            return False
-    return True
-
-def try_ascii_decode(bytes):
-    try:
-        bytes.decode("ascii")
-
-    except:
-        return False
-
-    return True

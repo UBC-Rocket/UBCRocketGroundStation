@@ -13,6 +13,21 @@ class IConnection:
     def send(self, data):  # must be thead safe
         pass
 
+    # Called to upon shutdown. Clean-up tasks done here.
+    @abc.abstractmethod
+    def shutDown(self):
+        pass
+
+    # Returns whether ints should be decoded as big endian
+    @abc.abstractmethod
+    def isIntBigEndian(self):  # must be thead safe
+        pass
+
+    # Returns whether floats should be decoded as big endian
+    @abc.abstractmethod
+    def isFloatBigEndian(self):
+        pass
+
 
 class DataProviderException(Exception):
     pass

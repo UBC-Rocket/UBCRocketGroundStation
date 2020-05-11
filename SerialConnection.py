@@ -23,3 +23,12 @@ class SerialConnection(IConnection):
         # remote_device = RemoteXBeeDevice(self.device, XBee64BitAddress.from_hex_string("0013A20041678fb9"))
         # self.device.send_data(remote_device, bytes)
         self.device.send_data_broadcast(bytes)
+
+    def isIntBigEndian(self):
+        return True
+
+    def isFloatBigEndian(self):
+        return False
+
+    def shutDown(self):
+        pass

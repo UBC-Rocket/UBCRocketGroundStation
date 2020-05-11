@@ -1,5 +1,4 @@
 import os
-import struct
 import sys
 import threading
 import numpy as np
@@ -8,11 +7,7 @@ from typing import Dict, Union
 
 from SubpacketIDs import SubpacketEnum
 import SubpacketIDs
-
-if getattr(sys, 'frozen', False):
-    local = os.path.dirname(sys.executable)
-elif __file__:
-    local = os.path.dirname(__file__)
+from detail import *
 
 # nametochar : Dict[str, bytes] = { # TODO Deal with legacy data types and conversions. Delete dead code when done.
 #     "Acceleration X": b'X',
@@ -71,7 +66,7 @@ class RocketData:
         self.timeset: Dict[int, Dict[str, Union[int, float]]] = {}
         self.lasttime = 0   # TODO REVIEW/CHANGE THIS, once all subpackets have their own timestamp.
         self.highest_altitude = 0
-        self.sessionName = os.path.join(local, "autosave_"+str(int(time.time()))+".csv")
+        self.sessionName = os.path.join(LOCAL, "autosave_"+str(int(time.time()))+".csv")
         self.autosaveThread = threading.Thread(target=self.timer, daemon=True)
         self.autosaveThread.start()
 
@@ -149,49 +144,3 @@ class RocketData:
                             data[ix, iy] = ""
 
         np.savetxt(csvpath, np.transpose(data), delimiter=',', fmt="%s") #Can free up the lock while we save since were no longer accessing the original data
-
-
-# TODO REVIEW/REMOVE this section once data types refactored
-
-def bytelist(bytes):
-    return list(map(lambda x: x[0], bytes))
-
-# def tostate(bytes):
-#     return statemap[toint(bytes)]
-
-def toint(bytes):
-    return int.from_bytes(bytes, byteorder='big', signed=False)
-
-def fourtofloat(bytes):
-    data = bytes
-    # data = data[::-1]#flips bytes
-    b = struct.pack('4B', *data)
-    # should be in little endian format from the teensy?
-    c = struct.unpack('<f', b)
-    return c[0]
-
-def fourtoint(bytes):
-    data = bytes
-    # data = data[::-1]#flips bytes
-    b = struct.pack('4B', *data)
-    # big endian
-    c = struct.unpack('>I', b)
-    return c[0]
-
-# def fivtoval(bytes):    # TODO REMOVE this function once data types refactored
-#     data = bytes[1:5]
-#     val = 0
-#
-#     try:
-#         if chr(bytes[0]) in typemap:
-#             datatype = typemap[chr(bytes[0])]
-#
-#             if datatype == "int":
-#                 return toint(data)
-#             elif datatype == "state":
-#                 return tostate(data)
-#
-#         return fourtofloat(data)
-#
-#     except:
-#         return -1

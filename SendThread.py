@@ -57,5 +57,6 @@ class SendThread(QtCore.QThread): #Updates GUI, therefore needs to be a QThread 
             except queue.Empty:
                 pass
 
-            except:
+            except Exception as ex:
                 self.sig_print.emit("Unexpected error while sending!")
+                print(ex)

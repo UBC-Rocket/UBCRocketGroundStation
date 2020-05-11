@@ -1,7 +1,4 @@
-import os
-import sys
 import math
-import atexit
 import time
 import threading
 
@@ -16,10 +13,10 @@ from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 import mplwidget  # DO NOT REMOVE pyinstller needs this
 
 import MapBox
+from detail import *
 
 import ReadThread
 import SendThread
-import RocketData
 from RocketData import RocketData as RD
 from SubpacketIDs import SubpacketEnum
 
@@ -29,12 +26,7 @@ if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
 if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
 
-if getattr(sys, 'frozen', False):
-    local = os.path.dirname(sys.executable)
-elif __file__:
-    local = os.path.dirname(__file__)
-
-qtCreatorFile = os.path.join(local, "main.ui")
+qtCreatorFile = os.path.join(LOCAL, "main.ui")
 
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
@@ -45,8 +37,8 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
     sig_send = pyqtSignal(str)
 
     def __init__(self, connection):
+        self.connection = connection
         self.data = RD()
-        atexit.register(self.exit_handler)
 
         # lock used for lat & lon fields # TODO Remove once RocketData refactored to have lock
         self.lock = threading.Lock()
@@ -72,7 +64,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.zoom = 20
         self.radius = 0.1
 
-        markerpath = os.path.join(local, "marker.png")
+        markerpath = os.path.join(LOCAL, "marker.png")
         # TODO: imresize removed in latest scipy since it's a duplicate from "Pillow". Update and replace.
         self.marker = imresize(plt.imread(markerpath), (12, 12))
         # self.plotMap(51.852667, -111.646972, self.radius, self.zoom)
@@ -81,25 +73,30 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.printToConsole("Starting Connection")
 
         # Init and connection of ReadThread
-        self.ReadThread = ReadThread.ReadThread(connection)
+        self.ReadThread = ReadThread.ReadThread(self.connection, self.data)
         self.ReadThread.sig_received.connect(self.receiveData)
         self.ReadThread.sig_print.connect(self.printToConsole)
         self.ReadThread.start()
 
         # Init and connection of SendThread
-        self.SendThread = SendThread.SendThread(connection)
+        self.SendThread = SendThread.SendThread(self.connection)
         self.sig_send.connect(self.SendThread.queueMessage)
         self.SendThread.sig_print.connect(self.printToConsole)
         self.SendThread.start()
 
         # Mapping thread init and start
         thread = threading.Thread(target=self.threadLoop, daemon=True)
-        thread.start()
+        #thread.start()
 
-    # Possible doc: receives from the serial thread loop of subpackets
-    def receiveData(self, dataBundle):
-        self.data.addBundle(dataBundle)
+    def closeEvent(self, event):
+        self.connection.shutDown()
+        print("Saving...")
+        self.data.save(os.path.join(LOCAL, "finalsave_" + str(int(time.time())) + ".csv"))
+        print("Saved!")
 
+
+    # Updates the UI when new data is available for display
+    def receiveData(self):
         latitude = self.data.lastvalue(SubpacketEnum.LATITUDE.value)
         longitude = self.data.lastvalue(SubpacketEnum.LONGITUDE.value)
 
@@ -134,7 +131,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.sig_send.emit(command)
 
     def saveFile(self):
-        result = QtWidgets.QFileDialog.getSaveFileName(None, 'Save File', directory=local, filter='.csv')
+        result = QtWidgets.QFileDialog.getSaveFileName(None, 'Save File', directory=LOCAL, filter='.csv')
         if result[0]:
             if result[0][-len(result[1]):] == result[1]:
                 name = result[0]
@@ -252,8 +249,3 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
 
             except:
                 print("Error in map thread loop.")
-
-    def exit_handler(self):
-        print("Saving...")
-        self.data.save(os.path.join(local, "finalsave_"+str(int(time.time()))+".csv"))
-        print("Saved!")

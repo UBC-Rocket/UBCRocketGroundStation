@@ -4,9 +4,11 @@ from PyQt5 import QtCore, QtGui, uic, QtWidgets
 import os
 import start
 import serial.tools.list_ports
+from detail import *
 
 from DebugConnectionFactory import DebugConnectionFactory
 from SerialConnectionFactory import SerialConnectionFactory
+from SimConnectionFactory import SimConnectionFactory
 
 if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
@@ -14,12 +16,7 @@ if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
 if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
 
-if getattr(sys, 'frozen', False):
-    local = os.path.dirname(sys.executable)
-elif __file__:
-    local = os.path.dirname(__file__)
-
-qtCreatorFile = os.path.join(local, "comWindow.ui")
+qtCreatorFile = os.path.join(LOCAL, "comWindow.ui")
 
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
@@ -31,7 +28,8 @@ class comWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.ConnectionFactories = {
             "Serial": SerialConnectionFactory(),
-            "Debug": DebugConnectionFactory()
+            "Debug": DebugConnectionFactory(),
+            "SIM": SimConnectionFactory(),
         }
         self.setupUi(self)
         self.MySetup()
@@ -54,8 +52,8 @@ class comWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         text = self.typeBox.currentText()
         factory = self.ConnectionFactories[text]
 
-        self.comBox.setEnabled(factory.requiresComPort)
-        self.baudBox.setEnabled(factory.requiresBaudRate)
+        self.comBox.setEnabled(factory.requiresComPort())
+        self.baudBox.setEnabled(factory.requiresBaudRate())
 
 
 

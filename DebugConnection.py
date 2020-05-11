@@ -46,7 +46,7 @@ class DebugConnection(IConnection):
         bulk_sensor_arr.append(0x30)  # id
         bulk_sensor_arr.extend((int(time.time())).to_bytes(length=4, byteorder='big'))  # use current integer time
         for x in range(0, 9):
-            bulk_sensor_arr.extend(struct.pack("f", random.uniform(0, 1e6)))
+            bulk_sensor_arr.extend(struct.pack(">f", random.uniform(0, 1e6))) # Big endian floats as per inherited IController definition
         bulk_sensor_arr.extend(random.randint(0, 100).to_bytes(length=1, byteorder='big'))  # state
         return bulk_sensor_arr
 
@@ -54,3 +54,12 @@ class DebugConnection(IConnection):
     def send(self, data):
         with self.lock: #Currently not needed, but good to have for future
             print("%s sent to DebugConnection" % data)
+
+    def isIntBigEndian(self):
+        return True
+
+    def isFloatBigEndian(self):
+        return True
+
+    def shutDown(self):
+        pass

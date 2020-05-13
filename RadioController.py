@@ -141,8 +141,6 @@ class RadioController:
     def fourtoint(self, bytes):
         assert len(bytes) == 4
         data = bytes
-        # data = data[::-1]#flips bytes
         b = struct.pack('4B', *data)
-        # big endian
         c = struct.unpack('>I' if self.bigEndianInts else '<I', b)
         return c[0]

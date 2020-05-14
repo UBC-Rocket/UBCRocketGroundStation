@@ -6,11 +6,7 @@ import sys
 from matplotlib import pyplot as plt
 import numpy as np
 from urllib.request import urlopen
-
-if getattr(sys, 'frozen', False):
-    local = os.path.dirname(sys.executable)
-elif __file__:
-    local = os.path.dirname(__file__)
+from detail import *
 
 TILE_SIZE = 256
 
@@ -60,7 +56,7 @@ class MapTile:
         return "x%dy%dz%d" % (self.x, self.y, self.z)
 
     def getImage(self):
-        tiles = os.path.join(local, "tiles")
+        tiles = os.path.join(LOCAL, "tiles")
         impath = os.path.join(tiles, self.getName() + ".png")
 
         if os.path.isfile(impath):

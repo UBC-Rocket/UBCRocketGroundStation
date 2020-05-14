@@ -12,17 +12,14 @@ import numpy as np
 
 import mapbox
 
-if getattr(sys, 'frozen', False):
-    local = os.path.dirname(sys.executable)
-elif __file__:
-    local = os.path.dirname(__file__)
+from detail import *
 
 TILE_SIZE = 512
 
 
 def readKey():
-    if os.path.isfile(os.path.join(local, "apikey.txt")):
-        f = open(os.path.join(local, "apikey.txt"), "r")
+    if os.path.isfile(os.path.join(LOCAL, "apikey.txt")):
+        f = open(os.path.join(LOCAL, "apikey.txt"), "r")
         contents = f.read()
         return contents.strip()
     else:
@@ -83,7 +80,7 @@ class MapTile:
 
     def getImage(self, overwrite=False):
 
-        raw = os.path.join(local, "raw")
+        raw = os.path.join(LOCAL, "raw")
         if not os.path.isdir(raw):
             os.mkdir(raw)
         scalefolder = os.path.join(raw, str(self.s))
@@ -105,7 +102,7 @@ class MapTile:
             return np.zeros((TILE_SIZE, TILE_SIZE, 3))
 
     def imageExists(self):
-        return os.path.isfile(os.path.join(local, "raw", str(self.s), self.getName() + ".png"))
+        return os.path.isfile(os.path.join(LOCAL, "raw", str(self.s), self.getName() + ".png"))
 
 
 class TileGrid:
@@ -183,7 +180,7 @@ class TileGrid:
             else:
                 return np.column_stack((A, B))
 
-        out = os.path.join(local, "out")
+        out = os.path.join(LOCAL, "out")
         if not os.path.isdir(out):
             os.mkdir(out)
 

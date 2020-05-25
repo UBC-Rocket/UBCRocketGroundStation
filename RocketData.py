@@ -70,6 +70,9 @@ class RocketData:
         self.autosaveThread = threading.Thread(target=self.timer, daemon=True)
         self.autosaveThread.start()
 
+        self.callbacks = {}
+        self.callbacks.fromkeys(SubpacketIDs.get_list_of_IDs(), [])
+
     def timer(self):
         while True:
             try:
@@ -80,18 +83,22 @@ class RocketData:
                 print("FAILED TO SAVE. Something went wrong")
             time.sleep(10)
 
-    # adding a bundle of data points
+    # adding a bundle of data points and trigger callbacks according to id
     # Current implementation: adds to time given, otherwise will add to the last time received?
     # NOTE how this works without a new time eg if single sensor temperature comes in 3 times in a row, the first two are overwritten
+    # |_> https://trello.com/c/KE0zJ7er/170-implement-ensure-spec-where-all-subpackets-will-have-timestamps
     def addBundle(self, incoming_data):
         with self.lock:
+            # if there's a time, set this to the most recent time val and then setup a respective dict in the data. TODO Review this once timestamps added to radios speck
             if SubpacketEnum.TIME.value in incoming_data.keys():
                 self.lasttime = incoming_data[SubpacketEnum.TIME.value]
             if self.lasttime not in self.timeset.keys():
                 self.timeset[self.lasttime] = {}
 
+            # write the data and call the respective callbacks
             for id in incoming_data.keys():
                 self.timeset[self.lasttime][id] = incoming_data[id]
+                self._notifyCallbacksOfId(id)
 
     # TODO REMOVE this function once data types refactored
     # # In the previous version this is supposed to save very specifically formatted incoming data into RocketData
@@ -110,7 +117,7 @@ class RocketData:
     #             if alt > self.highest_altitude:
     #                 self.highest_altitude = alt
 
-    # TODO REVIEW/IMPROVE THIS, once all subpackets have their own timestamp.
+    # TODO REVIEW/IMPROVE THIS, once all subpackets have their own timestamp. https://trello.com/c/KE0zJ7er/170-implement-ensure-spec-where-all-subpackets-will-have-timestamps
     # Gets the most recent value specified by the sensor_id given
     def lastvalue(self, sensor_id):
         with self.lock:
@@ -144,3 +151,16 @@ class RocketData:
                             data[ix, iy] = ""
 
         np.savetxt(csvpath, np.transpose(data), delimiter=',', fmt="%s") #Can free up the lock while we save since were no longer accessing the original data
+
+    # TODO possibly make into own object/file
+    # Add a new callback for its associated ID
+    def addNewCallback(self, id, callbackFn):
+        self.callbacks[id].append(callbackFn)
+
+    def _notifyCallbacksOfId(self, id):
+        for fn in self.callbacks[id]:
+            fn()
+
+    def _notifyAllCallbacks(self):
+        for id in SubpacketIDs.get_list_of_IDs():
+            self._notifyCallbacksOfId(id)

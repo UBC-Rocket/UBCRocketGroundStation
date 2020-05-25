@@ -131,6 +131,7 @@ class RadioController:
         SubpacketEnum.BULK_SENSOR.value: bulk_sensor,
     }
 
+    # TODO review this for data type fixes
     def fourtofloat(self, bytes):
         assert len(bytes) == 4
         data = bytes

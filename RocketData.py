@@ -70,8 +70,7 @@ class RocketData:
         self.autosaveThread = threading.Thread(target=self.timer, daemon=True)
         self.autosaveThread.start()
 
-        self.callbacks = {}
-        self.callbacks.fromkeys(SubpacketIDs.get_list_of_IDs(), [])
+        self.callbacks = {k: [] for k in SubpacketIDs.get_list_of_IDs()}
 
     def timer(self):
         while True:

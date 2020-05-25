@@ -18,10 +18,11 @@ class MappingThread(QtCore.QThread):
     sig_received = pyqtSignal()
     sig_print = pyqtSignal(str)
 
-    def __init__(self, connection, map, parent=None):
+    def __init__(self, connection, map, data, parent=None):
         QtCore.QThread.__init__(self, parent)
         self.connection = connection
         self.map = map
+        self.data = data
 
         # Condition variable to watch for notification of new lat and lon
         self.cv = threading.Condition()
@@ -29,7 +30,8 @@ class MappingThread(QtCore.QThread):
         self.errored = False # TODO Review if this is necessary, was used in read/sendThread
 
     def notify(self):
-        self.cv.notify()
+        with self.cv:
+            self.cv.notify()
 
     # Draw and show the map on the UI
     def plotMap(self, latitude, longitude):
@@ -92,45 +94,52 @@ class MappingThread(QtCore.QThread):
         self.map.setMap(mapData) # TODO NOT ROBUST: What if map data updated between top of this function and this setMap
 
     # TODO Info
-    def threadLoop(self):
-        lastgps = time.time()
-        lastMapUpdate = time.time() # TODO This time limiting should not be necessary anymore with cv.wait()
-        lastLatitude = None
-        lastLongitude = None
+    def run(self):
+        # lastgps = time.time()
+        # lastMapUpdate = time.time() # TODO This time limiting should not be necessary anymore with cv.wait()
+        # lastLatitude = None
+        # lastLongitude = None
         while True:
-            self.cv.wait()
+            with self.cv:
+                self.cv.wait()
             try:
-                with self.data.lock():
-                    latitude = self.data.lastvalue(SubpacketEnum.LATITUDE.value)
-                    longitude = self.data.lastvalue(SubpacketEnum.LONGITUDE.value)
-                lastLat = lastLatitude
-                lastLon = lastLongitude
-                lmu = lastMapUpdate
+                latitude = self.data.lastvalue(SubpacketEnum.LATITUDE.value)
+                longitude = self.data.lastvalue(SubpacketEnum.LONGITUDE.value)
 
-                if (time.time() - lmu > 5) and not (latitude is None or longitude is None):
-                    if lastLat is None or lastLon is None:
-                        self.plotMap(latitude, longitude)
-                        lastLat = latitude
-                        lastLon = longitude
-                        lmu = time.time()
-                    else:
-                        if (abs(latitude - lastLat) >= self.radius / 110.574) or (
-                                abs(longitude - lastLon) >= self.radius / 111.320 / math.cos(latitude * math.pi / 180.0)):
-                            self.plotMap(latitude, longitude)
-                            lastLat = latitude
-                            lastLon = longitude
-                            lmu = time.time()
+                # TODO NOne of this is actually necessary anymore
+                # mapData = self.map.getMap()
+                # radius = mapData[MapDataFieldNamesEnum.RADIUS.value]
 
-                lastLatitude = lastLat
-                lastLongitude = lastLon
-                lastMapUpdate = lmu
-                lgps = lastgps
+                # lastLat = lastLatitude
+                # lastLon = lastLongitude
+                # lmu = lastMapUpdate
 
-                if time.time() - lgps >= 1:
-                    self.updateMark(latitude, longitude)
-                    lgps = time.time()
+                # if (time.time() - lmu > 5) and not (latitude is None or longitude is None):
+                # if lastLat is None or lastLon is None:
+                #     self.plotMap(latitude, longitude)
+                #     lastLat = latitude
+                #     lastLon = longitude
+                #     lmu = time.time()
+                # else:
+                #     if (abs(latitude - lastLat) >= radius / 110.574) or (
+                #             abs(longitude - lastLon) >= radius / 111.320 / math.cos(latitude * math.pi / 180.0)):
+                #         self.plotMap(latitude, longitude)
+                #         lastLat = latitude
+                #         lastLon = longitude
+                #         lmu = time.time()
 
-                lastgps = lgps
+                # lastLatitude = lastLat
+                # lastLongitude = lastLon
+                # lastMapUpdate = lmu
+                # lgps = lastgps
+
+                self.plotMap(latitude, longitude)
+
+                # if time.time() - lgps >= 1:
+                self.updateMark(latitude, longitude)
+                #   lgps = time.time()
+
+                # lastgps = lgps
 
                 # notify UI that new data is available to be displayed
                 self.sig_received.emit()

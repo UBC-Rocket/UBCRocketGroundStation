@@ -41,7 +41,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
     sig_send = pyqtSignal(str)
 
     def __init__(self, connection):
-        # TODO move this out to application.py
+        # TODO move this set of fields out to application.py
         self.connection = connection
         self.data = RocketData()
         self.map = MapData()
@@ -62,7 +62,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.printToConsole("Starting Connection")
 
-        # TODO move this out to application.py
+        # TODO move all these thread controls out to application.py
         # Init and connection of ReadThread
         self.ReadThread = ReadThread.ReadThread(self.connection, self.data)
         self.ReadThread.sig_received.connect(self.receiveData)
@@ -76,17 +76,13 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.SendThread.start()
 
         # Init and connection of MappingThread
-        self.MappingThread = MappingThread.MappingThread(self.connection, self.map)
+        self.MappingThread = MappingThread.MappingThread(self.connection, self.map, self.data)
         self.MappingThread.sig_received.connect(self.receiveMap)
         self.MappingThread.sig_print.connect(self.printToConsole)
         self.data.addNewCallback(SubpacketEnum.LATITUDE.value, self.MappingThread.notify)
         self.data.addNewCallback(SubpacketEnum.LONGITUDE.value, self.MappingThread.notify) # TODO review, could/should be omitted
         self.MappingThread.start()
 
-        # Mapping thread init and start
-        thread = threading.Thread(target=self.threadLoop, daemon=True)
-        thread.sig_received.connect(self.receiveMap)
-        #thread.start()
 
     def closeEvent(self, event):
         self.connection.shutDown()

@@ -88,7 +88,8 @@ class RocketData:
     # |_> https://trello.com/c/KE0zJ7er/170-implement-ensure-spec-where-all-subpackets-will-have-timestamps
     def addBundle(self, incoming_data):
         with self.lock:
-            # if there's a time, set this to the most recent time val and then setup a respective dict in the data. TODO Review this once timestamps added to radios speck
+            # if there's a time, set this to the most recent time val and then setup a respective dict in the data.
+            # TODO Review this once timestamps added to radios spec
             if SubpacketEnum.TIME.value in incoming_data.keys():
                 self.lasttime = incoming_data[SubpacketEnum.TIME.value]
             if self.lasttime not in self.timeset.keys():

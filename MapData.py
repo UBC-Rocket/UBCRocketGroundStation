@@ -11,10 +11,10 @@ class MapDataFieldNamesEnum(Enum):
     ZOOM = 'zoom'
     RADIUS = 'radius'
     IMAGE = 'image'
+    MARKER_PATH = 'marker path'
     MARKER = 'marker'
     ANNO_BOX = 'annotation box'
     LOCATION = 'location'
-    MARKER_PATH = 'marker path'
 
 class MapData:
     def __init__(self):

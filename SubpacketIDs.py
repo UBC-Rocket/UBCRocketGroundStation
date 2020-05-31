@@ -12,7 +12,7 @@ class SubpacketEnum(Enum):
     GPS = 0x04
     ACKNOWLEDGEMENT = 0x05
     BULK_SENSOR = 0x30
-    # SINGLE_SENSOR:
+    # Single Sensor:
     ACCELERATION_X = 0x10
     ACCELERATION_Y = 0x11
     ACCELERATION_Z = 0x12
@@ -23,16 +23,16 @@ class SubpacketEnum(Enum):
     ROLL = 0x17
     PITCH = 0x18
     LATITUDE = 0x19
-    LONGITUDE = 0x20
-    GPS_ALTITUDE = 0x21
-    CALCULATED_ALTITUDE = 0x22
-    STATE = 0x23
-    VOLTAGE = 0x24
-    GROUND_ALTITUDE = 0x25
-    TIME = 0x26
-    ORIENTATION_1 = 0x27
-    ORIENTATION_2 = 0x28
-    ORIENTATION_3 = 0x29
+    LONGITUDE = 0x1A
+    GPS_ALTITUDE = 0x1B
+    CALCULATED_ALTITUDE = 0x1C
+    STATE = 0x1D
+    VOLTAGE = 0x1E
+    GROUND_ALTITUDE = 0x1F
+    TIME = 0x20
+    ORIENTATION_1 = 0x21
+    ORIENTATION_2 = 0x22
+    ORIENTATION_3 = 0x23
     # TODO 4th orientation value calculated since it is a quaternion?
 
 def get_list_of_IDs():

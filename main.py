@@ -6,20 +6,22 @@ import PyQt5
 from PyQt5 import QtCore, QtGui, uic, QtWidgets
 from PyQt5.QtCore import pyqtSignal
 
-
-from matplotlib.offsetbox import AnnotationBbox
-
 import mplwidget  # DO NOT REMOVE pyinstller needs this
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+import matplotlib.pyplot as plt
+from scipy.misc import imresize
 
-import MapBox
 from detail import LOCAL
 
 import ReadThread
 import SendThread
 import MappingThread
+
 from RocketData import RocketData
-from MapData import MapData, MapDataFieldNamesEnum
 from SubpacketIDs import SubpacketEnum
+import MapBox
+import MapData
+from MapData import MapDataClass
 
 if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
@@ -33,6 +35,10 @@ Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 TILES = 14  # TODO Remove if not necessary
 
+# The marker image, used to show where the rocket is on the map UI
+# TODO: imresize removed in latest scipy since it's a duplicate from "Pillow". Update and replace.
+MAP_MARKER = imresize(plt.imread(MapBox.MARKER_PATH), (12, 12))
+
 
 class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
     sig_send = pyqtSignal(str)
@@ -41,7 +47,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         # TODO move this set of fields out to application.py
         self.connection = connection
         self.data = RocketData()
-        self.map = MapData()
+        self.map = MapDataClass()
 
         QtWidgets.QMainWindow.__init__(self)
         Ui_MainWindow.__init__(self)
@@ -136,18 +142,23 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
             if isinstance(c, AnnotationBbox):
                 c.remove()
 
-        mapData = self.map.getMap()
+        location = self.map.getMapValue(MapData.LOCATION)
+        if location is None:
+            print("No location data to update")
+            return
 
         # plotMap UI modification
         self.plotWidget.canvas.ax.set_axis_off()
-        self.plotWidget.canvas.ax.set_ylim(mapData[MapDataFieldNamesEnum.LOCATION.value].height * MapBox.TILE_SIZE, 0)
-        self.plotWidget.canvas.ax.set_xlim(0, mapData[MapDataFieldNamesEnum.LOCATION.value].width * MapBox.TILE_SIZE)
+        self.plotWidget.canvas.ax.set_ylim(location.height * MapBox.TILE_SIZE, 0)
+        self.plotWidget.canvas.ax.set_xlim(0, location.width * MapBox.TILE_SIZE)
 
         self.plotWidget.canvas.fig.tight_layout(pad=0, w_pad=0, h_pad=0)
-        self.plotWidget.canvas.ax.imshow(mapData[MapDataFieldNamesEnum.IMAGE.value])
+        self.plotWidget.canvas.ax.imshow(self.map.getMapValue(MapData.IMAGE))
 
         self.plotWidget.canvas.draw()
 
         # updateMark UI modification
-        self.plotWidget.canvas.ax.add_artist(mapData[MapDataFieldNamesEnum.ANNO_BOX.value])
+        mark = self.map.getMapValue(MapData.MARK)
+        annotation_box = AnnotationBbox(OffsetImage(MAP_MARKER), mark, frameon=False)
+        self.plotWidget.canvas.ax.add_artist(annotation_box)
         self.plotWidget.canvas.draw()

@@ -4,11 +4,9 @@ import threading
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
 
-from matplotlib.offsetbox import OffsetImage, AnnotationBbox
-
 import MapBox
 
-from MapData import MapDataFieldNamesEnum
+import MapData
 from SubpacketIDs import SubpacketEnum
 
 # Mapping work and processing that gets put into MapData, repeatedly as RocketData is updated.
@@ -17,7 +15,7 @@ class MappingThread(QtCore.QThread):
     sig_received = pyqtSignal()
     sig_print = pyqtSignal(str)
 
-    def __init__(self, connection, map, data, parent=None):
+    def __init__(self, connection, map: MapData.MapDataClass, data, parent=None):
         QtCore.QThread.__init__(self, parent)
         self.connection = connection
         self.map = map
@@ -37,9 +35,8 @@ class MappingThread(QtCore.QThread):
         if longitude is None or latitude is None:
             return
 
-        mapData = self.map.getMap()
-        radius = mapData[MapDataFieldNamesEnum.RADIUS.value]
-        zoom = mapData[MapDataFieldNamesEnum.ZOOM.value]
+        radius = self.map.getMapValue(MapData.RADIUS)
+        zoom = self.map.getMapValue(MapData.ZOOM)
 
         p = MapBox.MapPoint(latitude, longitude) # TODO is this necessary??
 
@@ -57,9 +54,9 @@ class MappingThread(QtCore.QThread):
         location = MapBox.TileGrid(p1, p2, zoom)
         location.downloadArrayImages()
 
-        mapData[MapDataFieldNamesEnum.IMAGE.value] = location.genStichedMap()
-        mapData[MapDataFieldNamesEnum.LOCATION.value] = location
-        self.map.setMap(mapData) # TODO NOT ROBUST: What if mapdata updated between top of this function and this setMap
+        # TODO NOT ROBUST: What if mapdata updated between top of this function and this setMap
+        self.map.setMapValue(MapData.IMAGE, location.genStichedMap())
+        self.map.setMapValue(MapData.LOCATION, location)
 
 
     # Update UI with location on plot
@@ -67,10 +64,8 @@ class MappingThread(QtCore.QThread):
         if longitude is None or latitude is None:
             return
 
-        mapData = self.map.getMap()
-        radius = mapData[MapDataFieldNamesEnum.RADIUS.value]
-        zoom = mapData[MapDataFieldNamesEnum.ZOOM.value]
-        marker = mapData[MapDataFieldNamesEnum.MARKER.value]
+        radius = self.map.getMapValue(MapData.RADIUS)
+        zoom = self.map.getMapValue(MapData.ZOOM)
 
         p = MapBox.MapPoint(latitude, longitude)
 
@@ -89,8 +84,9 @@ class MappingThread(QtCore.QThread):
 
         mark = (x * MapBox.TILE_SIZE * len(location.ta[0]), y * MapBox.TILE_SIZE * len(location.ta))
 
-        mapData[MapDataFieldNamesEnum.ANNO_BOX.value] = AnnotationBbox(OffsetImage(marker), mark, frameon=False)
-        self.map.setMap(mapData) # TODO NOT ROBUST: What if mapdata updated between top of this function and this setMap
+        # TODO NOT ROBUST: What if mapdata updated between top of this function and this setMap
+        self.map.setMapValue(MapData.MARK, mark)
+
 
     # TODO Info
     def run(self):
@@ -103,11 +99,13 @@ class MappingThread(QtCore.QThread):
                 latitude = self.data.lastvalue(SubpacketEnum.LATITUDE.value)
                 longitude = self.data.lastvalue(SubpacketEnum.LONGITUDE.value)
 
-                self.plotMap(latitude, longitude)
-                self.updateMark(latitude, longitude)
+                # Prevent unnecessary work while no location data is received
+                if latitude is not None or longitude is not None:
+                    self.plotMap(latitude, longitude)
+                    self.updateMark(latitude, longitude)
 
-                # notify UI that new data is available to be displayed
-                self.sig_received.emit()
+                    # notify UI that new data is available to be displayed
+                    self.sig_received.emit()
 
             except:
                 print("Error in map thread loop.")

@@ -1,11 +1,11 @@
 import threading
 
 
-ZOOM = 'zoom'
-RADIUS = 'radius'
-IMAGE = 'image'
-MARK = 'mark'
-LOCATION = 'location'
+ZOOM = '_zoom'
+RADIUS = '_radius'
+IMAGE = '_image'
+MARK = '_mark'
+LOCATION = '_location'
 
 
 class MapDataClass:  # TODO Is there a better way of differentiating from the filename? Its causing trouble when trying to use both

@@ -16,6 +16,8 @@ from detail import *
 
 TILE_SIZE = 512
 
+MARKER_PATH = os.path.join(LOCAL, "marker.png")
+
 
 def readKey():
     if os.path.isfile(os.path.join(LOCAL, "apikey.txt")):

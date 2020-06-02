@@ -62,7 +62,7 @@ from detail import *
 
 class RocketData:
     def __init__(self):
-        self.lock = threading.Lock() # acquire lock ASAP since self.lock needs to be defined when autosave starts
+        self.lock = threading.RLock() # acquire lock ASAP since self.lock needs to be defined when autosave starts
         self.timeset: Dict[int, Dict[str, Union[int, float]]] = {}
         self.lasttime = 0   # TODO REVIEW/CHANGE THIS, once all subpackets have their own timestamp.
         self.highest_altitude = 0
@@ -98,7 +98,11 @@ class RocketData:
             # write the data and call the respective callbacks
             for id in incoming_data.keys():
                 self.timeset[self.lasttime][id] = incoming_data[id]
-                self._notifyCallbacksOfId(id)
+
+        # Notify after all data has been updated
+        # Also, do so outside lock to prevent mutex contention with notification listeners
+        for id in incoming_data.keys():
+            self._notifyCallbacksOfId(id)
 
     # TODO REMOVE this function once data types refactored
     # # In the previous version this is supposed to save very specifically formatted incoming data into RocketData

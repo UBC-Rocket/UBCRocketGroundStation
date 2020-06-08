@@ -53,6 +53,12 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         Ui_MainWindow.__init__(self)
         self.setupUi(self)
 
+        # Hook-up Matplotlib callbacks
+        self.plotWidget.canvas.fig.canvas.mpl_connect('resize_event', self.mapResizedEvent)
+        # TODO: Also have access to click, scroll, keyboard, etc. Would be good to implement map manipulation.
+
+        self.im = None  # Plot im
+
         # Attach functions for buttons
         self.sendButton.clicked.connect(self.sendButtonPressed)
         self.commandEdit.returnPressed.connect(self.sendButtonPressed)
@@ -82,17 +88,13 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.MappingThread = MappingThread.MappingThread(self.connection, self.map, self.data)
         self.MappingThread.sig_received.connect(self.receiveMap)
         self.MappingThread.sig_print.connect(self.printToConsole)
-        self.data.addNewCallback(SubpacketEnum.LATITUDE.value, self.MappingThread.notify)
-        self.data.addNewCallback(SubpacketEnum.LONGITUDE.value, self.MappingThread.notify) # TODO review, could/should be omitted
         self.MappingThread.start()
-
 
     def closeEvent(self, event):
         self.connection.shutDown()
         print("Saving...")
         self.data.save(os.path.join(LOCAL, "finalsave_" + str(int(time.time())) + ".csv"))
         print("Saved!")
-
 
     # Updates the UI when new data is available for display
     def receiveData(self):
@@ -110,7 +112,6 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.StateLabel.setText(str(self.data.lastvalue(SubpacketEnum.STATE.value)))
         self.PressureLabel.setText(str(self.data.lastvalue(SubpacketEnum.PRESSURE.value)))
         self.AccelerationLabel.setText(str(accel))
-
 
     def sendButtonPressed(self):
         word = self.commandEdit.text()
@@ -142,23 +143,31 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
             if isinstance(c, AnnotationBbox):
                 c.remove()
 
-        location = self.map.getMapValue(MapData.LOCATION)
-        if location is None:
-            print("No location data to update")
-            return
+        mapImage = self.map.getMapValue(MapData.IMAGE)
 
         # plotMap UI modification
         self.plotWidget.canvas.ax.set_axis_off()
-        self.plotWidget.canvas.ax.set_ylim(location.height * MapBox.TILE_SIZE, 0)
-        self.plotWidget.canvas.ax.set_xlim(0, location.width * MapBox.TILE_SIZE)
+        self.plotWidget.canvas.ax.set_ylim(mapImage.shape[0], 0)
+        self.plotWidget.canvas.ax.set_xlim(0, mapImage.shape[1])
 
-        self.plotWidget.canvas.fig.tight_layout(pad=0, w_pad=0, h_pad=0)
-        self.plotWidget.canvas.ax.imshow(self.map.getMapValue(MapData.IMAGE))
+        # Removes pesky white boarder
+        self.plotWidget.canvas.fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
 
-        self.plotWidget.canvas.draw()
+        if self.im:
+            # Required because plotting images over old ones creates memory leak
+            # NOTE: im.set_data() can also be used
+            self.im.remove()
+
+        self.im = self.plotWidget.canvas.ax.imshow(mapImage)
 
         # updateMark UI modification
         mark = self.map.getMapValue(MapData.MARK)
         annotation_box = AnnotationBbox(OffsetImage(MAP_MARKER), mark, frameon=False)
         self.plotWidget.canvas.ax.add_artist(annotation_box)
+
         self.plotWidget.canvas.draw()
+
+    # Called whenever the map plot is resized, also is called once at the start
+    def mapResizedEvent(self, event):
+        self.MappingThread.setDesiredMapSize(event.width, event.height)
+

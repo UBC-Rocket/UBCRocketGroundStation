@@ -43,6 +43,10 @@ class XBeeModuleSim:
         self._rocket_rx_queue_packed.put(data)
 
     def __init__(self):
+        """
+        Constructor.
+        In addition to constructing this, if any useful work is to be done then the rocket_callback and ground_callback attributes should be set - by default they are simply no-op functions.
+        """
         self._rocket_rx_queue = self._unpack(self._rocket_rx_queue_packed)
 
         # Callbacks should be of form callback(data), where data is a bytearray.
@@ -56,6 +60,9 @@ class XBeeModuleSim:
         """Is called whenever data recieved from the rocket needs to be sent to the rest of the ground station code. The callback should be thread safe."""
         self.ground_callback = nop_callback
 
+        self._running_lock = Lock()
+        self._running = True
+
         # Queues are IO bound.
         self._rocket_rx_thread = Thread(
             target=self._run_rocket_rx, name="xbee_sim_rocket_rx"
@@ -63,12 +70,8 @@ class XBeeModuleSim:
         self._ground_rx_thread = Thread(
             target=self._run_ground_rx, name="xbee_sim_ground_rx"
         )
-
         self._rocket_rx_thread.start()
         self._ground_rx_thread.start()
-
-        self._running_lock = Lock()
-        self._running = True
 
     def shutdown(self):
         """ 

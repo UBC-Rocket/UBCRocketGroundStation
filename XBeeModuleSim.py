@@ -1,7 +1,8 @@
 from collections import deque
 from enum import IntEnum
 from queue import SimpleQueue
-from threading import Thread
+import sys  # to quickly exit
+from threading import Thread, Lock
 
 START_DELIMITER = 0x7E
 ESCAPE_CHAR = 0x7D
@@ -32,7 +33,7 @@ class XBeeModuleSim:
         :brief: Queue data to send to rocket following the XBee protocol.
         :param data: bytearray of data.
         """
-        self._ground_rx_queue_packed.put_nowait(data)
+        self._ground_rx_queue_packed.put(data)
 
     def recieved_from_rocket(self, data):
         """
@@ -66,14 +67,38 @@ class XBeeModuleSim:
         self._rocket_rx_thread.start()
         self._ground_rx_thread.start()
 
+        self._running_lock = Lock()
+        self._running = True
+
+    def shutdown(self):
+        """ 
+        Shuts down everything and kills the internal threads.
+        Callbacks will not be interrupted/passed corrupt data.
+        """
+        with self._running_lock:
+            self._running = False
+
+        # Fill up the queues with garbage to unblock the threads on input
+        self._ground_rx_queue_packed.put(b"\0")
+        self._rocket_rx_queue_packed.put(b"\0")
+
+        self._rocket_rx_thread.join()
+        self._ground_rx_thread.join()
+
+    @property
+    def running(self):
+        with self._running_lock:
+            return self._running
+
     def _unpack(self, q):
         """
         Helper generator that unpacks the iterables in a given queue.
         """
-        while True:
+        while self.running:
             arr = q.get()
             for i in arr:
                 yield i
+        sys.exit()
 
     def _run_rocket_rx(self):
         """Process the incoming rocket data queue."""
@@ -82,7 +107,7 @@ class XBeeModuleSim:
 
     def _run_ground_rx(self):
         """Process the ground station data queue."""
-        while True:
+        while self.running:
             reserved = b"\xff\xfe"
             rx_options = b"\x02"
             data = self._ground_rx_queue_packed.get()

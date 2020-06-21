@@ -58,6 +58,7 @@ class SimConnection(IConnection):
 
         for b in packet:  # Work around for windows turning LF to CRLF
             self.rocket.stdin.write(bytes([b]))
+        self.rocket.stdin.flush()
 
     def registerCallback(self, fn):
         self._xbee.ground_callback = fn

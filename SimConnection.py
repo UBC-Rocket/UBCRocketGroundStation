@@ -1,5 +1,4 @@
 from enum import Enum
-from functools import partial
 import os
 import subprocess as sp
 import threading
@@ -47,7 +46,7 @@ class SimConnection(IConnection):
         self.thread.start()
 
         self._xbee = XBeeModuleSim()
-        self._xbee.rocket_callback = partial(self._send_radio_sim, self)
+        self._xbee.rocket_callback = self._send_radio_sim
 
     def send(self, data):
         self._xbee.send_to_rocket(data)

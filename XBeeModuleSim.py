@@ -79,6 +79,8 @@ class XBeeModuleSim:
         """ 
         Shuts down everything and kills the internal threads.
         Callbacks will not be interrupted/passed corrupt data.
+
+        Implementation note: In order to convert recieved data from the rocket into usable data for the rest of the ground station, the data is passed through a series of generator objects - think of it as a pipeline of processing. As a result, on shutdown it's easier to simply raise an uncaught exception at the inner most level and letting it propagate out, rather than checking for `self._running` everywhere. In Python only the thread terminates on an uncaught exception - not the whole process.
         """
         with self._running_lock:
             self._running = False
@@ -101,7 +103,7 @@ class XBeeModuleSim:
             arr = q.get()
             for i in arr:
                 yield i
-        sys.exit()
+        sys.exit()  # Kill the current thread (doesn't stop the whole process)
 
     def _run_rocket_rx(self):
         """Process the incoming rocket data queue."""

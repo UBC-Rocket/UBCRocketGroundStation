@@ -54,11 +54,11 @@ class XBeeModuleSim:
         def nop_callback(data):
             return
 
-        """Is called whenever data needs to be sent to the rocket through SIM - this should be the SIM send() function. The callback should be thread safe."""
         self.rocket_callback = nop_callback
+        """Is called whenever data needs to be sent to the rocket through SIM - this should be the SIM send() function. The callback should be thread safe."""
 
-        """Is called whenever data recieved from the rocket needs to be sent to the rest of the ground station code. The callback should be thread safe."""
         self.ground_callback = nop_callback
+        """Is called whenever data recieved from the rocket needs to be sent to the rest of the ground station code. The callback should be thread safe."""
 
         self._running_lock = Lock()
         self._running = True
@@ -121,7 +121,10 @@ class XBeeModuleSim:
                 )
             )
 
-    # Each frame parser gets iterator to data and the length (as given by the XBee frame standard). Note that since the length as given by the XBee standard includes the frame type, but the frame type is not passed to each frame parser, parsers should take in length - 1 bytes. Data iterator may throw StopIteration; do not catch this.
+    # Each frame parser gets iterator to data and the length (as given by the XBee frame standard).
+    # Note that since the length as given by the XBee standard includes the frame type, but the frame
+    # type is not passed to each frame parser, parsers should take in length - 1 bytes. Data iterator
+    # may throw StopIteration; do not catch this.
     def _parse_tx_request_frame(self, data, frame_len):
         frame_id = next(data)
         for _ in range(8):  # 64 bit destination address - discard

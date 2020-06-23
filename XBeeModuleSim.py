@@ -29,7 +29,13 @@ class XBeeModuleSim:
         :brief: Queue data to send to rocket following the XBee protocol.
         :param data: bytearray of data.
         """
-        self._ground_rx_queue_packed.put(data)
+        reserved = b"\xff\xfe"
+        rx_options = b"\x02"
+        self.rocket_callback(
+            self._create_frame(
+                FrameType.RX_INDICATOR, SOURCE_ADDRESS + reserved + rx_options + data,
+            )
+        )
 
     def recieved_from_rocket(self, data):
         """
@@ -45,7 +51,6 @@ class XBeeModuleSim:
         """
         # Each element in each queue is a bytearray.
         self._rocket_rx_queue_packed = SimpleQueue()  # RX from RKT
-        self._ground_rx_queue_packed = SimpleQueue()  # RX from GND
 
         self._rocket_rx_queue = self._unpack(self._rocket_rx_queue_packed)
 
@@ -67,11 +72,8 @@ class XBeeModuleSim:
         self._rocket_rx_thread = Thread(
             target=self._run_rocket_rx, name="xbee_sim_rocket_rx"
         )
-        self._ground_rx_thread = Thread(
-            target=self._run_ground_rx, name="xbee_sim_ground_rx"
-        )
+
         self._rocket_rx_thread.start()
-        self._ground_rx_thread.start()
 
     def shutdown(self):
         """ 
@@ -82,11 +84,9 @@ class XBeeModuleSim:
             self._running = False
 
         # Fill up the queues with garbage to unblock the threads on input
-        self._ground_rx_queue_packed.put(b"\0")
         self._rocket_rx_queue_packed.put(b"\0")
 
         self._rocket_rx_thread.join()
-        self._ground_rx_thread.join()
 
     @property
     def running(self):
@@ -107,19 +107,6 @@ class XBeeModuleSim:
         """Process the incoming rocket data queue."""
         while True:
             self._parse_API_frame()
-
-    def _run_ground_rx(self):
-        """Process the ground station data queue."""
-        while self.running:
-            reserved = b"\xff\xfe"
-            rx_options = b"\x02"
-            data = self._ground_rx_queue_packed.get()
-            self.rocket_callback(
-                self._create_frame(
-                    FrameType.RX_INDICATOR,
-                    SOURCE_ADDRESS + reserved + rx_options + data,
-                )
-            )
 
     # Each frame parser gets iterator to data and the length (as given by the XBee frame standard).
     # Note that since the length as given by the XBee standard includes the frame type, but the frame

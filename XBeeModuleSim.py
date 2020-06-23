@@ -24,10 +24,6 @@ class UnescapedDelimiterError(Exception):
 
 
 class XBeeModuleSim:
-    # Each element in each queue is a bytearray.
-    _rocket_rx_queue_packed = SimpleQueue()  # RX from RKT
-    _ground_rx_queue_packed = SimpleQueue()  # RX from GND
-
     def send_to_rocket(self, data):
         """
         :brief: Queue data to send to rocket following the XBee protocol.
@@ -47,6 +43,10 @@ class XBeeModuleSim:
         Constructor.
         In addition to constructing this, if any useful work is to be done then the rocket_callback and ground_callback attributes should be set - by default they are simply no-op functions.
         """
+        # Each element in each queue is a bytearray.
+        self._rocket_rx_queue_packed = SimpleQueue()  # RX from RKT
+        self._ground_rx_queue_packed = SimpleQueue()  # RX from GND
+
         self._rocket_rx_queue = self._unpack(self._rocket_rx_queue_packed)
 
         # Callbacks should be of form callback(data), where data is a bytearray.

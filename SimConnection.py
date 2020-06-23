@@ -114,8 +114,6 @@ class SimConnection(IConnection):
         length = self._getLength()
         data = self.stdout.read(length)
         self._xbee.recieved_from_rocket(data)
-        # if self.callback:
-        #     self.callback(data)
 
     packetHandlers = {
         # DO NOT HANDLE "CONFIG" - it should be received only once at the start
@@ -142,10 +140,6 @@ class SimConnection(IConnection):
                     for b in self.stdout.getHistory():
                         print(hex(b))
                     print("^^^^ violation.")
-                    # print("Trying to get next 100.")
-                    # for b in self.rocket.stdout.read(100):
-                    #    print(hex(b))
-                    # return
                     continue
 
                 # Call packet handler

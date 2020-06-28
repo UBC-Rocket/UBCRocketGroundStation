@@ -1,7 +1,10 @@
-from typing import Dict, Any, Callable, Union, List
+from typing import Dict, Any, Callable, Union, List, Tuple
 import struct
 import SubpacketIDs
 from SubpacketIDs import SubpacketEnum
+
+import collections
+Header = collections.namedtuple('Header', ['subpacket_id', 'timestamp', 'header_length', 'total_length'])
 
 # CONSTANTS
 
@@ -22,19 +25,19 @@ def isPacketLengthConst(subpacket_id):
     return subpacket_id in PACKET_ID_TO_CONST_LENGTH.keys()
 
 
-# TODO Update this when timestamp is going to be included in header
-# Map subpacket id to header size in bytes. Only includes types with CONSTANT lengths
-PACKET_ID_TO_HEADER_SIZE: Dict[int, int] = {
-    SubpacketEnum.STATUS_PING.value: 1,
-    SubpacketEnum.MESSAGE.value: 6,
-    SubpacketEnum.EVENT.value: 1,
-    SubpacketEnum.CONFIG.value: 1,
-    SubpacketEnum.GPS.value: 1,
-    SubpacketEnum.ACKNOWLEDGEMENT.value: 1,
-    SubpacketEnum.BULK_SENSOR.value: 1,
-}
-for i in SubpacketIDs.get_list_of_sensor_IDs():
-    PACKET_ID_TO_HEADER_SIZE[i] = 1
+# # TODO Possibly deprecate this, since we have header helper that tracks header size
+# # Map subpacket id to header size in bytes. Only includes types with CONSTANT lengths
+# PACKET_ID_TO_HEADER_SIZE: Dict[int, int] = {
+#     SubpacketEnum.STATUS_PING.value: 1,
+#     SubpacketEnum.MESSAGE.value: 6,
+#     SubpacketEnum.EVENT.value: 1,
+#     SubpacketEnum.CONFIG.value: 1,
+#     SubpacketEnum.GPS.value: 1,
+#     SubpacketEnum.ACKNOWLEDGEMENT.value: 1,
+#     SubpacketEnum.BULK_SENSOR.value: 1,
+# }
+# for i in SubpacketIDs.get_list_of_sensor_IDs():
+#     PACKET_ID_TO_HEADER_SIZE[i] = 1
 
 
 class RadioController:
@@ -45,15 +48,13 @@ class RadioController:
 
     # Return dict of parsed subpacket data and length of subpacket
     def extract(self, byte_list: List):
-        subpacket_id: SubpacketEnum.value = self.extract_subpacket_ID(byte_list[0])
-        if isPacketLengthConst(subpacket_id):
-            length: int = PACKET_ID_TO_CONST_LENGTH[int.from_bytes(byte_list[0], "big")] #Only one byte so byteorder doesnt matter for now
-        else:
-            length: int = int.from_bytes(byte_list[1], "big")  # todo modify this to handle differently positioned length bytes
-        data_unit = byte_list[PACKET_ID_TO_HEADER_SIZE[subpacket_id]:length]
-        data_length = length - PACKET_ID_TO_HEADER_SIZE[subpacket_id]
-        parsed_data: Dict[any, any] = self.parse_data(subpacket_id, data_unit, data_length)
-        return parsed_data, length
+        # header extraction
+        header = self.header(byte_list)
+        # data extraction
+        data_unit = byte_list[header.header_length:header.total_length]
+        data_length = header.total_length - header.header_length
+        parsed_data: Dict[any, any] = self.parse_data(header.subpacket_id, data_unit, data_length)
+        return parsed_data, header.total_length
 
 
     # Helper to convert byte to subpacket id as is in the SubpacketID enum, throws error otherwise
@@ -70,9 +71,29 @@ class RadioController:
     def parse_data(self, type_id, byte_list, length):
         return self.packetTypeToParser[type_id](self, byte_list, length)
 
+    # Header extractor helper
+    def header(self, byte_list: List) -> Header:
+        currByte = 0 # index for which byte is to be processed next. Collected in return as header size
+        # Get ID
+        subpacket_id: int = self.extract_subpacket_ID(byte_list[currByte])
+        currByte += 1
+        # Get timestamp
+        # TODO REVIEW/CHANGE in type refactoring: how this is required to convert from List[bytes] to List[int]
+        timestamp_int_list: List[int] = [int(x[0]) for x in byte_list[currByte: currByte + 4]]
+        timestamp: int = self.fourtofloat(timestamp_int_list)
+        currByte += 4
+        # Get length
+        if isPacketLengthConst(subpacket_id):
+            length: int = PACKET_ID_TO_CONST_LENGTH[subpacket_id]
+        else:
+            length: int = int.from_bytes(byte_list[currByte], "big")
+            currByte += 1
+        return Header(subpacket_id, timestamp, currByte, length)
+
+    ### General sensor data parsers
 
     def status_ping(self, byte_list, length):  # TODO
-        converted = {0.0}
+        converted = {0.0}  # STUB
         return converted
 
     def message(self, byte_list, length):  # TODO

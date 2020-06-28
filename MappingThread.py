@@ -68,7 +68,7 @@ class MappingThread(QtCore.QThread):
         location = MapBox.TileGrid(p1, p2, zoom)
         location.downloadArrayImages()
 
-        largeMapImage = location.genStichedMap()
+        largeMapImage = location.genStitchedMap()
 
         desiredSize = self.getDesiredMapSize()
 

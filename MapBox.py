@@ -43,6 +43,9 @@ class MapPoint:
         siny = math.sin(self.latitude * math.pi / 180)
         self.y = float((0.5 - math.log((1 + siny) / (1 - siny)) / (4 * math.pi)))
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.latitude}, {self.longitude}"
+
     def getPixelX(self, zoom):
         return int(math.floor(TILE_SIZE * (0.5 + self.longitude / 360) * math.pow(2, zoom)))
 
@@ -69,6 +72,12 @@ class MapTile:
         self.x = x
         self.y = y
         self.s = s
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.x}, {self.y}, {self.s})"
+
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y and self.s == other.s
 
     def getName(self):
         return f"{self.x}_{self.y}"
@@ -115,7 +124,7 @@ class TileGrid:
         self.height = None
         self.genTileArray()
         if self.width > 5 or self.height > 5:
-            print("WARNING: Large map (%dx%d tiles)" % (self.width, self.height))
+            print(f"WARNING: Large map ({self.width}x%{self.height} tiles)")
 
     def genTileArray(self):
         t1 = pointToTile(self.p1, self.scale)
@@ -160,7 +169,7 @@ class TileGrid:
         t2 = time.perf_counter()
         print(f"Successfully downloaded size {str(self.scale)} tiles in {t2 - t1} seconds.")
 
-    def genStichedMap(self, overwrite=False):
+    def genStitchedMap(self, overwrite=False):
         def appendv(A, B):
             if A is None:
                 return B
@@ -181,9 +190,11 @@ class TileGrid:
         if not os.path.isdir(out):
             os.mkdir(out)
 
-        outfile = os.path.join(out,
-                               f"output_{str(min(self.p1.x, self.p2.x))}-{str(max(self.p1.x, self.p2.x))}_{str(min(self.p1.y, self.p2.y))}-{str(max(self.p1.y, self.p2.y))}_{str(self.scale)}.png")
-        if (not os.path.isfile(outfile)) or overwrite == True:
+        outfile = os.path.join(out, f"output_{str(min(self.p1.x, self.p2.x))}-{str(max(self.p1.x, self.p2.x))}_"
+                                    f"{str(min(self.p1.y, self.p2.y))}-{str(max(self.p1.y, self.p2.y))}_"
+                                    f"{str(self.scale)}.png")
+
+        if (not os.path.isfile(outfile)) or overwrite:
             print(f"Generating size {str(self.scale)} map!")
 
             t1 = time.perf_counter()

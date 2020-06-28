@@ -134,8 +134,8 @@ class RadioController:
         data[SubpacketEnum.ORIENTATION_1.value] = self.fourtofloat(int_list[20:24])
         data[SubpacketEnum.ORIENTATION_2.value] = self.fourtofloat(int_list[24:28])
         data[SubpacketEnum.ORIENTATION_3.value] = self.fourtofloat(int_list[28:32])
-        data[SubpacketEnum.LONGITUDE.value] = self.fourtofloat(int_list[36:40])
         data[SubpacketEnum.LATITUDE.value] = self.fourtofloat(int_list[32:36])
+        data[SubpacketEnum.LONGITUDE.value] = self.fourtofloat(int_list[36:40])
         data[SubpacketEnum.STATE.value] = int_list[40]
         return data
 

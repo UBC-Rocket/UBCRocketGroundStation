@@ -1,9 +1,11 @@
-import os
 from enum import Enum
-from IConnection import IConnection
+import os
 import subprocess as sp
 import threading
+
+from IConnection import IConnection
 from StreamLogger import StreamLogger
+from XBeeModuleSim import XBeeModuleSim
 
 
 class SimPacketId(Enum):
@@ -17,7 +19,6 @@ LOG_HISTORY_SIZE = 100
 
 
 class SimConnection(IConnection):
-
     def __init__(self, firmwareDir, executableName):
         self.executablePath = os.path.join(firmwareDir, executableName)
         self.firmwareDir = firmwareDir
@@ -27,7 +28,9 @@ class SimConnection(IConnection):
         self.bigEndianFloats = None
 
         # Firmware subprocess - Closes automatically when parent (ground station) closes
-        self.rocket = sp.Popen(self.executablePath, cwd=self.firmwareDir, stdin=sp.PIPE, stdout=sp.PIPE)
+        self.rocket = sp.Popen(
+            self.executablePath, cwd=self.firmwareDir, stdin=sp.PIPE, stdout=sp.PIPE
+        )
 
         self.stdout = StreamLogger(self.rocket.stdout, LOG_HISTORY_SIZE)
 
@@ -42,16 +45,23 @@ class SimConnection(IConnection):
         self.thread = threading.Thread(target=self._run, name="SIM")
         self.thread.start()
 
+        self._xbee = XBeeModuleSim()
+        self._xbee.rocket_callback = self._send_radio_sim
+
     def send(self, data):
-        packet = b'R'
-        packet += len(data).to_bytes(length=2, byteorder='big')
+        self._xbee.send_to_rocket(data)
+
+    def _send_radio_sim(self, data):
+        packet = b"R"
+        packet += len(data).to_bytes(length=2, byteorder="big")
         packet += data
 
         for b in packet:  # Work around for windows turning LF to CRLF
             self.rocket.stdin.write(bytes([b]))
+        self.rocket.stdin.flush()
 
     def registerCallback(self, fn):
-        self.callback = fn
+        self._xbee.ground_callback = fn
 
     # Returns whether ints should be decoded as big endian
     def isIntBigEndian(self):  # must be thead safe
@@ -77,10 +87,13 @@ class SimConnection(IConnection):
         assert length == 8
         data = self.stdout.read(length)
 
-        self.bigEndianInts = (data[0] == 0x04)
-        self.bigEndianFloats = (data[4] == 0xC0)
+        self.bigEndianInts = data[0] == 0x04
+        self.bigEndianFloats = data[4] == 0xC0
 
-        print("SIM: Big Endian Ints - %s, Big Endian Floats - %s" % (self.bigEndianInts, self.bigEndianFloats))
+        print(
+            "SIM: Big Endian Ints - %s, Big Endian Floats - %s"
+            % (self.bigEndianInts, self.bigEndianFloats)
+        )
 
     def _handleBuzzer(self):
         length = self._getLength()
@@ -100,9 +113,7 @@ class SimConnection(IConnection):
     def _handleRadio(self):
         length = self._getLength()
         data = self.stdout.read(length)
-
-        if self.callback:
-            self.callback(data)
+        self._xbee.recieved_from_rocket(data)
 
     packetHandlers = {
         # DO NOT HANDLE "CONFIG" - it should be received only once at the start
@@ -129,10 +140,6 @@ class SimConnection(IConnection):
                     for b in self.stdout.getHistory():
                         print(hex(b))
                     print("^^^^ violation.")
-                    # print("Trying to get next 100.")
-                    # for b in self.rocket.stdout.read(100):
-                    #    print(hex(b))
-                    # return
                     continue
 
                 # Call packet handler

@@ -1,16 +1,10 @@
-import math
-import os
-import random
-import sys
-
-import threading
 import concurrent.futures
+import math
 import time
 
-from matplotlib import pyplot as plt
-import numpy as np
-
 import mapbox
+import numpy as np
+from matplotlib import pyplot as plt
 
 from detail import *
 
@@ -37,6 +31,12 @@ else:
 class MapPoint:
 
     def __init__(self, latitude, longitude):
+
+        # Values outside this range will produce weird results in the tile calculations
+        # Alternative is to normalize angles
+        if not -90 < latitude < 90 or not -180 < longitude < 180:
+            raise ValueError("Latitude or longitude is out of bounds")
+
         self.latitude = latitude
         self.longitude = longitude
         self.x = float(0.5 + self.longitude / 360)
@@ -61,13 +61,6 @@ class MapPoint:
 
     def getTileY(self, zoom):
         return int(self.getPixelY(zoom) / TILE_SIZE)
-
-
-## MapPoint Examples:
-p1 = MapPoint(49.284162, -123.2766960)  # NW of UBC
-p2 = MapPoint(49.239184, -123.210088)  # SE of UBC
-p3 = MapPoint(49.266063, -123.261348)  # NW of Vanier
-p4 = MapPoint(49.262715, -123.255472)  # SE of Vanier
 
 
 class MapTile:
@@ -121,6 +114,8 @@ class TileGrid:
         self.width = None
         self.height = None
         self.genTileArray()
+        if self.width > 5 or self.height > 5:
+            print("WARNING: Large map (%dx%d tiles)" % (self.width, self.height))
 
     def genTileArray(self):
         t1 = pointToTile(self.p1, self.scale)
@@ -212,8 +207,3 @@ class TileGrid:
 
 def pointToTile(p, s):
     return MapTile(math.floor(p.x * 2.0 ** s), math.floor(p.y * 2.0 ** s), s)
-
-
-## TileGrid Examples
-tg = TileGrid(p1, p2, 16)
-tg2 = TileGrid(p3, p4, 18)

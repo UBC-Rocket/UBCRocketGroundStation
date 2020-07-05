@@ -4,25 +4,33 @@ import time
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
-
-import MapBox
-
 from scipy.misc import imresize
 
+import MapBox
 import MapData
 from SubpacketIDs import SubpacketEnum
 
 
-# Mapping work and processing that gets put into MapData, repeatedly as RocketData is updated.
-# Signals the main thread to fetch UI elements in MapDataSimilar to ReadData
 class MappingThread(QtCore.QThread):
     sig_received = pyqtSignal()
     sig_print = pyqtSignal(str)
 
-    def __init__(self, connection, map: MapData.MapDataClass, data, parent=None):
+    def __init__(self, connection, m: MapData.MapDataClass, data, parent=None) -> None:
+        """Mapping work and processing that gets put into MapData, repeatedly as RocketData is updated.
+        Signals the main thread to fetch UI elements in MapDataSimilar to ReadData.
+
+        :param connection:
+        :type connection:
+        :param map:
+        :type map: MapData.MapDataClass
+        :param data:
+        :type data:
+        :param parent:
+        :type parent:
+        """
         QtCore.QThread.__init__(self, parent)
         self.connection = connection
-        self.map = map
+        self.map = m
         self.data = data
 
         self._desiredMapSize = None  # Tuple(int,int)
@@ -34,20 +42,44 @@ class MappingThread(QtCore.QThread):
         self.data.addNewCallback(SubpacketEnum.LATITUDE.value, self.notify)
         self.data.addNewCallback(SubpacketEnum.LONGITUDE.value, self.notify)  # TODO review, could/should be omitted
 
-    def notify(self):
+    def notify(self) -> None:
+        """
+
+        """
         with self.cv:
             self.cv.notify()
 
-    def setDesiredMapSize(self, x, y):
+    def setDesiredMapSize(self, x, y) -> None:
+        """
+
+        :param x:
+        :type x:
+        :param y:
+        :type y:
+        """
         with self.cv:
             self._desiredMapSize = (x, y)
 
     def getDesiredMapSize(self):
+        """
+
+        :return:
+        :rtype:
+        """
         with self.cv:
             return self._desiredMapSize
 
     # Draw and show the map on the UI
-    def plotMap(self, latitude, longitude):
+    def plotMap(self, latitude: float, longitude: float):
+        """
+
+        :param latitude:
+        :type latitude: float
+        :param longitude:
+        :type longitude: float
+        :return:
+        :rtype:
+        """
         if longitude is None or latitude is None:
             return
 
@@ -96,7 +128,10 @@ class MappingThread(QtCore.QThread):
         self.map.setMapValue(MapData.MARK, mark)
 
     # TODO Info
-    def run(self):
+    def run(self) -> None:
+        """
+
+        """
         last_latitude = None
         last_longitude = None
         last_update_time = 0

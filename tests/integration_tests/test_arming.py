@@ -2,11 +2,10 @@ import sys
 import time
 
 import pytest
+from PyQt5 import QtWidgets
 
 import main
-
 from DebugConnectionFactory import DebugConnectionFactory
-from PyQt5 import QtWidgets
 
 
 def test_arm_signal(qtbot, capsys):

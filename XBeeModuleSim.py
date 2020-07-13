@@ -65,45 +65,22 @@ class XBeeModuleSim:
         self.ground_callback = nop_callback
         """Is called whenever data recieved from the rocket needs to be sent to the rest of the ground station code. The callback should be thread safe."""
 
-        self._running_lock = Lock()
-        self._running = True
-
         # Queues are IO bound.
-        self._rocket_rx_thread = Thread(
-            target=self._run_rocket_rx, name="xbee_sim_rocket_rx"
-        )
+        self._rocket_rx_thread = Thread(target=self._run_rocket_rx, name="xbee_sim_rocket_rx", daemon=True)
 
         self._rocket_rx_thread.start()
 
     def shutdown(self):
-        """ 
-        Shuts down everything and kills the internal threads.
-        Callbacks will not be interrupted/passed corrupt data.
-
-        Implementation note: In order to convert recieved data from the rocket into usable data for the rest of the ground station, the data is passed through a series of generator objects - think of it as a pipeline of processing. As a result, on shutdown it's easier to simply raise an uncaught exception at the inner most level and letting it propagate out, rather than checking for `self._running` everywhere. In Python only the thread terminates on an uncaught exception - not the whole process.
-        """
-        with self._running_lock:
-            self._running = False
-
-        # Fill up the queues with garbage to unblock the threads on input
-        self._rocket_rx_queue_packed.put(b"\0")
-
-        self._rocket_rx_thread.join()
-
-    @property
-    def running(self):
-        with self._running_lock:
-            return self._running
+        pass
 
     def _unpack(self, q):
         """
         Helper generator that unpacks the iterables in a given queue.
         """
-        while self.running:
+        while True:
             arr = q.get()
             for i in arr:
                 yield i
-        sys.exit()  # Kill the current thread (doesn't stop the whole process)
 
     def _run_rocket_rx(self):
         """Process the incoming rocket data queue."""

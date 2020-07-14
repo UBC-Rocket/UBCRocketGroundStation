@@ -1,5 +1,6 @@
 import math
 import threading
+from multiprocessing import Process, Queue
 import time
 
 from PyQt5 import QtCore
@@ -30,6 +31,16 @@ class MappingThread(QtCore.QThread):
         # Condition variable to watch for notification of new lat and lon
         self.cv = threading.Condition()  # Uses RLock inside when none is provided
 
+        # Stitching (and a little bit resizing) the map is a significantly large CPU bound task which was actually
+        # blocking all the threads because of Python's GIL. This is resulting in some UI freezing and stuttering.
+        # Running the CPU bound tasks in a separate process gets around the GIL problems but introduces some additional
+        # IPC complexities (i.e. the queue)
+        # Might be able to turn MappingThread into a QProcess so that we dont need both a thread and a process
+        self.resultQueue = Queue(1)
+        self.requestQueue = Queue(1)
+        mapProc = Process(target=processMap, args=(self.requestQueue, self.resultQueue), daemon=True, name="MapProcess")
+        mapProc.start()
+
         # Must be done last to prevent race condition
         self.data.addNewCallback(SubpacketEnum.LATITUDE.value, self.notify)
         self.data.addNewCallback(SubpacketEnum.LONGITUDE.value, self.notify)  # TODO review, could/should be omitted
@@ -49,10 +60,13 @@ class MappingThread(QtCore.QThread):
     # Draw and show the map on the UI
     def plotMap(self, latitude, longitude):
         if longitude is None or latitude is None:
-            return
+            return False
 
         radius = self.map.getMapValue(MapData.RADIUS)
         zoom = self.map.getMapValue(MapData.ZOOM)
+
+        # Create MapPoints that correspond to corners of a square area (of side length 2*radius) surrounding the
+        # inputted latitude and longitude.
 
         lat1 = latitude + radius / 110.574
         lon1 = longitude - radius / 111.320 / math.cos(lat1 * math.pi / 180.0)
@@ -62,38 +76,31 @@ class MappingThread(QtCore.QThread):
         lon2 = longitude + radius / 111.320 / math.cos(lat2 * math.pi / 180.0)
         p2 = MapBox.MapPoint(lat2, lon2)  # Map corner 2
 
-        # Create MapPoints that correspond to corners of a square area (of side length 2*radius) surrounding the
-        # inputted latitude and longitude.
-
-        location = MapBox.TileGrid(p1, p2, zoom)
-        location.downloadArrayImages()
-
-        largeMapImage = location.genStichedMap()
-
         desiredSize = self.getDesiredMapSize()
 
-        if desiredSize is not None:
-            # Scale "to fit", maintains map aspect ratio even if it differs from the desired dimensions aspect ratio
-            scaleFactor = min(desiredSize[0] / largeMapImage.shape[0], desiredSize[1] / largeMapImage.shape[1])
-        else:
-            scaleFactor = 1
+        self.requestQueue.put_nowait((p1, p2, zoom, desiredSize))
 
-        scaleFactor = min(scaleFactor, 1) # You shall not scale the map larger. Waste of memory.
+        # NOTE: Passing numpy arrays through any sort of IPC other than plane old shared memory will result in the data
+        # being "pickled" and un-"pickled". This uses more processing time than just using shared memory. Since we're
+        # not worried about sync safety here, shared memory might be faster... but also harder to implement.
+        result = self.resultQueue.get()
 
-        # Downsizing the map here to the ideal size for the plot reduces the amount of work required in the main
-        # thread and thus reduces stuttering
-        resizedMapImage = imresize(largeMapImage, (int(scaleFactor * largeMapImage.shape[0]), int(scaleFactor * largeMapImage.shape[1])))
+        if not result:
+            return False
+
+        (resizedMapImage, xMin, xMax, yMin, yMax) = result
 
         # Update mark coordinates
         p = MapBox.MapPoint(latitude, longitude)
-        x = (p.x - location.xMin) / (location.xMax - location.xMin)
-        y = (p.y - location.yMin) / (location.yMax - location.yMin)
+        x = (p.x - xMin) / (xMax - xMin)
+        y = (p.y - yMin) / (yMax - yMin)
         mark = (x * resizedMapImage.shape[0], y * resizedMapImage.shape[1])
 
         # TODO NOT ROBUST: What if mapdata updated between top of this function and this setMap
         self.map.setMapValue(MapData.IMAGE, resizedMapImage)
-        self.map.setMapValue(MapData.LOCATION, location)
         self.map.setMapValue(MapData.MARK, mark)
+
+        return True
 
     # TODO Info
     def run(self):
@@ -117,15 +124,16 @@ class MappingThread(QtCore.QThread):
                 if latitude == last_latitude and longitude == last_longitude:
                     continue
 
-                # Prevent update spam from freezing UI
+                # Prevent update spam
                 current_time = time.time()
                 if current_time - last_update_time < 0.5:
                     continue
 
-                self.plotMap(latitude, longitude)
-
-                # notify UI that new data is available to be displayed
-                self.sig_received.emit()
+                if self.plotMap(latitude, longitude):
+                    # notify UI that new data is available to be displayed
+                    self.sig_received.emit()
+                else:
+                    continue
 
                 last_latitude = latitude
                 last_longitude = longitude
@@ -133,3 +141,32 @@ class MappingThread(QtCore.QThread):
 
             except Exception as ex:
                 print("Error in map thread loop: %s" % ex)
+
+
+# To be run in a new process as the stitching and resizing is a CPU bound task
+def processMap(requestQueue, resultQueue):
+    while True:
+        try:
+            (p1, p2, zoom, desiredSize) = requestQueue.get()
+
+            location = MapBox.TileGrid(p1, p2, zoom)
+            location.downloadArrayImages()
+
+            largeMapImage = location.genStichedMap()
+
+            if desiredSize is not None:
+                # Scale "to fit", maintains map aspect ratio even if it differs from the desired dimensions aspect ratio
+                scaleFactor = min(desiredSize[0] / largeMapImage.shape[0], desiredSize[1] / largeMapImage.shape[1])
+            else:
+                scaleFactor = 1
+
+            scaleFactor = min(scaleFactor, 1)  # You shall not scale the map larger. Waste of memory.
+
+            # Downsizing the map here to the ideal size for the plot reduces the amount of work required in the main
+            # thread and thus reduces stuttering
+            resizedMapImage = imresize(largeMapImage, (
+            int(scaleFactor * largeMapImage.shape[0]), int(scaleFactor * largeMapImage.shape[1])))
+
+            resultQueue.put((resizedMapImage, location.xMin, location.xMax, location.yMin, location.yMax))
+        except:
+            resultQueue.put(None)

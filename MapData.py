@@ -5,7 +5,6 @@ ZOOM = '_zoom'
 RADIUS = '_radius'
 IMAGE = '_image'
 MARK = '_mark'
-LOCATION = '_location'
 
 
 class MapDataClass:  # TODO Is there a better way of differentiating from the filename? Its causing trouble when trying to use both
@@ -17,7 +16,6 @@ class MapDataClass:  # TODO Is there a better way of differentiating from the fi
         self.__setattr__(RADIUS, 0.1)
         self.__setattr__(IMAGE, None)
         self.__setattr__(MARK, None)
-        self.__setattr__(LOCATION, None)
 
     # Get the value of the item from the map by Id
     def getMapValue(self, valueId):

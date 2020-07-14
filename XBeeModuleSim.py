@@ -70,9 +70,6 @@ class XBeeModuleSim:
 
         self._rocket_rx_thread.start()
 
-    def shutdown(self):
-        pass
-
     def _unpack(self, q):
         """
         Helper generator that unpacks the iterables in a given queue.

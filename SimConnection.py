@@ -71,7 +71,6 @@ class SimConnection(IConnection):
 
     def shutDown(self):
         self.rocket.kill()  # Otherwise it will prevent process from closing
-        self._xbee.shutdown()
 
     # AKA handle "Config" packet
     def _getEndianness(self):

@@ -168,5 +168,6 @@ def processMap(requestQueue, resultQueue):
             int(scaleFactor * largeMapImage.shape[0]), int(scaleFactor * largeMapImage.shape[1])))
 
             resultQueue.put((resizedMapImage, location.xMin, location.xMax, location.yMin, location.yMax))
-        except:
+        except Exception as ex:
+            print("ERROR: Exception in processMap process: %s" % ex)
             resultQueue.put(None)

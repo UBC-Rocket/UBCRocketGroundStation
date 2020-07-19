@@ -1,8 +1,8 @@
+import sys  # to quickly exit
 from collections import deque
 from enum import IntEnum
 from queue import SimpleQueue
-import sys  # to quickly exit
-from threading import Thread, Lock
+from threading import Lock, Thread
 
 START_DELIMITER = 0x7E
 ESCAPE_CHAR = 0x7D
@@ -60,10 +60,12 @@ class XBeeModuleSim:
             return
 
         self.rocket_callback = nop_callback
-        """Is called whenever data needs to be sent to the rocket through SIM - this should be the SIM send() function. The callback should be thread safe."""
+        # Is called whenever data needs to be sent to the rocket through SIM - this should be the SIM send()
+        # function. The callback should be thread safe.
 
         self.ground_callback = nop_callback
-        """Is called whenever data recieved from the rocket needs to be sent to the rest of the ground station code. The callback should be thread safe."""
+        # Is called whenever data recieved from the rocket needs to be sent to the rest of the ground station code.
+        # The callback should be thread safe.
 
         # Queues are IO bound.
         self._rocket_rx_thread = Thread(target=self._run_rocket_rx, name="xbee_sim_rocket_rx", daemon=True)
@@ -79,7 +81,7 @@ class XBeeModuleSim:
             for i in arr:
                 yield i
 
-    def _run_rocket_rx(self):
+    def _run_rocket_rx(self) -> None:
         """Process the incoming rocket data queue."""
         while True:
             self._parse_API_frame()
@@ -88,7 +90,7 @@ class XBeeModuleSim:
     # Note that since the length as given by the XBee standard includes the frame type, but the frame
     # type is not passed to each frame parser, parsers should take in length - 1 bytes. Data iterator
     # may throw StopIteration; do not catch this.
-    def _parse_tx_request_frame(self, data, frame_len):
+    def _parse_tx_request_frame(self, data, frame_len) -> None:
         frame_id = next(data)
         for _ in range(8):  # 64 bit destination address - discard
             next(data)
@@ -111,14 +113,17 @@ class XBeeModuleSim:
 
     _frame_parsers = {FrameType.TX_REQUEST: _parse_tx_request_frame}
 
-    def _parse_API_frame(self):
-        """
-        Parses one XBee API frame based on the rocket_rx_queue.
-        """
+    def _parse_API_frame(self) -> None:
+        """Parses one XBee API frame based on the rocket_rx_queue."""
         start = next(self._rocket_rx_queue)
         assert start == START_DELIMITER
 
         def unescape(q):
+            """
+
+            :param q:
+            :type q:
+            """
             for char in q:
                 if char == START_DELIMITER:
                     raise UnescapedDelimiterError
@@ -133,7 +138,14 @@ class XBeeModuleSim:
         assert frame_type in self._frame_parsers
         self._frame_parsers[frame_type](self, unescaped, frame_len)
 
-    def _escape(self, unescaped):
+    def _escape(self, unescaped) -> bytearray:
+        """
+
+        :param unescaped:
+        :type unescaped:
+        :return:
+        :rtype: bytearray
+        """
         escaped = bytearray()
         for b in unescaped:
             if b in NEEDS_ESCAPING:

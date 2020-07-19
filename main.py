@@ -1,27 +1,25 @@
 import math
-import time
 import os
+import time
+from typing import Union
 
 import PyQt5
-from PyQt5 import QtCore, QtGui, uic, QtWidgets
+from matplotlib import pyplot as plt
+from matplotlib.offsetbox import AnnotationBbox, OffsetImage
+from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import pyqtSignal
-
-import mplwidget  # DO NOT REMOVE pyinstller needs this
-from matplotlib.offsetbox import OffsetImage, AnnotationBbox
-import matplotlib.pyplot as plt
 from scipy.misc import imresize
 
-from detail import LOCAL
-
-import ReadThread
-import SendThread
-import MappingThread
-
-from RocketData import RocketData
-from SubpacketIDs import SubpacketEnum
 import MapBox
 import MapData
+import MappingThread
+import mplwidget  # DO NOT REMOVE pyinstller needs this
+import ReadThread
+import SendThread
+from detail import LOCAL
 from MapData import MapDataClass
+from RocketData import RocketData
+from SubpacketIDs import SubpacketEnum
 
 if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
@@ -43,7 +41,12 @@ MAP_MARKER = imresize(plt.imread(MapBox.MARKER_PATH), (12, 12))
 class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
     sig_send = pyqtSignal(str)
 
-    def __init__(self, connection):
+    def __init__(self, connection) -> None:
+        """
+
+        :param connection:
+        :type connection:
+        """
         # TODO move this set of fields out to application.py
         self.connection = connection
         self.data = RocketData()
@@ -90,18 +93,36 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.MappingThread.sig_print.connect(self.printToConsole)
         self.MappingThread.start()
 
-    def closeEvent(self, event):
+    def closeEvent(self, event) -> None:
+        """
+
+        :param event:
+        :type event:
+        """
         self.connection.shutDown()
         print("Saving...")
         self.data.save(os.path.join(LOCAL, "finalsave_" + str(int(time.time())) + ".csv"))
         print("Saved!")
 
     # Updates the UI when new data is available for display
-    def receiveData(self):
+    def receiveData(self) -> None:
+        """
+
+        :return:
+        :rtype:
+        """
+        def nonezero(x: float) -> Union[float, None]:
+            """
+
+            :param x:
+            :type x:
+            :return:
+            :rtype:
+            """
+            return 0 if x is None else x
+
         latitude = self.data.lastvalue(SubpacketEnum.LATITUDE.value)
         longitude = self.data.lastvalue(SubpacketEnum.LONGITUDE.value)
-
-        nonezero = lambda x: 0 if x is None else x
         accel = math.sqrt(nonezero(self.data.lastvalue(SubpacketEnum.ACCELERATION_X.value)) ** 2 +
                           nonezero(self.data.lastvalue(SubpacketEnum.ACCELERATION_Y.value)) ** 2 +
                           nonezero(self.data.lastvalue(SubpacketEnum.ACCELERATION_Z.value)) ** 2)
@@ -113,20 +134,36 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.PressureLabel.setText(str(self.data.lastvalue(SubpacketEnum.PRESSURE.value)))
         self.AccelerationLabel.setText(str(accel))
 
-    def sendButtonPressed(self):
+    def sendButtonPressed(self) -> None:
+        """
+
+        """
         word = self.commandEdit.text()
         self.sendCommand(word)
         self.commandEdit.setText("")
 
-    def printToConsole(self, text):
+    def printToConsole(self, text) -> None:
+        """
+
+        :param text:
+        :type text:
+        """
         self.consoleText.setPlainText(self.consoleText.toPlainText() + text + "\n")
         self.consoleText.moveCursor(QtGui.QTextCursor.End)
 
-    def sendCommand(self, command):
+    def sendCommand(self, command) -> None:
+        """
+
+        :param command:
+        :type command:
+        """
         self.printToConsole(command)
         self.sig_send.emit(command)
 
-    def saveFile(self):
+    def saveFile(self) -> None:
+        """
+
+        """
         result = QtWidgets.QFileDialog.getSaveFileName(None, 'Save File', directory=LOCAL, filter='.csv')
         if result[0]:
             if result[0][-len(result[1]):] == result[1]:
@@ -137,7 +174,10 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
             self.data.save(name)
 
     # Updates the UI when a new map is available for display
-    def receiveMap(self):
+    def receiveMap(self) -> None:
+        """
+
+        """
         children = self.plotWidget.canvas.ax.get_children()
         for c in children:
             if isinstance(c, AnnotationBbox):
@@ -168,6 +208,10 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.plotWidget.canvas.draw()
 
     # Called whenever the map plot is resized, also is called once at the start
-    def mapResizedEvent(self, event):
-        self.MappingThread.setDesiredMapSize(event.width, event.height)
+    def mapResizedEvent(self, event) -> None:
+        """
 
+        :param event:
+        :type event:
+        """
+        self.MappingThread.setDesiredMapSize(event.width, event.height)

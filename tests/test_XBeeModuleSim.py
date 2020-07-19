@@ -1,7 +1,7 @@
-import pytest
-
 from threading import Lock
 from time import sleep
+
+import pytest
 
 from XBeeModuleSim import XBeeModuleSim
 

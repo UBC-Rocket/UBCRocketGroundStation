@@ -1,7 +1,7 @@
-from enum import Enum
 import os
 import subprocess as sp
 import threading
+from enum import Enum
 
 from IConnection import IConnection
 from StreamLogger import StreamLogger

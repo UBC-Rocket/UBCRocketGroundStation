@@ -1,8 +1,9 @@
 from enum import Enum
 
-#### Constants
+# Constants
 MIN_SINGLE_SENSOR_ID: int = 0x10
 MAX_SINGLE_SENSOR_ID: int = 0x2F
+
 
 class SubpacketEnum(Enum):
     STATUS_PING = 0x00
@@ -35,22 +36,60 @@ class SubpacketEnum(Enum):
     ORIENTATION_3 = 0x23
     # TODO 4th orientation value calculated since it is a quaternion?
 
+
 def get_list_of_IDs():
+    """
+
+    :return:
+    :rtype:
+    """
     return [subpacket.value for subpacket in SubpacketEnum]
 
+
 def get_list_of_names():
+    """
+
+    :return:
+    :rtype:
+    """
     return [subpacket.name for subpacket in SubpacketEnum]
 
+
 def get_list_of_sensor_IDs():
+    """
+
+    :return:
+    :rtype:
+    """
     return [subpacket.value for subpacket in SubpacketEnum if isSingleSensorData(subpacket.value)]
 
+
 def get_list_of_sensor_names():
+    """
+
+    :return:
+    :rtype:
+    """
     return [subpacket.name for subpacket in SubpacketEnum if isSingleSensorData(subpacket.value)]
 
-# Check if it is a used ID
+
 def isSubpacketID(subpacket_id: int):
+    """Check if it is a used ID
+
+    :param subpacket_id:
+    :type subpacket_id:
+    :return:
+    :rtype:
+    """
     return subpacket_id in get_list_of_IDs()
 
-# Check if is singleSensor data
+
 def isSingleSensorData(subpacket_id):
+    """Check if is singleSensor data
+
+    :param subpacket_id:
+    :type subpacket_id:
+    :return:
+    :rtype:
+    """
     return MIN_SINGLE_SENSOR_ID <= subpacket_id <= MAX_SINGLE_SENSOR_ID

@@ -1,3 +1,11 @@
+# Running Tests
+
+## From PyCharm
+To run the unit and integration tests from PyCharm, you need only add a new run configuration. Click the button in the top right and then click "Edit Configurations" in the dropdown menu. Go to Python > Python Tests > pytest and click "Create configuration". From there, set "Target" to "Script path" with "UBCRocketGroundStation/tests" as the directory. Now, whenever you need to run the test suite, just select pytest from the dropdown menu in the top right and run it as you normally would. This way of running tests supports the Debug and Concurrency modes if you require them.
+
+## From the Command Line
+To run pytest from the command line, simply run the `pytest` command. If you wish to see the output of every test, add the `--verbose` argument.
+
 # Testing Best Practices
 
 ## Organization

@@ -13,6 +13,8 @@ from scipy.misc import imresize
 import MapData
 from SubpacketIDs import SubpacketEnum
 
+# Scaling is linear so a scale factor of 1 means no scaling (aka 1*x=x)
+SCALE_FACTOR_NO_SCALE = 1
 
 # Mapping work and processing that gets put into MapData, repeatedly as RocketData is updated.
 # Signals the main thread to fetch UI elements in MapDataSimilar to ReadData
@@ -158,9 +160,9 @@ def processMap(requestQueue, resultQueue):
                 # Scale "to fit", maintains map aspect ratio even if it differs from the desired dimensions aspect ratio
                 scaleFactor = min(desiredSize[0] / largeMapImage.shape[0], desiredSize[1] / largeMapImage.shape[1])
             else:
-                scaleFactor = 1
+                scaleFactor = SCALE_FACTOR_NO_SCALE
 
-            scaleFactor = min(scaleFactor, 1)  # You shall not scale the map larger. Waste of memory.
+            scaleFactor = min(scaleFactor, SCALE_FACTOR_NO_SCALE)  # You shall not scale the map larger. Waste of memory.
 
             # Downsizing the map here to the ideal size for the plot reduces the amount of work required in the main
             # thread and thus reduces stuttering

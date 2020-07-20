@@ -2,11 +2,10 @@ import os
 
 import numpy
 import pytest
+from matplotlib import pyplot
 
 import MapBox
-
 from detail import LOCAL
-from matplotlib import pyplot
 
 
 @pytest.fixture()
@@ -51,7 +50,7 @@ class TestMapPoint:
 
 class TestMapTile:
     def test_get_name(self, hennings_tile):
-        name = hennings_tile.getName()
+        name = hennings_tile.getName
 
         assert name == "41322_89729"
 
@@ -90,7 +89,7 @@ class TestMapTile:
 
         mocked_isfile.return_value = success
 
-        ie = hennings_tile.imageExists()
+        ie = hennings_tile.imageExists
 
         mocked_isfile.assert_called_once()
         mocked_isfile.assert_called_with(os.path.join(LOCAL, "raw", "18", "41322_89729" + ".png"))

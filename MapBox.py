@@ -1,6 +1,7 @@
 import concurrent.futures
 import math
 import time
+import typing
 
 import mapbox
 import numpy as np
@@ -13,7 +14,12 @@ TILE_SIZE = 512
 MARKER_PATH = os.path.join(LOCAL, "marker.png")
 
 
-def readKey():
+def readKey() -> str or None:
+    """Reads MapBox API key from apikey.txt.
+
+    :return: API Key for MapBox
+    :rtype: str or None
+    """
     if os.path.isfile(os.path.join(LOCAL, "apikey.txt")):
         f = open(os.path.join(LOCAL, "apikey.txt"), "r")
         contents = f.read()
@@ -30,8 +36,14 @@ else:
 
 class MapPoint:
 
-    def __init__(self, latitude, longitude):
+    def __init__(self, latitude: float, longitude: float) -> None:
+        """
 
+        :param latitude:
+        :type latitude: float
+        :param longitude:
+        :type longitude: float
+        """
         # Values outside this range will produce weird results in the tile calculations
         # Alternative is to normalize angles
         if not -90 < latitude < 90 or not -180 < longitude < 180:
@@ -43,13 +55,27 @@ class MapPoint:
         siny = math.sin(self.latitude * math.pi / 180)
         self.y = float((0.5 - math.log((1 + siny) / (1 - siny)) / (4 * math.pi)))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.latitude}, {self.longitude}"
 
-    def getPixelX(self, zoom):
+    def getPixelX(self, zoom: int) -> int:
+        """
+
+        :param zoom:
+        :type zoom: int
+        :return:
+        :rtype: int
+        """
         return int(math.floor(TILE_SIZE * (0.5 + self.longitude / 360) * math.pow(2, zoom)))
 
-    def getPixelY(self, zoom):
+    def getPixelY(self, zoom: int) -> int:
+        """
+
+        :param zoom:
+        :type zoom:
+        :return:
+        :rtype:
+        """
         siny = math.sin(self.latitude * math.pi / 180)
 
         # Truncating to 0.9999 effectively limits latitude to 89.189. This is
@@ -59,31 +85,66 @@ class MapPoint:
         return int(
             math.floor(TILE_SIZE * (0.5 - math.log((1 + siny) / (1 - siny)) / (4 * math.pi)) * math.pow(2, zoom)))
 
-    def getTileX(self, zoom):
+    def getTileX(self, zoom: int) -> int:
+        """
+
+        :param zoom:
+        :type zoom: int
+        :return:
+        :rtype: int
+        """
         return int(self.getPixelX(zoom) / TILE_SIZE)
 
-    def getTileY(self, zoom):
+    def getTileY(self, zoom: int) -> int:
+        """
+
+        :param zoom:
+        :type zoom: int
+        :return:
+        :rtype: int
+        """
         return int(self.getPixelY(zoom) / TILE_SIZE)
 
 
 class MapTile:
 
-    def __init__(self, x, y, s):
+    def __init__(self, x: int, y: int, s: int):
+        """
+
+        :param x:
+        :type x: int
+        :param y:
+        :type y: int
+        :param s:
+        :type s: int
+        """
         self.x = x
         self.y = y
         self.s = s
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.x}, {self.y}, {self.s})"
 
-    def __eq__(self, other):
+    def __eq__(self, other: typing.Any) -> bool:
         return self.x == other.x and self.y == other.y and self.s == other.s
 
-    def getName(self):
+    @property
+    def getName(self) -> str:
+        """
+
+        :return:
+        :rtype: str
+        """
         return f"{self.x}_{self.y}"
 
-    def getImage(self, overwrite=False):
+    def getImage(self, overwrite: bool = False) -> np.ndarray:
+        """
 
+        :param overwrite:
+        :type overwrite: bool
+        :return:
+        :rtype: numpy.ndarray
+        """
         raw = os.path.join(LOCAL, "raw")
         if not os.path.isdir(raw):
             os.mkdir(raw)
@@ -91,7 +152,7 @@ class MapTile:
         if not os.path.isdir(scalefolder):
             os.mkdir(scalefolder)
 
-        impath = os.path.join(scalefolder, self.getName() + ".jpg")
+        impath = os.path.join(scalefolder, self.getName + ".jpg")
 
         if ((not os.path.exists(impath)) or overwrite) and not (maps is None):
             response = maps.tile("mapbox.satellite", self.x, self.y, self.s, retina=True)
@@ -105,13 +166,28 @@ class MapTile:
         else:
             return np.zeros((TILE_SIZE, TILE_SIZE, 3))
 
-    def imageExists(self):
-        return os.path.isfile(os.path.join(LOCAL, "raw", str(self.s), self.getName() + ".png"))
+    @property
+    def imageExists(self) -> bool:
+        """
+
+        :return:
+        :rtype: bool
+        """
+        return os.path.isfile(os.path.join(LOCAL, "raw", str(self.s), self.getName + ".png"))
 
 
 class TileGrid:
 
-    def __init__(self, p1, p2, s):
+    def __init__(self, p1: MapPoint, p2: MapPoint, s: int):
+        """
+
+        :param p1:
+        :type p1: MapPoint
+        :param p2:
+        :type p2: MapPoint
+        :param s:
+        :type s: int
+        """
         self.p1 = p1
         self.p2 = p2
         self.scale = min(s, 18)
@@ -126,7 +202,10 @@ class TileGrid:
         if self.width > 5 or self.height > 5:
             print(f"WARNING: Large map ({self.width}x%{self.height} tiles)")
 
-    def genTileArray(self):
+    def genTileArray(self) -> None:
+        """
+
+        """
         t1 = pointToTile(self.p1, self.scale)
         t2 = pointToTile(self.p2, self.scale)
         x1 = min(t1.x, t2.x)
@@ -152,7 +231,14 @@ class TileGrid:
         self.width = len(self.ta[0])
         self.height = len(self.ta)
 
-    def downloadArrayImages(self, attempts=3, overwrite=False):
+    def downloadArrayImages(self, attempts: int = 3, overwrite: bool = False) -> None:
+        """
+
+        :param attempts:
+        :type attempts: int
+        :param overwrite:
+        :type overwrite: bool
+        """
         print(f"Beginning download of size {str(self.scale)} tiles.")
         t1 = time.perf_counter()
 
@@ -169,7 +255,15 @@ class TileGrid:
         t2 = time.perf_counter()
         print(f"Successfully downloaded size {str(self.scale)} tiles in {t2 - t1} seconds.")
 
-    def genStitchedMap(self, overwrite=False):
+    def genStitchedMap(self, overwrite: bool = False) -> np.ndarray:
+        """
+
+        :param overwrite:
+        :type overwrite: bool
+        :return:
+        :rtype: numpy.ndarray
+        """
+
         def appendv(A, B):
             if A is None:
                 return B
@@ -216,5 +310,14 @@ class TileGrid:
             return plt.imread(outfile, 'jpeg')
 
 
-def pointToTile(p, s):
+def pointToTile(p: MapPoint, s: int) -> MapTile:
+    """
+
+    :param p:
+    :type p: MapPoint
+    :param s:
+    :type s: int
+    :return:
+    :rtype: MapTile
+    """
     return MapTile(math.floor(p.x * 2.0 ** s), math.floor(p.y * 2.0 ** s), s)

@@ -19,6 +19,13 @@ LOG_HISTORY_SIZE = 100
 
 
 class SimConnection(IConnection):
+    def _rocket_handshake(self):
+        assert self.rocket.stdout.read(3) == b"SYN"
+        # Uncomment for FW debuggers, for a chance to attach debugger
+        # input("Recieved rocket SYN; press enter to respond with ACK and continue\n")
+        self.rocket.stdin.write(b"ACK")
+        self.rocket.stdin.flush()
+
     def __init__(self, firmwareDir, executableName):
         self.executablePath = os.path.join(firmwareDir, executableName)
         self.firmwareDir = firmwareDir
@@ -31,6 +38,7 @@ class SimConnection(IConnection):
         self.rocket = sp.Popen(
             self.executablePath, cwd=self.firmwareDir, stdin=sp.PIPE, stdout=sp.PIPE
         )
+        self._rocket_handshake()
 
         self.stdout = StreamLogger(self.rocket.stdout, LOG_HISTORY_SIZE)
 

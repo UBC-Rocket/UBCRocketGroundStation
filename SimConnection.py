@@ -45,7 +45,7 @@ class SimConnection(IConnection):
         self._xbee.rocket_callback = self._send_radio_sim
     
     def _rocket_handshake(self):
-        assert self.rocket.stdout.read(3) == b"SYN"
+        assert self.stdout.read(3) == b"SYN"
         # Uncomment for FW debuggers, for a chance to attach debugger
         # input("Recieved rocket SYN; press enter to respond with ACK and continue\n")
         self.rocket.stdin.write(b"ACK")

@@ -31,8 +31,8 @@ class SimConnection(IConnection):
         self.rocket = sp.Popen(
             self.executablePath, cwd=self.firmwareDir, stdin=sp.PIPE, stdout=sp.PIPE
         )
-
         self.stdout = StreamLogger(self.rocket.stdout, LOG_HISTORY_SIZE)
+        self._rocket_handshake()
 
         # Gets endianess of ints and floats
         self._getEndianness()
@@ -43,7 +43,14 @@ class SimConnection(IConnection):
 
         self._xbee = XBeeModuleSim()
         self._xbee.rocket_callback = self._send_radio_sim
-
+    
+    def _rocket_handshake(self):
+        assert self.rocket.stdout.read(3) == b"SYN"
+        # Uncomment for FW debuggers, for a chance to attach debugger
+        # input("Recieved rocket SYN; press enter to respond with ACK and continue\n")
+        self.rocket.stdin.write(b"ACK")
+        self.rocket.stdin.flush()
+        
     def send(self, data):
         self._xbee.send_to_rocket(data)
 

@@ -1,12 +1,13 @@
-import sys
-import PyQt5
-from PyQt5 import QtCore, QtGui, uic, QtWidgets
 import os
-import start
-import serial.tools.list_ports
-from detail import *
+import sys
 
+import PyQt5
+import serial.tools.list_ports
+from PyQt5 import QtCore, QtGui, QtWidgets, uic
+
+import start
 from DebugConnectionFactory import DebugConnectionFactory
+from detail import *
 from SerialConnectionFactory import SerialConnectionFactory
 from SimConnectionFactory import SimConnectionFactory
 
@@ -22,7 +23,11 @@ Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 
 class comWindow(QtWidgets.QMainWindow, Ui_MainWindow):
-    def __init__(self):
+
+    def __init__(self) -> None:
+        """
+
+        """
         QtWidgets.QMainWindow.__init__(self)
         Ui_MainWindow.__init__(self)
 
@@ -34,7 +39,10 @@ class comWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.MySetup()
 
-    def MySetup(self):
+    def MySetup(self) -> None:
+        """
+
+        """
         self.typeBox.currentTextChanged.connect(self.connectionChanged)
         self.typeBox.addItems(self.ConnectionFactories.keys())
 
@@ -42,19 +50,24 @@ class comWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         comlist = list(map(lambda x: x.device, serial.tools.list_ports.comports()))
         self.comBox.addItems(comlist)
 
-    def doneButtonPressed(self):
+    def doneButtonPressed(self) -> None:
+        """
+
+        """
         factory = self.ConnectionFactories[self.typeBox.currentText()]
         connection = factory.construct(comPort=self.comBox.currentText(), baudRate=int(self.baudBox.currentText()))
         start.start(connection)
         self.close()
 
-    def connectionChanged(self):
+    def connectionChanged(self) -> None:
+        """
+
+        """
         text = self.typeBox.currentText()
         factory = self.ConnectionFactories[text]
 
         self.comBox.setEnabled(factory.requiresComPort())
         self.baudBox.setEnabled(factory.requiresBaudRate())
-
 
 
 if __name__ == "__main__":

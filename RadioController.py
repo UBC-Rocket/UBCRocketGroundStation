@@ -1,5 +1,6 @@
-from typing import Dict, Any, Callable, Union, List
 import struct
+from typing import Any, Callable, Dict, List, Union
+
 import SubpacketIDs
 from SubpacketIDs import SubpacketEnum
 
@@ -40,11 +41,25 @@ for i in SubpacketIDs.get_list_of_sensor_IDs():
 class RadioController:
 
     def __init__(self, bigEndianInts, bigEndianFloats):
+        """
+
+        :param bigEndianInts:
+        :type bigEndianInts:
+        :param bigEndianFloats:
+        :type bigEndianFloats:
+        """
         self.bigEndianInts = bigEndianInts
         self.bigEndianFloats = bigEndianFloats
 
     # Return dict of parsed subpacket data and length of subpacket
     def extract(self, byte_list: List):
+        """
+
+        :param byte_list:
+        :type byte_list:
+        :return:
+        :rtype:
+        """
         subpacket_id: SubpacketEnum.value = self.extract_subpacket_ID(byte_list[0])
         if isPacketLengthConst(subpacket_id):
             length: int = PACKET_ID_TO_CONST_LENGTH[int.from_bytes(byte_list[0], "big")] #Only one byte so byteorder doesnt matter for now
@@ -58,6 +73,13 @@ class RadioController:
 
     # Helper to convert byte to subpacket id as is in the SubpacketID enum, throws error otherwise
     def extract_subpacket_ID(self, byte: List):
+        """
+
+        :param byte:
+        :type byte:
+        :return:
+        :rtype:
+        """
         subpacket_id: int = int.from_bytes(byte, "big")
         # check that id is valid:
         if not SubpacketIDs.isSubpacketID(subpacket_id):
@@ -68,30 +90,95 @@ class RadioController:
 
     # general data parser interface
     def parse_data(self, type_id, byte_list, length):
+        """
+
+        :param type_id:
+        :type type_id:
+        :param byte_list:
+        :type byte_list:
+        :param length:
+        :type length:
+        :return:
+        :rtype:
+        """
         return self.packetTypeToParser[type_id](self, byte_list, length)
 
 
     def status_ping(self, byte_list, length):  # TODO
+        """
+
+        :param byte_list:
+        :type byte_list:
+        :param length:
+        :type length:
+        :return:
+        :rtype:
+        """
         converted = {0.0}
         return converted
 
     def message(self, byte_list, length):  # TODO
+        """
+
+        :param byte_list:
+        :type byte_list:
+        :param length:
+        :type length:
+        :return:
+        :rtype:
+        """
         converted = {0.0}  # STUB
         return converted
 
     def event(self, byte_list, length):  # TODO
+        """
+
+        :param byte_list:
+        :type byte_list:
+        :param length:
+        :type length:
+        :return:
+        :rtype:
+        """
         converted = {0.0}  # STUB
         return converted
 
     def config(self, byte_list, length):  # TODO
+        """
+
+        :param byte_list:
+        :type byte_list:
+        :param length:
+        :type length:
+        :return:
+        :rtype:
+        """
         converted = {0.0}  # STUB
         return converted
 
     def single_sensor(self, byte_list, length):  # TODO
+        """
+
+        :param byte_list:
+        :type byte_list:
+        :param length:
+        :type length:
+        :return:
+        :rtype:
+        """
         converted = {0.0}  # STUB
         return converted
 
     def gps(self, byte_list, length):  # TODO
+        """
+
+        :param byte_list:
+        :type byte_list:
+        :param length:
+        :type length:
+        :return:
+        :rtype:
+        """
         converted = {0.0}  # STUB
         return converted
 
@@ -100,6 +187,15 @@ class RadioController:
     #     return converted
 
     def bulk_sensor(self, byte_list: List, length: int):
+        """
+
+        :param byte_list:
+        :type byte_list:
+        :param length:
+        :type length:
+        :return:
+        :rtype:
+        """
         data: Dict[int, any] = {}
 
         # TODO REVIEW/CHANGE in type refactoring: how this is required to convert from List[bytes] to List[int]
@@ -133,6 +229,13 @@ class RadioController:
 
     # TODO review this for data type fixes
     def fourtofloat(self, bytes):
+        """
+
+        :param bytes:
+        :type bytes:
+        :return:
+        :rtype:
+        """
         assert len(bytes) == 4
         data = bytes
         b = struct.pack('4B', *data)
@@ -140,6 +243,13 @@ class RadioController:
         return c[0]
 
     def fourtoint(self, bytes):
+        """
+
+        :param bytes:
+        :type bytes:
+        :return:
+        :rtype:
+        """
         assert len(bytes) == 4
         data = bytes
         b = struct.pack('4B', *data)

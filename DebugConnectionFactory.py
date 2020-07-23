@@ -1,13 +1,16 @@
+from typing import Union
+
 from DebugConnection import DebugConnection
 from IConnectionFactory import IConnectionFactory
 
 
 class DebugConnectionFactory(IConnectionFactory):
-    def construct(self, comPort=None, baudRate=None):
+
+    def requiresComPort(self) -> bool:
+        return False
+
+    def requiresBaudRate(self) -> bool:
+        return False
+
+    def construct(self, comPort: Union[int, str, None] = None, baudRate=None) -> DebugConnection:
         return DebugConnection()
-
-    def requiresComPort(self):
-        return False
-
-    def requiresBaudRate(self):
-        return False

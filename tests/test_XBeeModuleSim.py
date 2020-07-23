@@ -1,7 +1,7 @@
-import pytest
-
 from threading import Lock
 from time import sleep
+
+import pytest
 
 from XBeeModuleSim import XBeeModuleSim
 
@@ -25,9 +25,6 @@ class TestXBeeModuleSim:
 
         self.xbee.rocket_callback = rocket_callback
         self.xbee.ground_callback = ground_callback
-
-    def teardown_method(self):
-        self.xbee.shutdown()
 
     def test_rocket_rx(self):
         tx_example = bytearray(b"\x7E\x00\x16\x10\x01\x00\x7D\x33\xA2\x00\x40\x0A\x01\x27"

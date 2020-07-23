@@ -1,15 +1,17 @@
 import abc
+from typing import Union
 
 
 class IConnectionFactory:
+
     @abc.abstractmethod
-    def requiresComPort(self):
+    def requiresComPort(self) -> bool:
         return False
 
     @abc.abstractmethod
-    def requiresBaudRate(self):
+    def requiresBaudRate(self) -> bool:
         return False
 
     @abc.abstractmethod
-    def construct(self, comPort=None, baudRate=None):
+    def construct(self, comPort: Union[int, str, None] = None, baudRate: Union[int, None] = None) -> None:
         pass

@@ -20,7 +20,10 @@ class FrameType(IntEnum):
 
 
 class UnescapedDelimiterError(Exception):
-    """Raises if there's an unescaped start delimiter"""
+    """
+    Raises if there's an unescaped start delimiter.
+    As per the XBee spec, this is eventually handled by discarding the packet so far and rebuilding.
+    """
 
 
 class XBeeModuleSim:
@@ -46,7 +49,7 @@ class XBeeModuleSim:
 
     def __init__(self):
         """
-        Constructor.
+        :brief: Constructor.
         In addition to constructing this, if any useful work is to be done then the rocket_callback and ground_callback attributes should be set - by default they are simply no-op functions.
         """
         # Each element in each queue is a bytearray.
@@ -76,7 +79,9 @@ class XBeeModuleSim:
 
     def _unpack(self, q):
         """
-        Helper generator that unpacks the iterables in a given queue.
+        :brief: Helper generator that unpacks the iterables in a given queue.
+        :param q: SimpleQueue of iterables.
+        :return: Yields the elements of each iterable in q, in order.
         """
         while True:
             arr = q.get()
@@ -84,7 +89,10 @@ class XBeeModuleSim:
                 yield i
 
     def _run_rocket_rx(self) -> None:
-        """Process the incoming rocket data queue."""
+        """
+        :brief: Process the incoming rocket data queue.
+        This is the top level function, and handles any unescaped start delimiters.
+        """
         start = next(self._rocket_rx_queue)
         assert start == START_DELIMITER
         while True:
@@ -101,6 +109,11 @@ class XBeeModuleSim:
     # type is not passed to each frame parser, parsers should take in length - 1 bytes. Data iterator
     # may throw StopIteration; do not catch this.
     def _parse_tx_request_frame(self, data, frame_len) -> None:
+        """
+        :brief: Parses a TX Request frame, and passes a TX Status packet to the rocket.
+        :param data: Iterable
+        :param frame_len: length as defined in XBee protocol
+        """
         frame_id = next(data)
         for _ in range(8):  # 64 bit destination address - discard
             next(data)
@@ -128,8 +141,8 @@ class XBeeModuleSim:
 
         def unescape(q):
             """
-            :param q:
-            :type q:
+            :brief: Undos the escaping in the XBee protocol standard
+            :param q: Unpacked queue (with escaped characters)
             """
             for char in q:
                 if char == START_DELIMITER:
@@ -147,10 +160,9 @@ class XBeeModuleSim:
 
     def _escape(self, unescaped) -> bytearray:
         """
-
-        :param unescaped:
-        :type unescaped:
-        :return:
+        :param unescaped: Data to be escaped.
+        :type unescaped: iterable of byte (e.g. bytes, bytearray)
+        :return: Escaped data.
         :rtype: bytearray
         """
         escaped = bytearray()

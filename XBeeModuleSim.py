@@ -68,7 +68,9 @@ class XBeeModuleSim:
         # The callback should be thread safe.
 
         # Queues are IO bound.
-        self._rocket_rx_thread = Thread(target=self._run_rocket_rx, name="xbee_sim_rocket_rx", daemon=True)
+        self._rocket_rx_thread = Thread(
+            target=self._run_rocket_rx, name="xbee_sim_rocket_rx", daemon=True
+        )
 
         self._rocket_rx_thread.start()
 
@@ -83,8 +85,16 @@ class XBeeModuleSim:
 
     def _run_rocket_rx(self) -> None:
         """Process the incoming rocket data queue."""
+        start = next(self._rocket_rx_queue)
+        assert start == START_DELIMITER
         while True:
-            self._parse_API_frame()
+            try:
+                self._parse_API_frame()
+            except UnescapedDelimiterError:
+                continue  # drop it and try again
+            else:
+                start = next(self._rocket_rx_queue)
+                assert start == START_DELIMITER
 
     # Each frame parser gets iterator to data and the length (as given by the XBee frame standard).
     # Note that since the length as given by the XBee standard includes the frame type, but the frame
@@ -115,12 +125,9 @@ class XBeeModuleSim:
 
     def _parse_API_frame(self) -> None:
         """Parses one XBee API frame based on the rocket_rx_queue."""
-        start = next(self._rocket_rx_queue)
-        assert start == START_DELIMITER
 
         def unescape(q):
             """
-
             :param q:
             :type q:
             """

@@ -18,6 +18,7 @@ import ReadThread
 import SendThread
 from detail import LOCAL
 from MapData import MapDataClass
+from rocket_profile import RocketProfile
 from RocketData import RocketData
 from SubpacketIDs import SubpacketEnum
 
@@ -41,14 +42,17 @@ MAP_MARKER = imresize(plt.imread(MapBox.MARKER_PATH), (12, 12))
 class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
     sig_send = pyqtSignal(str)
 
-    def __init__(self, connection) -> None:
+    def __init__(self, connection, rocket: RocketProfile) -> None:
         """
 
         :param connection:
         :type connection:
+        :param rocket:
+        :type rocket: RocketProfile
         """
         # TODO move this set of fields out to application.py
         self.connection = connection
+        self.rocket = rocket
         self.data = RocketData()
         self.map = MapDataClass()
 
@@ -68,9 +72,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionSave.setShortcut("Ctrl+S")
         self.actionSave.triggered.connect(self.saveFile)
 
-        self.StatusButton.clicked.connect(lambda _: self.sendCommand("status"))
-        self.ArmButton.clicked.connect(lambda _: self.sendCommand("arm"))
-        self.HaloButton.clicked.connect(lambda _: self.sendCommand("halo"))
+        self.setup_buttons()
 
         self.printToConsole("Starting Connection")
 
@@ -92,6 +94,31 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.MappingThread.sig_received.connect(self.receiveMap)
         self.MappingThread.sig_print.connect(self.printToConsole)
         self.MappingThread.start()
+
+    def setup_buttons(self):
+        """
+
+        """
+        for button in self.rocket.buttons.keys():
+            exec(f"self.{button}Button = QtWidgets.QPushButton(self.centralwidget)")
+            sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+            sizePolicy.setHorizontalStretch(0)
+            sizePolicy.setVerticalStretch(0)
+            exec(f"sizePolicy.setHeightForWidth(self.{button}Button.sizePolicy().hasHeightForWidth())")
+            exec(f"self.{button}Button.setSizePolicy(sizePolicy)")
+            font = QtGui.QFont()
+            font.setPointSize(35)
+            font.setKerning(True)
+            exec(f"self.{button}Button.setFont(font)")
+            exec(f"self.{button}Button.setObjectName('{button}Button')")
+            exec(f"self.gridLayout_5.addWidget(self.{button}Button)")
+        # A .py file created from a .ui file will have the labels all defined at the end, for some reason. Two for loops
+        # are being used to be consistent with the PyQt5 conventions.
+        for button in self.rocket.buttons.keys():
+            exec(f"self.{button}Button.setText(QtCore.QCoreApplication.translate('MainWindow', '{button}'))")
+
+        for button, command in self.rocket.buttons.items():
+            exec(f"self.{button}Button.clicked.connect(lambda _: self.sendCommand('{command}'))", {"self": self})
 
     def closeEvent(self, event) -> None:
         """

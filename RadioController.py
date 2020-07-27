@@ -9,7 +9,7 @@ from SubpacketIDs import SubpacketEnum
 # TODO Review these based on spec
 # Map subpacket id (int) to length (int) in bytes. Only includes types with CONSTANT lengths
 PACKET_ID_TO_CONST_LENGTH: Dict[int, int] = {
-    SubpacketEnum.STATUS_PING.value: 4,
+    SubpacketEnum.STATUS_PING.value: 10,
     SubpacketEnum.EVENT.value: 2,
     SubpacketEnum.GPS.value: 25,
     SubpacketEnum.ACKNOWLEDGEMENT.value: 0000,  # TODO ack length?
@@ -39,7 +39,6 @@ for i in SubpacketIDs.get_list_of_sensor_IDs():
 
 
 class RadioController:
-
     def __init__(self, bigEndianInts, bigEndianFloats):
         """
 
@@ -62,14 +61,19 @@ class RadioController:
         """
         subpacket_id: SubpacketEnum.value = self.extract_subpacket_ID(byte_list[0])
         if isPacketLengthConst(subpacket_id):
-            length: int = PACKET_ID_TO_CONST_LENGTH[int.from_bytes(byte_list[0], "big")] #Only one byte so byteorder doesnt matter for now
+            length: int = PACKET_ID_TO_CONST_LENGTH[
+                int.from_bytes(byte_list[0], "big")
+            ]  # Only one byte so byteorder doesnt matter for now
         else:
-            length: int = int.from_bytes(byte_list[1], "big")  # todo modify this to handle differently positioned length bytes
-        data_unit = byte_list[PACKET_ID_TO_HEADER_SIZE[subpacket_id]:length]
+            length: int = int.from_bytes(
+                byte_list[1], "big"
+            )  # todo modify this to handle differently positioned length bytes
+        data_unit = byte_list[PACKET_ID_TO_HEADER_SIZE[subpacket_id] : length]
         data_length = length - PACKET_ID_TO_HEADER_SIZE[subpacket_id]
-        parsed_data: Dict[any, any] = self.parse_data(subpacket_id, data_unit, data_length)
+        parsed_data: Dict[any, any] = self.parse_data(
+            subpacket_id, data_unit, data_length
+        )
         return parsed_data, length
-
 
     # Helper to convert byte to subpacket id as is in the SubpacketID enum, throws error otherwise
     def extract_subpacket_ID(self, byte: List):
@@ -87,7 +91,6 @@ class RadioController:
             raise ValueError
         return SubpacketEnum(subpacket_id).value
 
-
     # general data parser interface
     def parse_data(self, type_id, byte_list, length):
         """
@@ -103,7 +106,6 @@ class RadioController:
         """
         return self.packetTypeToParser[type_id](self, byte_list, length)
 
-
     def status_ping(self, byte_list, length):  # TODO
         """
 
@@ -114,7 +116,7 @@ class RadioController:
         :return:
         :rtype:
         """
-        converted = {0.0}
+        converted = {}
         return converted
 
     def message(self, byte_list, length):  # TODO
@@ -127,7 +129,8 @@ class RadioController:
         :return:
         :rtype:
         """
-        converted = {0.0}  # STUB
+        print("Message: ", bytes((i[0] for i in byte_list)))
+        converted = {}  # STUB
         return converted
 
     def event(self, byte_list, length):  # TODO
@@ -202,7 +205,9 @@ class RadioController:
         int_list: List[int] = [int(x[0]) for x in byte_list]
 
         data[SubpacketEnum.TIME.value] = self.fourtoint(int_list[0:4])
-        data[SubpacketEnum.CALCULATED_ALTITUDE.value] = self.fourtofloat(int_list[4:8])  # TODO Double check it is calculated barometer altitude with firmware
+        data[SubpacketEnum.CALCULATED_ALTITUDE.value] = self.fourtofloat(
+            int_list[4:8]
+        )  # TODO Double check it is calculated barometer altitude with firmware
         data[SubpacketEnum.ACCELERATION_X.value] = self.fourtofloat(int_list[8:12])
         data[SubpacketEnum.ACCELERATION_Y.value] = self.fourtofloat(int_list[12:16])
         data[SubpacketEnum.ACCELERATION_Z.value] = self.fourtofloat(int_list[16:20])
@@ -214,9 +219,10 @@ class RadioController:
         data[SubpacketEnum.STATE.value] = int_list[40]
         return data
 
-
     # Dictionary of subpacket id - function to parse that data
-    packetTypeToParser: Dict[int, Callable[[list, int], Any]] = {  # TODO review this type hint
+    packetTypeToParser: Dict[
+        int, Callable[[list, int], Any]
+    ] = {  # TODO review this type hint
         SubpacketEnum.STATUS_PING.value: status_ping,
         SubpacketEnum.MESSAGE.value: message,
         SubpacketEnum.EVENT.value: event,
@@ -238,8 +244,8 @@ class RadioController:
         """
         assert len(bytes) == 4
         data = bytes
-        b = struct.pack('4B', *data)
-        c = struct.unpack('>f' if self.bigEndianFloats else '<f', b)
+        b = struct.pack("4B", *data)
+        c = struct.unpack(">f" if self.bigEndianFloats else "<f", b)
         return c[0]
 
     def fourtoint(self, bytes):
@@ -252,6 +258,6 @@ class RadioController:
         """
         assert len(bytes) == 4
         data = bytes
-        b = struct.pack('4B', *data)
-        c = struct.unpack('>I' if self.bigEndianInts else '<I', b)
+        b = struct.pack("4B", *data)
+        c = struct.unpack(">I" if self.bigEndianInts else "<I", b)
         return c[0]

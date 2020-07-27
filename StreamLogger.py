@@ -1,4 +1,6 @@
 import collections
+from detail import LOCAL
+import os
 import sys
 
 CR = 0x0D
@@ -6,88 +8,64 @@ LF = 0x0A
 
 
 class StreamLogger:
-
-    def __init__(self, stream, size) -> None:
+    def __init__(self, bufstream, size) -> None:
         """
-
-        :param stream:
-        :type stream:
-        :param size:
+        :param bufstream: Bufferred stream like a subprocess stdout, that supports read() and peek().
+        :type bufstream:
+        :param size: Size of in-memory circular log buffer
         :type size:
         """
-        self.stream = stream
-        self.circularBuffer = collections.deque(maxlen=size)
+        try:
+            os.mkdir(os.path.join(LOCAL, ".log"))
+        except FileExistsError:
+            pass  # directory exists
 
-        self.filterCache = bytearray()
+        if sys.platform == "win32":
+            filtered_stream = self._crcrlfFilter(bufstream)
+        else:
+            filtered_stream = self._noFilter(bufstream)
+
+        self.circularBuffer = collections.deque(maxlen=size)
+        self._logged_stream = self._read_and_log(filtered_stream)
+
+    def _read_and_log(self, stream_gen):
+        self._logfilePath = os.path.join(LOCAL, ".log", "streamlog")
+        with open(self._logfilePath, "wb") as f:
+            while True:
+                c = next(stream_gen)
+                self.circularBuffer.append(c)
+                f.write(c)
+                f.flush()
+                yield c
+
+    def _crcrlfFilter(self, stream):
+        while True:
+            c = stream.read(1)
+            if c == CR and stream.peek(1)[0] == LF:
+                yield stream.read(1)  # yields the LF, skipping the CR
+            else:
+                yield c
+
+    def _noFilter(self, stream):
+        while True:
+            yield stream.read(1)
 
     def read(self, number):
         """
-
         :param number:
         :type number:
         :return:
         :rtype:
         """
-        if sys.platform == 'win32':
-            data = self._windowsFilter(number)
-        else:
-            data = self.stream.read(number)
-
-        for b in data:
-            self.circularBuffer.append(b)
+        data = bytearray()
+        for _ in range(number):
+            data += next(self._logged_stream)
 
         return data
 
     def getHistory(self):
         """
-
         :return:
-        :rtype:
+        :rtype: Iterable
         """
-        return list(self.circularBuffer)
-
-    def _readWithCache(self, number):
-        """
-
-        :param number:
-        :type number:
-        :return:
-        :rtype:
-        """
-        data = b''
-
-        numFromCache = min(len(self.filterCache), number)
-
-        data += self.filterCache[0:numFromCache]
-        del self.filterCache[0:numFromCache]
-
-        numToRead = number - numFromCache
-
-        if numToRead > 0:
-            data += self.stream.read(numToRead)
-
-        return data
-
-    def _windowsFilter(self, number): # TODO: Should probably be in its own class
-        """
-
-        :param number:
-        :type number:
-        :return:
-        :rtype:
-        """
-        data = b''
-
-        while len(data) < number:
-            new = self._readWithCache(1)
-            if new[0] is CR:
-                next = self._readWithCache(1)
-                if next[0] is LF:
-                    data += next
-                else:
-                    data += new
-                    self.filterCache += next
-            else:
-                data += new
-
-        return data
+        return self.circularBuffer

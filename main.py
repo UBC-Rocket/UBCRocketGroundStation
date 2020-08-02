@@ -21,7 +21,7 @@ from RocketData import RocketData
 from SubpacketIDs import SubpacketEnum
 import MapBox
 import MapData
-from MapData import MapDataClass
+from MapData import MapData
 
 if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
@@ -47,7 +47,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         # TODO move this set of fields out to application.py
         self.connection = connection
         self.data = RocketData()
-        self.map = MapDataClass()
+        self.map = MapData()
 
         QtWidgets.QMainWindow.__init__(self)
         Ui_MainWindow.__init__(self)

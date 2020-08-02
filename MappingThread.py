@@ -19,7 +19,7 @@ class MappingThread(QtCore.QThread):
     sig_received = pyqtSignal()
     sig_print = pyqtSignal(str)
 
-    def __init__(self, connection, map: MapData.MapDataClass, data, parent=None):
+    def __init__(self, connection, map: MapData.MapData, data, parent=None):
         QtCore.QThread.__init__(self, parent)
         self.connection = connection
         self.map = map

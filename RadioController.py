@@ -1,24 +1,25 @@
+import math
 from typing import Dict, Any, Callable, Union, List, Tuple
 import struct
 import SubpacketIDs
 from SubpacketIDs import SubpacketEnum
 
 import collections
-Header = collections.namedtuple('Header', ['subpacket_id', 'timestamp', 'header_length', 'total_length'])
+Header = collections.namedtuple('Header', ['subpacket_id', 'timestamp', 'header_length', 'data_length', 'total_length'])
 
 # CONSTANTS
 
-# TODO Review these based on spec
-# Map subpacket id (int) to length (int) in bytes. Only includes types with CONSTANT lengths
+# TODO Review these based on spec. REVIEW Exclude header bytes???? Depends on if the 'length' field in subpackets will contain dataLength or totalLength. Will require change in extractHeader.
+# Map subpacket id to DATA (excluding header) length in bytes. Only includes types with CONSTANT lengths.
 PACKET_ID_TO_CONST_LENGTH: Dict[int, int] = {
-    SubpacketEnum.STATUS_PING.value: 4,
+    SubpacketEnum.STATUS_PING.value: 5,
     SubpacketEnum.EVENT.value: 2,
     SubpacketEnum.GPS.value: 25,
-    SubpacketEnum.ACKNOWLEDGEMENT.value: 0000,  # TODO ack length?
-    SubpacketEnum.BULK_SENSOR.value: 42,
+    SubpacketEnum.ACKNOWLEDGEMENT.value: 0000,  # TODO ack length??
+    SubpacketEnum.BULK_SENSOR.value: 37,  # TODO Check
 }
 for i in SubpacketIDs.get_list_of_sensor_IDs():
-    PACKET_ID_TO_CONST_LENGTH[i] = 5
+    PACKET_ID_TO_CONST_LENGTH[i] = 9
 
 # Check if packet of given type has constant length
 def isPacketLengthConst(subpacket_id):
@@ -28,13 +29,13 @@ def isPacketLengthConst(subpacket_id):
 # # TODO Possibly deprecate this, since we have header helper that tracks header size
 # # Map subpacket id to header size in bytes. Only includes types with CONSTANT lengths
 # PACKET_ID_TO_HEADER_SIZE: Dict[int, int] = {
-#     SubpacketEnum.STATUS_PING.value: 1,
+#     SubpacketEnum.STATUS_PING.value: 5,
 #     SubpacketEnum.MESSAGE.value: 6,
-#     SubpacketEnum.EVENT.value: 1,
-#     SubpacketEnum.CONFIG.value: 1,
-#     SubpacketEnum.GPS.value: 1,
-#     SubpacketEnum.ACKNOWLEDGEMENT.value: 1,
-#     SubpacketEnum.BULK_SENSOR.value: 1,
+#     SubpacketEnum.EVENT.value: 5,
+#     SubpacketEnum.CONFIG.value: 5,
+#     SubpacketEnum.GPS.value: 5,
+#     SubpacketEnum.ACKNOWLEDGEMENT.value: ,???
+#     SubpacketEnum.BULK_SENSOR.value: 5,
 # }
 # for i in SubpacketIDs.get_list_of_sensor_IDs():
 #     PACKET_ID_TO_HEADER_SIZE[i] = 1
@@ -52,9 +53,12 @@ class RadioController:
         header = self.header(byte_list)
         # data extraction
         data_unit = byte_list[header.header_length:header.total_length]
-        data_length = header.total_length - header.header_length
-        # print(data_unit)
-        parsed_data: Dict[any, any] = self.parse_data(header.subpacket_id, data_unit, data_length)
+        data_length = header.data_length
+        try:
+            parsed_data: Dict[any, any] = self.parse_data(header.subpacket_id, data_unit, data_length)
+        except Exception as e:
+            print(e)
+            raise e
         # Add timestamp from header
         parsed_data[SubpacketEnum.TIME.value] = header.timestamp
         return parsed_data, header.total_length
@@ -62,7 +66,8 @@ class RadioController:
 
     # Helper to convert byte to subpacket id as is in the SubpacketID enum, throws error otherwise
     def extract_subpacket_ID(self, byte: List):
-        subpacket_id: int = int.from_bytes(byte, "big")
+        # subpacket_id: int = int.from_bytes(byte, "big")
+        subpacket_id: int = byte
         # check that id is valid:
         if not SubpacketIDs.isSubpacketID(subpacket_id):
             # TODO Error log here?
@@ -72,35 +77,97 @@ class RadioController:
 
     # general data parser interface
     def parse_data(self, type_id, byte_list, length) -> Dict[any, any]:
+        print(type_id, byte_list)
         return self.packetTypeToParser[type_id](self, byte_list, length)
 
     # Header extractor helper
     def header(self, byte_list: List) -> Header:
-        currByte = Count(0, 1) # index for which byte is to be processed next. Collected in return as header size
+        currByte = Count(0, 1)  # index for which byte is to be processed next. Collected in return as header size
         # Get ID
         subpacket_id: int = self.extract_subpacket_ID(byte_list[currByte.currAndInc(1)])
+
         # Get timestamp
         # TODO REVIEW/CHANGE in type refactoring: how this is required to convert from List[bytes] to List[int]
-        timestamp_int_list: List[int] = [int(x[0]) for x in byte_list[currByte.curr(): currByte.next(4)]]
-        timestamp: int = self.fourtofloat(timestamp_int_list)
+        # Commented due to change in ReadThread, Run() line 39. Now we no longer wrap each array with another array. This appears unnecessary and is a start towards refacctoring fully
+        # timestamp_int_list: List[int] = [int(x[0]) for x in byte_list[currByte.curr(): currByte.next(4)]]
+        # timestamp: int = self.fourtofloat(timestamp_int_list)
+
+        timestamp: int = self.fourtofloat(byte_list[currByte.curr(): currByte.next(4)])
+
+        # Set header length, up to this point.
+        header_length = currByte.curr()
+
         # Get length
         if isPacketLengthConst(subpacket_id):
-            length: int = PACKET_ID_TO_CONST_LENGTH[subpacket_id]
+            data_length: int = PACKET_ID_TO_CONST_LENGTH[subpacket_id]
         else:
-            length: int = int.from_bytes(byte_list[currByte.currAndInc(1)], "big")
-        return Header(subpacket_id, timestamp, currByte.curr(), length)
+            data_length: int = int.from_bytes(byte_list[currByte.currAndInc(1)], "big")
+            header_length = currByte.curr() # Update header length due to presence of length byte
+
+        total_length = data_length + header_length
+
+        return Header(subpacket_id, timestamp, header_length, data_length, total_length)
 
     ### General sensor data parsers
 
-    def statusPing(self, byte_list, length):  # TODO
-        mask = 0b00000011
-        overallStatus = byte_list[0] & mask
-        converted = {0.0}  # STUB
-        return converted
+    # Convert bit field into a series of statuses
+    # FIXME Alternate implementation would convert all bytes into array of bits, then use those accordingly
+    def statusPing(self, byte_list, length):
+    # TODO Make actual types for statuses?
+        # TODO Extract these constants
+        SENSOR_BIT_FIELD_LENGTH = 16
+        OTHER_BIT_FIELD_LENGTH = 16
+        NOMINAL = 'NOMINAL'
+        NONCRITICAL_FAILURE = "NONCRITICAL_FAILURE"
+        CRITICAL_FAILURE = 'CRITICAL_FAILURE'
+        OVERALL_STATUS = 'OVERALL_STATUS'
+        BAROMETER = 'BAROMETER'
+        GPS = 'GPS'
+        ACCELEROMETER = 'ACCELEROMETER'
+        TEMPERATURE = 'TEMPERATURE'
+        IMU = 'IMU'
+        SENSOR_TYPES = [OVERALL_STATUS, BAROMETER, GPS, ACCELEROMETER, IMU, TEMPERATURE]
+        DROGUE_IGNITER_CONTINUITY = 'DROGUE_IGNITER_CONTINUITY'
+        MAIN_IGNITER_CONTINUITY = 'MAIN_IGNITER_CONTINUITY'
+        FILE_OPEN_SUCCESS = 'FILE_OPEN_SUCCESS'
+        OTHER_STATUS_TYPES = [DROGUE_IGNITER_CONTINUITY, MAIN_IGNITER_CONTINUITY, FILE_OPEN_SUCCESS]
+
+        data: Dict = {}
+        currByte = Count(0, 1)
+
+        # Overall status from 6th and 7th bits
+        overallStatus = bitFromByte(byte_list[currByte.curr()], 1) | bitFromByte(byte_list[currByte.currAndInc(1)], 0)
+        if overallStatus == 0b00000000:
+            data['overallStatus'] = NOMINAL
+        elif overallStatus == 0b00000001:
+            data['overallStatus'] = NONCRITICAL_FAILURE
+        elif overallStatus == 0b00000011:
+            data['overallStatus'] = CRITICAL_FAILURE
+
+        # Sensor status
+        numAssignedBits = min(SENSOR_BIT_FIELD_LENGTH, len(SENSOR_TYPES))  # only go as far as is assigned
+        for i in range(0, numAssignedBits):
+            byteIndex = currByte.curr() + math.floor(i / 8)
+            relativeBitIndex = 7 - (i % 8)  # get the bits left to right
+            data[SENSOR_TYPES[i]] = bitFromByte(byte_list[byteIndex], relativeBitIndex)
+        currByte.next(math.floor(SENSOR_BIT_FIELD_LENGTH / 8))  # move to next section of bytes
+
+        # Other misc statuses
+        numAssignedBits = min(OTHER_BIT_FIELD_LENGTH, len(OTHER_STATUS_TYPES))  # only go as far as is assigned
+        for i in range(0, numAssignedBits):
+            byteIndex = currByte.curr() + math.floor(i / 8)
+            relativeBitIndex = 7 - (i % 8)
+            data[OTHER_STATUS_TYPES[i]] = bitFromByte(byte_list[byteIndex], relativeBitIndex)
+        currByte.next(math.floor(OTHER_BIT_FIELD_LENGTH / 8))
+        return data
 
     def message(self, byte_list, length):  # TODO
-        converted = {0.0}  # STUB
-        return converted
+        data: Dict = {}
+        print(byte_list)
+        byteData = bytearray(byte_list)
+        print(byteData)
+        data['MESSAGE'] = byteData.decode('ascii')
+        return data
 
     def event(self, byte_list, length):  # TODO
         converted = {0.0}  # STUB
@@ -192,7 +259,7 @@ class Count:
 
         return self.num
 
-    # increments and returns the new value
+    # returns the current value then increments
     def currAndInc(self, interval=9):
         num = self.num
         if interval == 0:
@@ -201,3 +268,10 @@ class Count:
             self.num += interval
 
         return num
+
+# Extract bit at position targetIndex. 0 based index
+def bitFromByte(val: int, targetIndex: int):
+    mask = 0b1 << targetIndex
+    bit = val & mask
+    bit = bit >> targetIndex
+    return bit

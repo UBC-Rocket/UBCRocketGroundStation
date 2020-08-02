@@ -34,11 +34,12 @@ class ReadThread(QtCore.QThread): #Updates GUI, therefore needs to be a QThread 
 
             data = self.dataQueue.get(block=True, timeout=None) # Block until something new
             self.dataQueue.task_done()
-
-            byteList = [[x] for x in data] # sad that we still need this
+            print(data)
+            # byteList = [[x] for x in data] # sad that we still need this
+            byteList = [x for x in data]  # array of ints ranging from 0 - 255 TODO Review this change
             # loop that quickly runs through entire data list and extracts subpackets where possible
             while len(byteList) > 0:
-                parsed_data: Dict[int, any] = {} # generally any is floats and ints
+                parsed_data: Dict[int, any] = {}  # generally any is floats and ints
                 length: int = 0
                 try:
                     parsed_data, length = self.radioController.extract(byteList)
@@ -46,7 +47,8 @@ class ReadThread(QtCore.QThread): #Updates GUI, therefore needs to be a QThread 
 
                     #notify UI that new data is available to be displayed
                     self.sig_received.emit()
-                except:
+                except Exception as e:
+                    print(e)
                     print("Error decoding new data!")
 
                 del byteList[0:length]

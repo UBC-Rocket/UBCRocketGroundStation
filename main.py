@@ -99,6 +99,13 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         """
 
         """
+
+        grid_width = math.ceil(math.sqrt(len(self.rocket.buttons)))
+
+        # Trying to replicate PyQt's generated code from a .ui file as closely as possible. Hence the execs and custom
+        # button object names.
+        row = 0
+        col = 0
         for button in self.rocket.buttons.keys():
             exec(f"self.{button}Button = QtWidgets.QPushButton(self.centralwidget)")
             sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
@@ -111,7 +118,12 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
             font.setKerning(True)
             exec(f"self.{button}Button.setFont(font)")
             exec(f"self.{button}Button.setObjectName('{button}Button')")
-            exec(f"self.gridLayout_5.addWidget(self.{button}Button)")
+            exec(f"self.gridLayout_5.addWidget(self.{button}Button, {row}, {col}, 1, 1)")
+            if col + 1 < grid_width:
+                col += 1
+            else:
+                col = 0
+                row += 1
         # A .py file created from a .ui file will have the labels all defined at the end, for some reason. Two for loops
         # are being used to be consistent with the PyQt5 conventions.
         for button in self.rocket.buttons.keys():

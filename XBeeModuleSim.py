@@ -99,6 +99,7 @@ class XBeeModuleSim:
             try:
                 self._parse_API_frame()
             except UnescapedDelimiterError:
+                print("WARNING: Caught UnescapedDelimiterError exception")
                 continue  # drop it and try again
             else:
                 start = next(self._rocket_rx_queue)

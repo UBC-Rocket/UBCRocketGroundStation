@@ -2,8 +2,7 @@ import abc
 from typing import Callable
 
 
-class IConnection:
-
+class IConnection(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def registerCallback(self, fn: Callable[[bytearray], None]) -> None:
         """Register callback to which we will send new data.

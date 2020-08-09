@@ -8,12 +8,12 @@ LF = 0x0A
 
 
 class StreamLogger:
-    def __init__(self, bufstream, size) -> None:
+    def __init__(self, bufstream, size: int) -> None:
         """
         :param bufstream: Bufferred stream like a subprocess stdout, that supports read() and peek().
-        :type bufstream:
+        :type bufstream: Bufferred stream
         :param size: Size of in-memory circular log buffer
-        :type size:
+        :type size: int
         """
         try:
             os.mkdir(os.path.join(LOCAL, ".log"))
@@ -50,12 +50,12 @@ class StreamLogger:
         while True:
             yield stream.read(1)
 
-    def read(self, number):
+    def read(self, number: int):
         """
-        :param number:
-        :type number:
-        :return:
-        :rtype:
+        :param number: Number of bytes to read
+        :type number: int
+        :return: Bytes from stream
+        :rtype: Iterable of bytes
         """
         data = bytearray()
         for _ in range(number):
@@ -65,7 +65,7 @@ class StreamLogger:
 
     def getHistory(self):
         """
-        :return:
-        :rtype: Iterable
+        :return: Contents of circular buffer aka history
+        :rtype: Iterable of bytes
         """
         return self.circularBuffer

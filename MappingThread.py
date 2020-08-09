@@ -1,14 +1,14 @@
 import math
 import threading
-from multiprocessing import Process, Queue
 import time
+from multiprocessing import Process, Queue
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
 from scipy.misc import imresize
 
+import map_data
 import MapBox
-import MapData
 from SubpacketIDs import SubpacketEnum
 
 # Scaling is linear so a scale factor of 1 means no scaling (aka 1*x=x)
@@ -18,14 +18,14 @@ class MappingThread(QtCore.QThread):
     sig_received = pyqtSignal()
     sig_print = pyqtSignal(str)
 
-    def __init__(self, connection, m: MapData.MapDataClass, data, parent=None) -> None:
+    def __init__(self, connection, m: map_data.MapData, data, parent=None) -> None:
         """Mapping work and processing that gets put into MapData, repeatedly as RocketData is updated.
         Signals the main thread to fetch UI elements in MapDataSimilar to ReadData.
 
         :param connection:
         :type connection:
         :param map:
-        :type map: MapData.MapDataClass
+        :type map: map_data.MapData
         :param data:
         :type data:
         :param parent:
@@ -96,8 +96,8 @@ class MappingThread(QtCore.QThread):
         if longitude is None or latitude is None:
             return False
 
-        radius = self.map.getMapValue(MapData.RADIUS)
-        zoom = self.map.getMapValue(MapData.ZOOM)
+        radius = self.map.getMapValue(map_data.RADIUS)
+        zoom = self.map.getMapValue(map_data.ZOOM)
 
         # Create MapPoints that correspond to corners of a square area (of side length 2*radius) surrounding the
         # inputted latitude and longitude.
@@ -131,8 +131,8 @@ class MappingThread(QtCore.QThread):
         mark = (x * resizedMapImage.shape[0], y * resizedMapImage.shape[1])
 
         # TODO NOT ROBUST: What if mapdata updated between top of this function and this setMap
-        self.map.setMapValue(MapData.IMAGE, resizedMapImage)
-        self.map.setMapValue(MapData.MARK, mark)
+        self.map.setMapValue(map_data.IMAGE, resizedMapImage)
+        self.map.setMapValue(map_data.MARK, mark)
 
         return True
 

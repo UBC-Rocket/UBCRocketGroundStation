@@ -6,7 +6,7 @@ IMAGE = '_image'
 MARK = '_mark'
 
 
-class MapDataClass:  # TODO Is there a better way of differentiating from the filename? Its causing trouble when trying to use both
+class MapData:
     def __init__(self) -> None:
         """
 

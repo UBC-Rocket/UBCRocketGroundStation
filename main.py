@@ -10,14 +10,14 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import pyqtSignal
 from scipy.misc import imresize
 
+import map_data
 import MapBox
-import MapData
 import MappingThread
 import mplwidget  # DO NOT REMOVE pyinstller needs this
 import ReadThread
 import SendThread
 from detail import LOCAL
-from MapData import MapDataClass
+from map_data import MapData
 from RocketData import RocketData
 from SubpacketIDs import SubpacketEnum
 
@@ -50,7 +50,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         # TODO move this set of fields out to application.py
         self.connection = connection
         self.data = RocketData()
-        self.map = MapDataClass()
+        self.map = MapData()
 
         QtWidgets.QMainWindow.__init__(self)
         Ui_MainWindow.__init__(self)
@@ -183,7 +183,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
             if isinstance(c, AnnotationBbox):
                 c.remove()
 
-        mapImage = self.map.getMapValue(MapData.IMAGE)
+        mapImage = self.map.getMapValue(map_data.IMAGE)
 
         # plotMap UI modification
         self.plotWidget.canvas.ax.set_axis_off()
@@ -201,7 +201,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.im = self.plotWidget.canvas.ax.imshow(mapImage)
 
         # updateMark UI modification
-        mark = self.map.getMapValue(MapData.MARK)
+        mark = self.map.getMapValue(map_data.MARK)
         annotation_box = AnnotationBbox(OffsetImage(MAP_MARKER), mark, frameon=False)
         self.plotWidget.canvas.ax.add_artist(annotation_box)
 

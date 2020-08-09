@@ -2,8 +2,7 @@ import abc
 from typing import Union
 
 
-class IConnectionFactory:
-
+class IConnectionFactory(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def requiresComPort(self) -> bool:
         return False
@@ -13,5 +12,7 @@ class IConnectionFactory:
         return False
 
     @abc.abstractmethod
-    def construct(self, comPort: Union[int, str, None] = None, baudRate: Union[int, None] = None) -> None:
+    def construct(
+        self, comPort: Union[int, str, None] = None, baudRate: Union[int, None] = None
+    ) -> None:
         pass

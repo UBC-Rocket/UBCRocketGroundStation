@@ -9,24 +9,23 @@ Header = collections.namedtuple('Header', ['subpacket_id', 'timestamp', 'header_
 
 # CONSTANTS
 
-# TODO Review these based on spec. REVIEW Exclude header bytes???? Depends on if the 'length' field in subpackets will contain dataLength or totalLength. Will require change in extractHeader.
-# Map subpacket id to DATA (excluding header) length in bytes. Only includes types with CONSTANT lengths.
+# Map subpacket id to DATA length (excluding header) in bytes. Only includes types with CONSTANT lengths.
 PACKET_ID_TO_CONST_LENGTH: Dict[int, int] = {
     SubpacketEnum.STATUS_PING.value: 5,
-    SubpacketEnum.EVENT.value: 2,
-    SubpacketEnum.GPS.value: 25,
+    SubpacketEnum.EVENT.value: 1,
+    SubpacketEnum.GPS.value: 24,
     SubpacketEnum.ACKNOWLEDGEMENT.value: 0000,  # TODO ack length??
-    SubpacketEnum.BULK_SENSOR.value: 37,  # TODO Check
+    SubpacketEnum.BULK_SENSOR.value: 37,
 }
 for i in SubpacketIDs.get_list_of_sensor_IDs():
-    PACKET_ID_TO_CONST_LENGTH[i] = 9
+    PACKET_ID_TO_CONST_LENGTH[i] = 4
 
 # Check if packet of given type has constant length
 def isPacketLengthConst(subpacket_id):
     return subpacket_id in PACKET_ID_TO_CONST_LENGTH.keys()
 
 
-# # TODO Possibly deprecate this, since we have header helper that tracks header size
+# # TODO remove? since we have header helper that tracks header size. Would be useful, if header size varies more
 # # Map subpacket id to header size in bytes. Only includes types with CONSTANT lengths
 # PACKET_ID_TO_HEADER_SIZE: Dict[int, int] = {
 #     SubpacketEnum.STATUS_PING.value: 5,
@@ -40,7 +39,8 @@ def isPacketLengthConst(subpacket_id):
 # for i in SubpacketIDs.get_list_of_sensor_IDs():
 #     PACKET_ID_TO_HEADER_SIZE[i] = 1
 
-
+# This class takes care of converting subpacket data coming in, according to the specifications.
+# The term/parameter name byte list refer to a list of byte data, each byte being represented as ints.
 class RadioController:
 
     def __init__(self, bigEndianInts, bigEndianFloats):
@@ -63,7 +63,6 @@ class RadioController:
         parsed_data[SubpacketEnum.TIME.value] = header.timestamp
         return parsed_data, header.total_length
 
-
     # Helper to convert byte to subpacket id as is in the SubpacketID enum, throws error otherwise
     def extract_subpacket_ID(self, byte: List):
         # subpacket_id: int = int.from_bytes(byte, "big")
@@ -75,24 +74,25 @@ class RadioController:
         return SubpacketEnum(subpacket_id).value
 
 
-    # general data parser interface
+    # general data parser interface. Routes to the right parse, based on type_id
     def parse_data(self, type_id, byte_list, length) -> Dict[any, any]:
         print(type_id, byte_list)
-        return self.packetTypeToParser[type_id](self, byte_list, length)
+        # Switch, passing Id if it is a sensor type
+        return self.packetTypeToParser[type_id](self, byte_list, length=length, type_id=type_id)
+        # if SubpacketIDs.isSingleSensorData(type_id):
+        #     return self.packetTypeToParser[type_id](self, byte_list, length=length, type_id=type_id)
+        # else:
+        #     return self.packetTypeToParser[type_id](self, byte_list, length=length, type_id=type_id)
 
-    # Header extractor helper
+    # Header extractor helper.
+    # ASSUMES that length values represent full subpacket lengths, including headers
     def header(self, byte_list: List) -> Header:
         currByte = Count(0, 1)  # index for which byte is to be processed next. Collected in return as header size
         # Get ID
         subpacket_id: int = self.extract_subpacket_ID(byte_list[currByte.currAndInc(1)])
 
         # Get timestamp
-        # TODO REVIEW/CHANGE in type refactoring: how this is required to convert from List[bytes] to List[int]
-        # Commented due to change in ReadThread, Run() line 39. Now we no longer wrap each array with another array. This appears unnecessary and is a start towards refacctoring fully
-        # timestamp_int_list: List[int] = [int(x[0]) for x in byte_list[currByte.curr(): currByte.next(4)]]
-        # timestamp: int = self.fourtofloat(timestamp_int_list)
-
-        timestamp: int = self.fourtofloat(byte_list[currByte.curr(): currByte.next(4)])
+        timestamp: int = self.fourtoint(byte_list[currByte.curr(): currByte.next(4)])
 
         # Set header length, up to this point.
         header_length = currByte.curr()
@@ -101,8 +101,8 @@ class RadioController:
         if isPacketLengthConst(subpacket_id):
             data_length: int = PACKET_ID_TO_CONST_LENGTH[subpacket_id]
         else:
-            data_length: int = int.from_bytes(byte_list[currByte.currAndInc(1)], "big")
-            header_length = currByte.curr() # Update header length due to presence of length byte
+            data_length: int = byte_list[currByte.currAndInc(1)]
+            header_length = currByte.curr()  # Update header length due to presence of length byte
 
         total_length = data_length + header_length
 
@@ -111,14 +111,12 @@ class RadioController:
     ### General sensor data parsers
 
     # Convert bit field into a series of statuses
-    # FIXME Alternate implementation would convert all bytes into array of bits, then use those accordingly
-    def statusPing(self, byte_list, length):
-    # TODO Make actual types for statuses?
-        # TODO Extract these constants
-        SENSOR_BIT_FIELD_LENGTH = 16
-        OTHER_BIT_FIELD_LENGTH = 16
+    def statusPing(self, byte_list, **kwargs):
+        sensor_bit_field_length = 16
+        other_bit_field_length = 16
+        # TODO need these elsewhere? extract (and make enum, or maybe combine with SubpacketIds somehow)
         NOMINAL = 'NOMINAL'
-        NONCRITICAL_FAILURE = "NONCRITICAL_FAILURE"
+        NONCRITICAL_FAILURE = 'NONCRITICAL_FAILURE'
         CRITICAL_FAILURE = 'CRITICAL_FAILURE'
         OVERALL_STATUS = 'OVERALL_STATUS'
         BAROMETER = 'BAROMETER'
@@ -133,113 +131,137 @@ class RadioController:
         OTHER_STATUS_TYPES = [DROGUE_IGNITER_CONTINUITY, MAIN_IGNITER_CONTINUITY, FILE_OPEN_SUCCESS]
 
         data: Dict = {}
-        currByte = Count(0, 1)
+        curr_byte = Count(0, 1)
 
         # Overall status from 6th and 7th bits
-        overallStatus = bitFromByte(byte_list[currByte.curr()], 1) | bitFromByte(byte_list[currByte.currAndInc(1)], 0)
+        overallStatus = bitFromByte(byte_list[curr_byte.curr()], 1) | bitFromByte(byte_list[curr_byte.currAndInc(1)], 0)
         if overallStatus == 0b00000000:
-            data['overallStatus'] = NOMINAL
+            data[SubpacketEnum.STATUS_PING.value] = NOMINAL
         elif overallStatus == 0b00000001:
-            data['overallStatus'] = NONCRITICAL_FAILURE
+            data[SubpacketEnum.STATUS_PING.value] = NONCRITICAL_FAILURE
         elif overallStatus == 0b00000011:
-            data['overallStatus'] = CRITICAL_FAILURE
+            data[SubpacketEnum.STATUS_PING.value] = CRITICAL_FAILURE
 
         # Sensor status
-        numAssignedBits = min(SENSOR_BIT_FIELD_LENGTH, len(SENSOR_TYPES))  # only go as far as is assigned
-        for i in range(0, numAssignedBits):
-            byteIndex = currByte.curr() + math.floor(i / 8)
-            relativeBitIndex = 7 - (i % 8)  # get the bits left to right
-            data[SENSOR_TYPES[i]] = bitFromByte(byte_list[byteIndex], relativeBitIndex)
-        currByte.next(math.floor(SENSOR_BIT_FIELD_LENGTH / 8))  # move to next section of bytes
+        num_assigned_bits = min(sensor_bit_field_length, len(SENSOR_TYPES))  # only go as far as is assigned
+        for i in range(0, num_assigned_bits):
+            byte_index = curr_byte.curr() + math.floor(i / 8)
+            relative_bit_index = 7 - (i % 8)  # get the bits left to right
+            data[SENSOR_TYPES[i]] = bitFromByte(byte_list[byte_index], relative_bit_index)
+        curr_byte.next(math.floor(sensor_bit_field_length / 8))  # move to next section of bytes
 
         # Other misc statuses
-        numAssignedBits = min(OTHER_BIT_FIELD_LENGTH, len(OTHER_STATUS_TYPES))  # only go as far as is assigned
-        for i in range(0, numAssignedBits):
-            byteIndex = currByte.curr() + math.floor(i / 8)
-            relativeBitIndex = 7 - (i % 8)
-            data[OTHER_STATUS_TYPES[i]] = bitFromByte(byte_list[byteIndex], relativeBitIndex)
-        currByte.next(math.floor(OTHER_BIT_FIELD_LENGTH / 8))
+        num_assigned_bits = min(other_bit_field_length, len(OTHER_STATUS_TYPES))  # only go as far as is assigned
+        for i in range(0, num_assigned_bits):
+            byte_index = curr_byte.curr() + math.floor(i / 8)
+            relative_bit_index = 7 - (i % 8)
+            data[OTHER_STATUS_TYPES[i]] = bitFromByte(byte_list[byte_index], relative_bit_index)
+        curr_byte.next(math.floor(other_bit_field_length / 8))
         return data
 
-    def message(self, byte_list, length):  # TODO
+    def message(self, byte_list, **kwargs):
         data: Dict = {}
-        print(byte_list)
-        byteData = bytearray(byte_list)
-        print(byteData)
-        data['MESSAGE'] = byteData.decode('ascii')
+
+        # Two step: int[] -> bytearray -> string. Probably a more efficient way
+        byte_data = bytearray(byte_list)
+        data[SubpacketEnum.MESSAGE.value] = byte_data.decode('ascii')
+        print(data[SubpacketEnum.MESSAGE.value])  # TODO Temporary until: saving to RocketData, logging, or displaying done
         return data
 
-    def event(self, byte_list, length):  # TODO
-        converted = {0.0}  # STUB
-        return converted
+    def event(self, byte_list, **kwargs):
+        data: Dict = {}
+        # TODO Enumerate the list of events mapped to strings somewhere? Then convert to human readable string here.
+        data[SubpacketEnum.EVENT.value] = byte_list[0]
+        return data
 
-    def config(self, byte_list, length):  # TODO
-        converted = {0.0}  # STUB
-        return converted
+    # TODO. This is a stub until there is a spec.
+    def config(self, byte_list, **kwargs):
+        data = {}
+        data[SubpacketEnum.CONFIG.value] = byte_list[0]
+        return data
 
-    def single_sensor(self, byte_list, length):  # TODO
-        converted = {0.0}  # STUB
-        return converted
+    def single_sensor(self, byte_list, **kwargs):
+        type_id = kwargs['type_id']
+        data = {}
+        # TODO Commented out, since apparently we pass along state, or other non-floats as float too??
+        # if type_id == SubpacketEnum.STATE.value:
+        #     data[type_id] = byte_list[0]
+        # else:
+        #     data[type_id] = self.fourtofloat(byte_list[0])
+        data[type_id] = self.fourtofloat(byte_list[0])
+        return data
 
-    def gps(self, byte_list, length):  # TODO
-        converted = {0.0}  # STUB
-        return converted
+    def gps(self, byte_list, **kwargs):
+        data = {}
+        curr_byte = Count(0, 1)
+        data[SubpacketEnum.LATITUDE.value] = self.eighttodouble(byte_list[curr_byte.curr():curr_byte.next(8)])
+        data[SubpacketEnum.LONGITUDE.value] = self.eighttodouble(byte_list[curr_byte.curr():curr_byte.next(8)])
+        data[SubpacketEnum.GPS_ALTITUDE.value] = self.eighttodouble(byte_list[curr_byte.curr():curr_byte.next(8)])
+        return data
 
-    # def acknowledgement(self, byte_list, length):  # TODO ?
-    #     converted = 0.0  # STUB
-    #     return converted
+    # TODO
+    # def acknowledgement(self, byte_list, **kwargs):
+    #     data = {}  # STUB
+    #     return data
 
-    def bulk_sensor(self, byte_list: List, length: int):
+    def bulk_sensor(self, byte_list: List, **kwargs):
         data: Dict[int, any] = {}
 
-        # TODO REVIEW/CHANGE in type refactoring: how this is required to convert from List[bytes] to List[int]
-        int_list: List[int] = [int(x[0]) for x in byte_list]
-        currByte = Count(0, 4)
+        # # TODO REVIEW/CHANGE in type refactoring: how this is required to convert from List[bytes] to List[int]
+        # byte_list: List[int] = [int(x[0]) for x in byte_list]
+        curr_byte = Count(0, 4)
 
-        data[SubpacketEnum.CALCULATED_ALTITUDE.value] = self.fourtofloat(int_list[currByte.curr():currByte.next(4)])  # TODO Double check it is calculated barometer altitude with firmware
-        data[SubpacketEnum.ACCELERATION_X.value] = self.fourtofloat(int_list[currByte.curr():currByte.next(4)])
-        data[SubpacketEnum.ACCELERATION_Y.value] = self.fourtofloat(int_list[currByte.curr():currByte.next(4)])
-        data[SubpacketEnum.ACCELERATION_Z.value] = self.fourtofloat(int_list[currByte.curr():currByte.next(4)])
-        data[SubpacketEnum.ORIENTATION_1.value] = self.fourtofloat(int_list[currByte.curr():currByte.next(4)])
-        data[SubpacketEnum.ORIENTATION_2.value] = self.fourtofloat(int_list[currByte.curr():currByte.next(4)])
-        data[SubpacketEnum.ORIENTATION_3.value] = self.fourtofloat(int_list[currByte.curr():currByte.next(4)])
-        data[SubpacketEnum.LATITUDE.value] = self.fourtofloat(int_list[currByte.curr():currByte.next(4)])
-        data[SubpacketEnum.LONGITUDE.value] = self.fourtofloat(int_list[currByte.curr():currByte.next(4)])
-        data[SubpacketEnum.STATE.value] = int_list[currByte.currAndInc(1)]
+        data[SubpacketEnum.CALCULATED_ALTITUDE.value] = self.fourtofloat(byte_list[curr_byte.curr():curr_byte.next(4)])  # TODO Double check it is calculated barometer altitude with firmware
+        data[SubpacketEnum.ACCELERATION_X.value] = self.fourtofloat(byte_list[curr_byte.curr():curr_byte.next(4)])
+        data[SubpacketEnum.ACCELERATION_Y.value] = self.fourtofloat(byte_list[curr_byte.curr():curr_byte.next(4)])
+        data[SubpacketEnum.ACCELERATION_Z.value] = self.fourtofloat(byte_list[curr_byte.curr():curr_byte.next(4)])
+        data[SubpacketEnum.ORIENTATION_1.value] = self.fourtofloat(byte_list[curr_byte.curr():curr_byte.next(4)])
+        data[SubpacketEnum.ORIENTATION_2.value] = self.fourtofloat(byte_list[curr_byte.curr():curr_byte.next(4)])
+        data[SubpacketEnum.ORIENTATION_3.value] = self.fourtofloat(byte_list[curr_byte.curr():curr_byte.next(4)])
+        data[SubpacketEnum.LATITUDE.value] = self.fourtofloat(byte_list[curr_byte.curr():curr_byte.next(4)])  # TODO Should lat+lon be doubles??
+        data[SubpacketEnum.LONGITUDE.value] = self.fourtofloat(byte_list[curr_byte.curr():curr_byte.next(4)])
+        data[SubpacketEnum.STATE.value] = byte_list[curr_byte.currAndInc(1)]
         return data
 
 
-    # Dictionary of subpacket id - function to parse that data
+    # Dictionary of subpacket id mapped to function to parse that data
     packetTypeToParser: Dict[int, Callable[[list, int], Dict[any, any]]] = {  # TODO review this type hint
         SubpacketEnum.STATUS_PING.value: statusPing,
         SubpacketEnum.MESSAGE.value: message,
         SubpacketEnum.EVENT.value: event,
         SubpacketEnum.CONFIG.value: config,
-        # SubpacketEnum.SINGLE_SENSOR.value: single_sensor, # Todo make this a range of keys?
+        # SubpacketEnum.SINGLE_SENSOR.value: single_sensor,  # See loop that maps function for range of ids below
         SubpacketEnum.GPS.value: gps,
-        # SubpacketEnum.ACKNOWLEDGEMENT.value: acknowledgement, # TODO Uncomment when complete
+        # SubpacketEnum.ACKNOWLEDGEMENT.value: acknowledgement,
         SubpacketEnum.BULK_SENSOR.value: bulk_sensor,
     }
+    for i in SubpacketIDs.get_list_of_sensor_IDs():
+        packetTypeToParser[i] = single_sensor
 
-    # TODO review this for data type fixes
-    def fourtofloat(self, bytes):
-        assert len(bytes) == 4
-        data = bytes
+    # TODO Put these in utils folder/file?
+    def fourtofloat(self, byte_list):
+        assert len(byte_list) == 4
+        data = byte_list
         b = struct.pack('4B', *data)
         c = struct.unpack('>f' if self.bigEndianFloats else '<f', b)
         return c[0]
 
-    def fourtoint(self, bytes):
-        assert len(bytes) == 4
-        data = bytes
+    def fourtoint(self, byte_list):
+        assert len(byte_list) == 4
+        data = byte_list
         b = struct.pack('4B', *data)
         c = struct.unpack('>I' if self.bigEndianInts else '<I', b)
         return c[0]
 
+    def eighttodouble(self, byte_list):
+        assert len(byte_list) == 8
+        data = byte_list
+        b = struct.pack('8B', *data)
+        c = struct.unpack('>d' if self.bigEndianInts else '<d', b)
+        return c[0]
 
-# python way of doing ++ (unlimited incrementing) TODO Put this in utils folder/file?
+# Helper class. python way of doing ++ (unlimited incrementing) TODO Put this in utils folder/file?
 class Count:
-
     def __init__(self, start=0, interval=1):
         self.interval = interval
         self.num = start
@@ -269,7 +291,7 @@ class Count:
 
         return num
 
-# Extract bit at position targetIndex. 0 based index
+# Helper function. Extract bit at position targetIndex. 0 based index. TODO Put this in utils folder/file?
 def bitFromByte(val: int, targetIndex: int):
     mask = 0b1 << targetIndex
     bit = val & mask

@@ -29,7 +29,7 @@ class DebugConnection(IConnection):
                 if not self.callback:
                     continue
 
-                bulk_sensor_arr: bytearray = self.bulk_sensor_mock_random()
+                # bulk_sensor_arr: bytearray = self.bulk_sensor_mock_random()
                 # statusPingArr: bytearray = self.statusPingMockSetValues()
                 messageArr: bytearray = self.messageValues()
                 self.callback(messageArr)
@@ -79,8 +79,7 @@ class DebugConnection(IConnection):
         bulk_sensor_arr.append(SubpacketEnum.MESSAGE.value)  # id
         bulk_sensor_arr.extend((int(time.time())).to_bytes(length=4, byteorder='big'))  # use current integer time
         bulk_sensor_arr.extend((int(5)).to_bytes(length=1, byteorder='big'))  # length of the message data
-        # bulk_sensor_arr.extend(map(ord, "Hello"))  # message TODO TEST this
-        bulk_sensor_arr.extend("Hello".encode('ascii'))  # message TODO TEST this
+        bulk_sensor_arr.extend([ord(ch) for ch in 'hello'])  # message
         return bulk_sensor_arr
 
     # Send data to connection

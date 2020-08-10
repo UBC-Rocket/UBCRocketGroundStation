@@ -57,7 +57,7 @@ statemap = {  # TODO Review legacy data format. Not deleted due to need to confe
 }
 
 # Supposedly a dictionary of all of the time points mapped to a dictionary of sensor id to value.
-# self.data:    dictionary designed to hold time - dictionary {sensor id - value} pairs.
+# self.timeset:    dictionary designed to hold time - dictionary {sensor id - value} pairs.
         # essentially  self.data: Dict[int, Dict[str, Union[int, float]]] = {}
 
 class RocketData:

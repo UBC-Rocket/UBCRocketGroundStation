@@ -32,17 +32,17 @@ class ReadThread(QtCore.QThread): #Updates GUI, therefore needs to be a QThread 
     def run(self):
         while True:
 
-            data = self.dataQueue.get(block=True, timeout=None) # Block until something new
+            data = self.dataQueue.get(block=True, timeout=None)  # Block until something new
             self.dataQueue.task_done()
             print(data)
-            # byteList = [[x] for x in data] # sad that we still need this
-            byteList = [x for x in data]  # array of ints ranging from 0 - 255 TODO Review this change
+            # Convert from bytearray to List[int]
+            byte_list = list(data)  # list of ints ranging from 0 - 255. Equivalent to doing [x for x in data]
             # loop that quickly runs through entire data list and extracts subpackets where possible
-            while len(byteList) > 0:
+            while len(byte_list) > 0:
                 parsed_data: Dict[int, any] = {}  # generally any is floats and ints
                 length: int = 0
                 try:
-                    parsed_data, length = self.radioController.extract(byteList)
+                    parsed_data, length = self.radioController.extract(byte_list)
                     self.rocketData.addBundle(parsed_data)
 
                     #notify UI that new data is available to be displayed
@@ -51,4 +51,4 @@ class ReadThread(QtCore.QThread): #Updates GUI, therefore needs to be a QThread 
                     print(e)
                     print("Error decoding new data!")
 
-                del byteList[0:length]
+                del byte_list[0:length]

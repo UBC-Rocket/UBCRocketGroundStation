@@ -17,7 +17,7 @@ import mplwidget  # DO NOT REMOVE pyinstller needs this
 import ReadThread
 import SendThread
 from detail import LOCAL
-from MapData import MapDataClass
+from map_data import MapData
 from rocket_profile import RocketProfile
 from RocketData import RocketData
 from SubpacketIDs import SubpacketEnum
@@ -54,7 +54,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.connection = connection
         self.rocket = rocket
         self.data = RocketData()
-        self.map = MapData()
+        self.map = map_data.MapData()
 
         QtWidgets.QMainWindow.__init__(self)
         Ui_MainWindow.__init__(self)
@@ -73,6 +73,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionSave.triggered.connect(self.saveFile)
 
         self.setup_buttons()
+        self.setup_labels()
 
         self.printToConsole("Starting Connection")
 
@@ -132,6 +133,27 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         for button, command in self.rocket.buttons.items():
             exec(f"self.{button}Button.clicked.connect(lambda _: self.sendCommand('{command}'))", {"self": self})
 
+    def setup_labels(self):
+        row = 0
+        for label in self.rocket.labels.keys():
+            exec(f"self.{label}Text = QtWidgets.QLabel(self.centralwidget)")
+            sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
+            sizePolicy.setHorizontalStretch(0)
+            sizePolicy.setVerticalStretch(0)
+            exec(f"sizePolicy.setHeightForWidth(self.{label}Text.sizePolicy().hasHeightForWidth())")
+            exec(f"self.{label}Text.setSizePolicy(sizePolicy)")
+            exec(f"self.{label}Text.setObjectName('{label}Text')")
+            exec(f"self.gridLayout_6.addWidget(self.{label}Text, {row}, 0, 1, 1)")
+
+            exec(f"self.{label}Label = QtWidgets.QLabel(self.centralwidget)")
+            exec(f"self.{label}Label.setObjectName('{label}Label')")
+            exec(f"self.gridLayout_6.addWidget(self.{label}Label, {row}, 1, 1, 1)")
+            row += 1
+
+        for label in self.rocket.labels.keys():
+            exec(f"self.{label}Text.setText(QtCore.QCoreApplication.translate('MainWindow', '{label}'))")
+            exec(f"self.{label}Label.setText(QtCore.QCoreApplication.translate('MainWindow', '0'))")
+
     def closeEvent(self, event) -> None:
         """
 
@@ -150,28 +172,8 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         :return:
         :rtype:
         """
-        def nonezero(x: float) -> Union[float, None]:
-            """
 
-            :param x:
-            :type x:
-            :return:
-            :rtype:
-            """
-            return 0 if x is None else x
-
-        latitude = self.data.lastvalue(SubpacketEnum.LATITUDE.value)
-        longitude = self.data.lastvalue(SubpacketEnum.LONGITUDE.value)
-        accel = math.sqrt(nonezero(self.data.lastvalue(SubpacketEnum.ACCELERATION_X.value)) ** 2 +
-                          nonezero(self.data.lastvalue(SubpacketEnum.ACCELERATION_Y.value)) ** 2 +
-                          nonezero(self.data.lastvalue(SubpacketEnum.ACCELERATION_Z.value)) ** 2)
-
-        self.AltitudeLabel.setText(str(self.data.lastvalue(SubpacketEnum.CALCULATED_ALTITUDE.value)))
-        self.MaxAltitudeLabel.setText(str(self.data.highest_altitude))
-        self.GpsLabel.setText(str(latitude) + ", " + str(longitude))
-        self.StateLabel.setText(str(self.data.lastvalue(SubpacketEnum.STATE.value)))
-        self.PressureLabel.setText(str(self.data.lastvalue(SubpacketEnum.PRESSURE.value)))
-        self.AccelerationLabel.setText(str(accel))
+        self.rocket.update_labels(self)
 
     def sendButtonPressed(self) -> None:
         """

@@ -5,12 +5,13 @@ import PyQt5
 import serial.tools.list_ports
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
-import rocket_profile
 import start
+from co_pilot import co_pilot
 from DebugConnectionFactory import DebugConnectionFactory
 from detail import *
 from SerialConnectionFactory import SerialConnectionFactory
 from SimConnectionFactory import SimConnectionFactory
+from tantalus import tantalus
 
 if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
@@ -38,8 +39,8 @@ class comWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "SIM": SimConnectionFactory(),
         }
         self.RocketProfiles = {
-            "Tantalus": rocket_profile.tantalus,
-            "Co Pilot": rocket_profile.co_pilot,
+            "Tantalus": tantalus,
+            "Co Pilot": co_pilot,
         }
         self.setupUi(self)
         self.MySetup()

@@ -9,7 +9,7 @@ from SubpacketIDs import SubpacketEnum
 # TODO Review these based on spec
 # Map subpacket id (int) to length (int) in bytes. Only includes types with CONSTANT lengths
 PACKET_ID_TO_CONST_LENGTH: Dict[int, int] = {
-    SubpacketEnum.STATUS_PING.value: 4,
+    SubpacketEnum.STATUS_PING.value: 10,
     SubpacketEnum.EVENT.value: 2,
     SubpacketEnum.GPS.value: 25,
     SubpacketEnum.ACKNOWLEDGEMENT.value: 0000,  # TODO ack length?
@@ -114,7 +114,7 @@ class RadioController:
         :return:
         :rtype:
         """
-        converted = {0.0}
+        converted = {}
         return converted
 
     def message(self, byte_list, length):  # TODO
@@ -127,7 +127,8 @@ class RadioController:
         :return:
         :rtype:
         """
-        converted = {0.0}  # STUB
+        print("Message: ", bytes((i[0] for i in byte_list)))
+        converted = {}  # STUB
         return converted
 
     def event(self, byte_list, length):  # TODO

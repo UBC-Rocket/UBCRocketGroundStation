@@ -1,28 +1,30 @@
 import random
 import struct
-import time
 import threading
 from array import array
+import time
 
 from IConnection import IConnection
 from SubpacketIDs import SubpacketEnum
 
 
 class DebugConnection(IConnection):
-    def __init__(self):
+
+    def __init__(self) -> None:
+        """
+
+        """
         self.lastSend = time.time()  # float seconds
         self.callback = None
         self.lock = threading.RLock()  # Protects callback variable and any other "state" variables
         self.connectionThread = threading.Thread(target=self._run, daemon=True)
         self.connectionThread.start()
 
-    # Register callback to which we will send new data
-    def registerCallback(self, fn):
-        with self.lock:
-            self.callback = fn
-
     # Thread loop that creates fake data at constant interval and returns it via callback
-    def _run(self):
+    def _run(self) -> None:
+        """
+
+        """
         while True:
             time.sleep(5)
             with self.lock:
@@ -35,6 +37,11 @@ class DebugConnection(IConnection):
                 self.callback(messageArr)
 
     def bulk_sensor_mock_random(self) -> bytearray:
+        """
+
+        :return:
+        :rtype: bytearray
+        """
         bulk_sensor_arr: bytearray = bytearray()
         bulk_sensor_arr.append(0x30)  # id
         bulk_sensor_arr.extend((int(time.time())).to_bytes(length=4, byteorder='big'))  # use current integer time
@@ -82,16 +89,26 @@ class DebugConnection(IConnection):
         bulk_sensor_arr.extend([ord(ch) for ch in 'hello'])  # message
         return bulk_sensor_arr
 
+    # Register callback to which we will send new data
+    def registerCallback(self, fn) -> None:
+        with self.lock:
+            self.callback = fn
+
     # Send data to connection
-    def send(self, data):
+    def send(self, data) -> None:
+        """
+
+        :param data:
+        :type data:
+        """
         with self.lock:  # Currently not needed, but good to have for future
-            print("%s sent to DebugConnection" % data)
+            print(f"{data} sent to DebugConnection")
 
-    def isIntBigEndian(self):
-        return True
-
-    def isFloatBigEndian(self):
-        return True
-
-    def shutDown(self):
+    def shutDown(self) -> None:
         pass
+
+    def isIntBigEndian(self) -> bool:
+        return True
+
+    def isFloatBigEndian(self) -> bool:
+        return True

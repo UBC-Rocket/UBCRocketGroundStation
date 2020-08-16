@@ -1,5 +1,5 @@
-import numpy as np
 import matplotlib
+import numpy as np
 from matplotlib import pyplot as plt
 
 x = []
@@ -29,7 +29,8 @@ def plot(newx, newy):
     plt.clf()
     plt.plot(x, y, marker="o")
     plt.draw()
-    #pause(0.01)
+    # pause(0.01)
+
 
 def close():
     plt.close()

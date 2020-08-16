@@ -1,7 +1,7 @@
-from enum import Enum
 import os
 import subprocess as sp
 import threading
+from enum import Enum
 
 from IConnection import IConnection
 from StreamLogger import StreamLogger
@@ -31,23 +31,26 @@ class SimConnection(IConnection):
         self.rocket = sp.Popen(
             self.executablePath, cwd=self.firmwareDir, stdin=sp.PIPE, stdout=sp.PIPE
         )
-
         self.stdout = StreamLogger(self.rocket.stdout, LOG_HISTORY_SIZE)
+        self._rocket_handshake()
 
         # Gets endianess of ints and floats
         self._getEndianness()
 
-        # Keeps track of thread state
-        self.running = False
-        self.runningLock = threading.RLock()
-
         # Thread to make communication non-blocking
-        self.thread = threading.Thread(target=self._run, name="SIM")
+        self.thread = threading.Thread(target=self._run, name="SIM", daemon=True)
         self.thread.start()
 
         self._xbee = XBeeModuleSim()
         self._xbee.rocket_callback = self._send_radio_sim
-
+    
+    def _rocket_handshake(self):
+        assert self.stdout.read(3) == b"SYN"
+        # Uncomment for FW debuggers, for a chance to attach debugger
+        # input("Recieved rocket SYN; press enter to respond with ACK and continue\n")
+        self.rocket.stdin.write(b"ACK")
+        self.rocket.stdin.flush()
+        
     def send(self, data):
         self._xbee.send_to_rocket(data)
 
@@ -74,9 +77,7 @@ class SimConnection(IConnection):
         return self.bigEndianFloats
 
     def shutDown(self):
-        with self.runningLock:
-            self.running = False
-            self.rocket.kill()  # Otherwise it will prevent process from closing
+        self.rocket.kill()  # Otherwise it will prevent process from closing
 
     # AKA handle "Config" packet
     def _getEndianness(self):
@@ -122,16 +123,8 @@ class SimConnection(IConnection):
         SimPacketId.RADIO.value: _handleRadio,
     }
 
-    # Check whether thread should be running
-    def _isRunning(self):
-        with self.runningLock:
-            return self.running
-
     def _run(self):
-        with self.runningLock:
-            self.running = True
-
-        while self._isRunning():
+        while True:
             try:
                 id = self.stdout.read(1)[0]  # Returns 0 if process
 

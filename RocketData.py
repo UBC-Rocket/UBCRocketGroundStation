@@ -1,13 +1,14 @@
 import os
 import sys
 import threading
-import numpy as np
 import time
 from typing import Dict, Union
 
-from SubpacketIDs import SubpacketEnum
+import numpy as np
+
 import SubpacketIDs
 from detail import *
+from SubpacketIDs import SubpacketEnum
 
 # nametochar : Dict[str, bytes] = { # TODO Deal with legacy data types and conversions. Delete dead code when done.
 #     "Acceleration X": b'X',
@@ -61,12 +62,15 @@ statemap = {  # TODO Review legacy data format. Not deleted due to need to confe
         # essentially  self.data: Dict[int, Dict[str, Union[int, float]]] = {}
 
 class RocketData:
-    def __init__(self):
-        self.lock = threading.RLock() # acquire lock ASAP since self.lock needs to be defined when autosave starts
+    def __init__(self) -> None:
+        """
+
+        """
+        self.lock = threading.RLock()  # acquire lock ASAP since self.lock needs to be defined when autosave starts
         self.timeset: Dict[int, Dict[str, Union[int, float]]] = {}
-        self.lasttime = 0   # TODO REVIEW/CHANGE THIS, once all subpackets have their own timestamp.
+        self.lasttime = 0  # TODO REVIEW/CHANGE THIS, once all subpackets have their own timestamp.
         self.highest_altitude = 0
-        self.sessionName = os.path.join(LOCAL, "autosave_"+str(int(time.time()))+".csv")
+        self.sessionName = os.path.join(LOCAL, "autosave_" + str(int(time.time())) + ".csv")
         self.autosaveThread = threading.Thread(target=self.timer, daemon=True)
         self.autosaveThread.start()
 
@@ -74,6 +78,9 @@ class RocketData:
         self.callbacks = {k: [] for k in SubpacketIDs.get_list_of_IDs()}
 
     def timer(self):
+        """
+
+        """
         while True:
             try:
                 self.save(self.sessionName)
@@ -88,6 +95,11 @@ class RocketData:
     # NOTE how this works without a new time eg if single sensor temperature comes in 3 times in a row, the first two are overwritten
     # |_> https://trello.com/c/KE0zJ7er/170-implement-ensure-spec-where-all-subpackets-will-have-timestamps
     def addBundle(self, incoming_data):
+        """
+
+        :param incoming_data:
+        :type incoming_data:
+        """
         with self.lock:
             # if there's a time, set this to the most recent time val and then setup a respective dict in the data.
             # TODO Review this once timestamps added to radios spec. REMOVE?
@@ -126,6 +138,13 @@ class RocketData:
     # TODO REVIEW/IMPROVE THIS, once all subpackets have their own timestamp. https://trello.com/c/KE0zJ7er/170-implement-ensure-spec-where-all-subpackets-will-have-timestamps
     # Gets the most recent value specified by the sensor_id given
     def lastvalue(self, sensor_id):
+        """
+
+        :param sensor_id:
+        :type sensor_id:
+        :return:
+        :rtype:
+        """
         with self.lock:
             times = list(self.timeset.keys())
             times.sort(reverse=True)
@@ -136,11 +155,18 @@ class RocketData:
 
     # Data saving function that creates csv
     def save(self, csvpath):
+        """
+
+        :param csvpath:
+        :type csvpath:
+        :return:
+        :rtype:
+        """
         with self.lock:
             if len(self.timeset) <= 0:
                 return
 
-            data = np.empty((len(SubpacketIDs.get_list_of_sensor_IDs()), len(self.timeset)+1), dtype=object)
+            data = np.empty((len(SubpacketIDs.get_list_of_sensor_IDs()), len(self.timeset) + 1), dtype=object)
             times = list(self.timeset.keys())
             times.sort(reverse=False)
             for ix, iy in np.ndindex(data.shape):
@@ -151,23 +177,39 @@ class RocketData:
                     if SubpacketIDs.get_list_of_sensor_names()[ix] == SubpacketEnum.TIME.name:
                         data[ix, iy] = times[iy - 1]
                     else:
-                        if SubpacketIDs.get_list_of_sensor_IDs()[ix] in self.timeset[times[iy-1]]:
-                            data[ix, iy] = self.timeset[times[iy-1]][SubpacketIDs.get_list_of_sensor_IDs()[ix]]
+                        if SubpacketIDs.get_list_of_sensor_IDs()[ix] in self.timeset[times[iy - 1]]:
+                            data[ix, iy] = self.timeset[times[iy - 1]][SubpacketIDs.get_list_of_sensor_IDs()[ix]]
                         else:
                             data[ix, iy] = ""
 
-        np.savetxt(csvpath, np.transpose(data), delimiter=',', fmt="%s") #Can free up the lock while we save since were no longer accessing the original data
+        np.savetxt(csvpath, np.transpose(data), delimiter=',',
+                   fmt="%s")  # Can free up the lock while we save since were no longer accessing the original data
 
     # TODO possibly make into own object/file
     # Add a new callback for its associated ID
     def addNewCallback(self, data_id, callbackFn):
+        """
+
+        :param data_id:
+        :type data_id:
+        :param callbackFn:
+        :type callbackFn:
+        """
         self.callbacks[data_id].append(callbackFn)
 
     def _notifyCallbacksOfId(self, data_id):
+        """
+
+        :param data_id:
+        :type data_id:
+        """
         if data_id in self.callbacks.keys():
             for fn in self.callbacks[data_id]:
                 fn()
 
     def _notifyAllCallbacks(self):
+        """
+
+        """
         for data_id in self.callbacks.keys():
             self._notifyCallbacksOfId(data_id)

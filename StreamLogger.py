@@ -7,13 +7,27 @@ LF = 0x0A
 
 class StreamLogger:
 
-    def __init__(self, stream, size):
+    def __init__(self, stream, size) -> None:
+        """
+
+        :param stream:
+        :type stream:
+        :param size:
+        :type size:
+        """
         self.stream = stream
         self.circularBuffer = collections.deque(maxlen=size)
 
         self.filterCache = bytearray()
 
     def read(self, number):
+        """
+
+        :param number:
+        :type number:
+        :return:
+        :rtype:
+        """
         if sys.platform == 'win32':
             data = self._windowsFilter(number)
         else:
@@ -25,9 +39,21 @@ class StreamLogger:
         return data
 
     def getHistory(self):
+        """
+
+        :return:
+        :rtype:
+        """
         return list(self.circularBuffer)
 
     def _readWithCache(self, number):
+        """
+
+        :param number:
+        :type number:
+        :return:
+        :rtype:
+        """
         data = b''
 
         numFromCache = min(len(self.filterCache), number)
@@ -43,6 +69,13 @@ class StreamLogger:
         return data
 
     def _windowsFilter(self, number): # TODO: Should probably be in its own class
+        """
+
+        :param number:
+        :type number:
+        :return:
+        :rtype:
+        """
         data = b''
 
         while len(data) < number:

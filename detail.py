@@ -1,4 +1,4 @@
-# This file is meant to contain all the commonly used functions and constants
+"""This file is meant to contain all the commonly used functions and constants"""
 
 import os
 import sys

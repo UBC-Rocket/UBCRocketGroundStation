@@ -1,12 +1,15 @@
-from IConnection import IConnection
+from typing import Union
+
 from digi.xbee.devices import XBeeDevice
+
+from IConnection import IConnection
 
 
 class SerialConnection(IConnection):
 
-    def __init__(self, comPort, baudRate):
+    def __init__(self, comPort: Union[int, str, None], baudRate: Union[int, None]):
         self.device = XBeeDevice(comPort, baudRate)
-        self.device.set_sync_ops_timeout(5) #5 seconds
+        self.device.set_sync_ops_timeout(5)  # 5 seconds
         self.device.open()
         self.device.add_data_received_callback(self._newData)
 
@@ -24,11 +27,11 @@ class SerialConnection(IConnection):
         # self.device.send_data(remote_device, bytes)
         self.device.send_data_broadcast(bytes)
 
+    def shutDown(self):
+        pass
+
     def isIntBigEndian(self):
         return True
 
     def isFloatBigEndian(self):
         return False
-
-    def shutDown(self):
-        pass

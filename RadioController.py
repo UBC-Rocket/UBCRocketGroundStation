@@ -1,6 +1,7 @@
 import math
 from typing import Dict, Any, Callable, Union, List, Tuple
 import struct
+
 import SubpacketIDs
 from SubpacketIDs import SubpacketEnum
 
@@ -44,11 +45,25 @@ def isPacketLengthConst(subpacket_id):
 class RadioController:
 
     def __init__(self, bigEndianInts, bigEndianFloats):
+        """
+
+        :param bigEndianInts:
+        :type bigEndianInts:
+        :param bigEndianFloats:
+        :type bigEndianFloats:
+        """
         self.bigEndianInts = bigEndianInts
         self.bigEndianFloats = bigEndianFloats
 
     # Return dict of parsed subpacket data and length of subpacket
     def extract(self, byte_list: List):
+        """
+
+        :param byte_list:
+        :type byte_list:
+        :return:
+        :rtype:
+        """
         # header extraction
         header = self.header(byte_list)
         # data extraction
@@ -65,6 +80,13 @@ class RadioController:
 
     # Helper to convert byte to subpacket id as is in the SubpacketID enum, throws error otherwise
     def extract_subpacket_ID(self, byte: List):
+        """
+
+        :param byte:
+        :type byte:
+        :return:
+        :rtype:
+        """
         # subpacket_id: int = int.from_bytes(byte, "big")
         subpacket_id: int = byte
         # check that id is valid:
@@ -76,13 +98,18 @@ class RadioController:
 
     # general data parser interface. Routes to the right parse, based on type_id
     def parse_data(self, type_id, byte_list, length) -> Dict[any, any]:
-        print(type_id, byte_list)
-        # Switch, passing Id if it is a sensor type
+        """
+
+        :param type_id:
+        :type type_id:
+        :param byte_list:
+        :type byte_list:
+        :param length:
+        :type length:
+        :return:
+        :rtype:
+        """
         return self.packetTypeToParser[type_id](self, byte_list, length=length, type_id=type_id)
-        # if SubpacketIDs.isSingleSensorData(type_id):
-        #     return self.packetTypeToParser[type_id](self, byte_list, length=length, type_id=type_id)
-        # else:
-        #     return self.packetTypeToParser[type_id](self, byte_list, length=length, type_id=type_id)
 
     # Header extractor helper.
     # ASSUMES that length values represent full subpacket lengths, including headers
@@ -112,6 +139,15 @@ class RadioController:
 
     # Convert bit field into a series of statuses
     def statusPing(self, byte_list, **kwargs):
+        """
+
+        :param byte_list:
+        :type byte_list:
+        :param **kwargs:
+        :type **kwargs:
+        :return:
+        :rtype:
+        """
         sensor_bit_field_length = 16
         other_bit_field_length = 16
         # TODO need these elsewhere? extract (and make enum, or maybe combine with SubpacketIds somehow)
@@ -160,6 +196,15 @@ class RadioController:
         return data
 
     def message(self, byte_list, **kwargs):
+        """
+
+        :param byte_list:
+        :type byte_list:
+        :param **kwargs:
+        :type **kwargs:
+        :return:
+        :rtype:
+        """
         data: Dict = {}
 
         # Two step: int[] -> bytearray -> string. Probably a more efficient way
@@ -169,6 +214,15 @@ class RadioController:
         return data
 
     def event(self, byte_list, **kwargs):
+        """
+
+        :param byte_list:
+        :type byte_list:
+        :param **kwargs:
+        :type **kwargs:
+        :return:
+        :rtype:
+        """
         data: Dict = {}
         # TODO Enumerate the list of events mapped to strings somewhere? Then convert to human readable string here.
         data[SubpacketEnum.EVENT.value] = byte_list[0]
@@ -176,11 +230,29 @@ class RadioController:
 
     # TODO. This is a stub until there is a spec.
     def config(self, byte_list, **kwargs):
+        """
+
+        :param byte_list:
+        :type byte_list:
+        :param **kwargs:
+        :type **kwargs:
+        :return:
+        :rtype:
+        """
         data = {}
         data[SubpacketEnum.CONFIG.value] = byte_list[0]
         return data
 
     def single_sensor(self, byte_list, **kwargs):
+        """
+
+        :param byte_list:
+        :type byte_list:
+        :param **kwargs:
+        :type **kwargs:
+        :return:
+        :rtype:
+        """
         type_id = kwargs['type_id']
         data = {}
         # TODO Commented out, since apparently we pass along state, or other non-floats as float too??
@@ -192,6 +264,15 @@ class RadioController:
         return data
 
     def gps(self, byte_list, **kwargs):
+        """
+
+        :param byte_list:
+        :type byte_list:
+        :param **kwargs:
+        :type **kwargs:
+        :return:
+        :rtype:
+        """
         data = {}
         curr_byte = Count(0, 1)
         data[SubpacketEnum.LATITUDE.value] = self.eighttodouble(byte_list[curr_byte.curr():curr_byte.next(8)])
@@ -205,6 +286,15 @@ class RadioController:
     #     return data
 
     def bulk_sensor(self, byte_list: List, **kwargs):
+        """
+
+        :param byte_list:
+        :type byte_list:
+        :param **kwargs:
+        :type **kwargs:
+        :return:
+        :rtype:
+        """
         data: Dict[int, any] = {}
 
         # # TODO REVIEW/CHANGE in type refactoring: how this is required to convert from List[bytes] to List[int]
@@ -240,6 +330,13 @@ class RadioController:
 
     # TODO Put these in utils folder/file?
     def fourtofloat(self, byte_list):
+        """
+
+        :param bytes:
+        :type bytes:
+        :return:
+        :rtype:
+        """
         assert len(byte_list) == 4
         data = byte_list
         b = struct.pack('4B', *data)
@@ -247,6 +344,13 @@ class RadioController:
         return c[0]
 
     def fourtoint(self, byte_list):
+        """
+
+        :param bytes:
+        :type bytes:
+        :return:
+        :rtype:
+        """
         assert len(byte_list) == 4
         data = byte_list
         b = struct.pack('4B', *data)
@@ -254,6 +358,13 @@ class RadioController:
         return c[0]
 
     def eighttodouble(self, byte_list):
+        """
+
+        :param bytes:
+        :type bytes:
+        :return:
+        :rtype:
+        """
         assert len(byte_list) == 8
         data = byte_list
         b = struct.pack('8B', *data)

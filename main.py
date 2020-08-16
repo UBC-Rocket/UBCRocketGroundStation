@@ -1,7 +1,7 @@
 import math
 import os
 import time
-from typing import Union
+from typing import Callable
 
 import PyQt5
 from matplotlib import pyplot as plt
@@ -108,18 +108,19 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         row = 0
         col = 0
         for button in self.rocket.buttons.keys():
-            exec(f"self.{button}Button = QtWidgets.QPushButton(self.centralwidget)")
+            setattr(self, button + "Button", QtWidgets.QPushButton(self.centralwidget))
+            qt_button = getattr(self, button + "Button")
             sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
             sizePolicy.setHorizontalStretch(0)
             sizePolicy.setVerticalStretch(0)
-            exec(f"sizePolicy.setHeightForWidth(self.{button}Button.sizePolicy().hasHeightForWidth())")
-            exec(f"self.{button}Button.setSizePolicy(sizePolicy)")
+            sizePolicy.setHeightForWidth(getattr(self, button + "Button").sizePolicy().hasHeightForWidth())
+            qt_button.setSizePolicy(sizePolicy)
             font = QtGui.QFont()
             font.setPointSize(35)
             font.setKerning(True)
-            exec(f"self.{button}Button.setFont(font)")
-            exec(f"self.{button}Button.setObjectName('{button}Button')")
-            exec(f"self.gridLayout_5.addWidget(self.{button}Button, {row}, {col}, 1, 1)")
+            qt_button.setFont(font)
+            qt_button.setObjectName(f"{button}Button")
+            self.gridLayout_5.addWidget(qt_button, row, col, 1, 1)
             if col + 1 < grid_width:
                 col += 1
             else:
@@ -128,32 +129,40 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         # A .py file created from a .ui file will have the labels all defined at the end, for some reason. Two for loops
         # are being used to be consistent with the PyQt5 conventions.
         for button in self.rocket.buttons.keys():
-            exec(f"self.{button}Button.setText(QtCore.QCoreApplication.translate('MainWindow', '{button}'))")
+            getattr(self, button + "Button").setText(QtCore.QCoreApplication.translate('MainWindow', button))
+
+        def gen_send_command(cmd: str) -> Callable[[], None]:
+            def send() -> None:
+                self.sendCommand(cmd)
+            return send
 
         for button, command in self.rocket.buttons.items():
-            exec(f"self.{button}Button.clicked.connect(lambda _: self.sendCommand('{command}'))", {"self": self})
+            getattr(self, button + "Button").clicked.connect(gen_send_command(command))
 
     def setup_labels(self):
         row = 0
         for label in self.rocket.labels:
             name = label.name
-            exec(f"self.{name}Text = QtWidgets.QLabel(self.centralwidget)")
+            setattr(self, name + "Text", QtWidgets.QLabel(self.centralwidget))
+            qt_text = getattr(self, name + "Text")
             sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
             sizePolicy.setHorizontalStretch(0)
             sizePolicy.setVerticalStretch(0)
-            exec(f"sizePolicy.setHeightForWidth(self.{name}Text.sizePolicy().hasHeightForWidth())")
-            exec(f"self.{name}Text.setSizePolicy(sizePolicy)")
-            exec(f"self.{name}Text.setObjectName('{name}Text')")
-            exec(f"self.gridLayout_6.addWidget(self.{name}Text, {row}, 0, 1, 1)")
+            sizePolicy.setHeightForWidth(getattr(self, name + "Text").sizePolicy().hasHeightForWidth())
+            qt_text.setSizePolicy(sizePolicy)
+            qt_text.setObjectName(f"{name}Text")
+            self.gridLayout_6.addWidget(qt_text, row, 0, 1, 1)
 
-            exec(f"self.{name}Label = QtWidgets.QLabel(self.centralwidget)")
-            exec(f"self.{name}Label.setObjectName('{name}Label')")
-            exec(f"self.gridLayout_6.addWidget(self.{name}Label, {row}, 1, 1, 1)")
+            setattr(self, name + "Label", QtWidgets.QLabel(self.centralwidget))
+            qt_label = getattr(self, name + "Label")
+            qt_label.setObjectName(f"{name}Label")
+            self.gridLayout_6.addWidget(qt_label, row, 1, 1, 1)
             row += 1
 
         for label in self.rocket.labels:
-            exec(f"self.{label.name}Text.setText(QtCore.QCoreApplication.translate('MainWindow', '{label.display_name}'))")
-            exec(f"self.{label.name}Label.setText(QtCore.QCoreApplication.translate('MainWindow', '0'))")
+            name = label.name
+            getattr(self, name + "Text").setText(QtCore.QCoreApplication.translate("MainWindow", label.display_name))
+            getattr(self, name + "Label").setText(QtCore.QCoreApplication.translate("MainWindow", "0"))
 
     def closeEvent(self, event) -> None:
         """

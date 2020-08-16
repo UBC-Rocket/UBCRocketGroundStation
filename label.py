@@ -51,7 +51,7 @@ def update_acceleration(main_window: "MainApp") -> str:
 default_labels = [
     Label("Altitude", update_altitude),
     Label("MaxAltitude", update_max_altitude, "Max Altitude"),
-    Label("Gps", update_gps),
+    Label("GPS", update_gps),
     Label("State", update_state),
     Label("Pressure", update_pressure),
     Label("Acceleration", update_acceleration),

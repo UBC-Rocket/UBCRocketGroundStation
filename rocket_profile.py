@@ -1,24 +1,20 @@
-import math
-from typing import Dict
+from typing import Dict, List
+
+from label import Label, default_labels
 
 
 class RocketProfile:
-    def __init__(self, buttons: Dict[str, str], labels: Dict[str, str]):
+    def __init__(self, buttons: Dict[str, str], labels: List[Label]):
         self.buttons = buttons
         self.labels = labels
 
     def update_labels(self, main_window) -> None:
-        for label in self.labels.items():
-            exec(
-                f"main_window.{label[0]}Label.setText(self.update_{label[1]}(main_window))"
-            )
+        for label in self.labels:
+            exec(f"main_window.{label.name}Label.setText(label.update(main_window))")
 
 
-default_labels = {
-    "Altitude": "altitude",
-    "MaxAltitude": "max_altitude",
-    "Gps": "gps",
-    "State": "state",
-    "Pressure": "pressure",
-    "Acceleration": "acceleration",
-}
+tantalus = RocketProfile({"Arm": "arm", "Status": "status"}, default_labels)
+co_pilot = RocketProfile(
+    {"Arm": "arm", "Halo": "halo", "Data": "data", "Status": "status"},
+    default_labels + [Label("Test", lambda main_window: "Hey")],
+)

@@ -6,12 +6,11 @@ import serial.tools.list_ports
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
 import start
-from co_pilot import co_pilot
 from DebugConnectionFactory import DebugConnectionFactory
 from detail import *
+from rocket_profile import co_pilot, tantalus
 from SerialConnectionFactory import SerialConnectionFactory
 from SimConnectionFactory import SimConnectionFactory
-from tantalus import tantalus
 
 if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)

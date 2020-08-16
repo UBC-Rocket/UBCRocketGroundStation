@@ -135,24 +135,25 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def setup_labels(self):
         row = 0
-        for label in self.rocket.labels.keys():
-            exec(f"self.{label}Text = QtWidgets.QLabel(self.centralwidget)")
+        for label in self.rocket.labels:
+            name = label.name
+            exec(f"self.{name}Text = QtWidgets.QLabel(self.centralwidget)")
             sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
             sizePolicy.setHorizontalStretch(0)
             sizePolicy.setVerticalStretch(0)
-            exec(f"sizePolicy.setHeightForWidth(self.{label}Text.sizePolicy().hasHeightForWidth())")
-            exec(f"self.{label}Text.setSizePolicy(sizePolicy)")
-            exec(f"self.{label}Text.setObjectName('{label}Text')")
-            exec(f"self.gridLayout_6.addWidget(self.{label}Text, {row}, 0, 1, 1)")
+            exec(f"sizePolicy.setHeightForWidth(self.{name}Text.sizePolicy().hasHeightForWidth())")
+            exec(f"self.{name}Text.setSizePolicy(sizePolicy)")
+            exec(f"self.{name}Text.setObjectName('{name}Text')")
+            exec(f"self.gridLayout_6.addWidget(self.{name}Text, {row}, 0, 1, 1)")
 
-            exec(f"self.{label}Label = QtWidgets.QLabel(self.centralwidget)")
-            exec(f"self.{label}Label.setObjectName('{label}Label')")
-            exec(f"self.gridLayout_6.addWidget(self.{label}Label, {row}, 1, 1, 1)")
+            exec(f"self.{name}Label = QtWidgets.QLabel(self.centralwidget)")
+            exec(f"self.{name}Label.setObjectName('{name}Label')")
+            exec(f"self.gridLayout_6.addWidget(self.{name}Label, {row}, 1, 1, 1)")
             row += 1
 
-        for label in self.rocket.labels.keys():
-            exec(f"self.{label}Text.setText(QtCore.QCoreApplication.translate('MainWindow', '{label}'))")
-            exec(f"self.{label}Label.setText(QtCore.QCoreApplication.translate('MainWindow', '0'))")
+        for label in self.rocket.labels:
+            exec(f"self.{label.name}Text.setText(QtCore.QCoreApplication.translate('MainWindow', '{label.display_name}'))")
+            exec(f"self.{label.name}Label.setText(QtCore.QCoreApplication.translate('MainWindow', '0'))")
 
     def closeEvent(self, event) -> None:
         """

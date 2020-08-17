@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import pyqtSignal
-from scipy.misc import imresize
+from PIL import Image
 
 import map_data
 import MapBox
@@ -31,11 +31,8 @@ qtCreatorFile = os.path.join(LOCAL, "main.ui")
 
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
-TILES = 14  # TODO Remove if not necessary
-
 # The marker image, used to show where the rocket is on the map UI
-# TODO: imresize removed in latest scipy since it's a duplicate from "Pillow". Update and replace.
-MAP_MARKER = imresize(plt.imread(MapBox.MARKER_PATH), (12, 12))
+MAP_MARKER = Image.open(MapBox.MARKER_PATH).resize((12, 12), Image.LANCZOS)
 
 
 class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):

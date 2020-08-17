@@ -8,7 +8,12 @@ if TYPE_CHECKING:
 
 
 class Label:
-    def __init__(self, name: str, update_func: Callable[["MainApp"], str], display_name: Optional[str] = None):
+    def __init__(
+        self,
+        name: str,
+        update_func: Callable[["MainApp"], str],
+        display_name: Optional[str] = None,
+    ):
         self.name = name
         self.display_name = display_name if display_name is not None else name
         self.update = update_func
@@ -48,6 +53,26 @@ def update_acceleration(main_window: "MainApp") -> str:
     return str(accel)
 
 
+# TODO: Implement Tantalus test separation label update.
+def update_test_separation(main_window: "MainApp") -> str:
+    return "Separated"
+
+
+# TODO: Implement Co-Pilot tank pressure label update.
+def update_tank_pressure(main_window: "MainApp") -> str:
+    return "10 Pa"
+
+
+# TODO: Implement Co-Pilot chamber pressure label update.
+def update_chamber_pressure(main_window: "MainApp") -> str:
+    return "40 Pa"
+
+
+# TODO: Implement Co-Pilot chamber temperature label update.
+def update_chamber_temp(main_window: "MainApp") -> str:
+    return "283 K"
+
+
 default_labels = [
     Label("Altitude", update_altitude),
     Label("MaxAltitude", update_max_altitude, "Max Altitude"),
@@ -55,4 +80,14 @@ default_labels = [
     Label("State", update_state),
     Label("Pressure", update_pressure),
     Label("Acceleration", update_acceleration),
+]
+
+tantalus_labels = default_labels + [
+    Label("TestSeparation", update_test_separation, "Test Separation")
+]
+
+cp_labels = default_labels + [
+    Label("TankPressure", update_tank_pressure, "Tank Pressure"),
+    Label("ChamberPressure", update_chamber_pressure, "Chamber Pressure"),
+    Label("ChamberTemp", update_chamber_temp, "Chamber Temperature"),
 ]

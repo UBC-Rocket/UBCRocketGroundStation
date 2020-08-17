@@ -108,8 +108,8 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         row = 0
         col = 0
         for button in self.rocket.buttons.keys():
-            setattr(self, button + "Button", QtWidgets.QPushButton(self.centralwidget))
-            qt_button = getattr(self, button + "Button")
+            qt_button = QtWidgets.QPushButton(self.centralwidget)
+            setattr(self, button + "Button", qt_button)
             sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
             sizePolicy.setHorizontalStretch(0)
             sizePolicy.setVerticalStretch(0)
@@ -143,8 +143,8 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         row = 0
         for label in self.rocket.labels:
             name = label.name
-            setattr(self, name + "Text", QtWidgets.QLabel(self.centralwidget))
-            qt_text = getattr(self, name + "Text")
+            qt_text = QtWidgets.QLabel(self.centralwidget)
+            setattr(self, name + "Text", qt_text)
             sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
             sizePolicy.setHorizontalStretch(0)
             sizePolicy.setVerticalStretch(0)
@@ -153,8 +153,8 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
             qt_text.setObjectName(f"{name}Text")
             self.gridLayout_6.addWidget(qt_text, row, 0, 1, 1)
 
-            setattr(self, name + "Label", QtWidgets.QLabel(self.centralwidget))
-            qt_label = getattr(self, name + "Label")
+            qt_label = QtWidgets.QLabel(self.centralwidget)
+            setattr(self, name + "Label", qt_label)
             qt_label.setObjectName(f"{name}Label")
             self.gridLayout_6.addWidget(qt_label, row, 1, 1, 1)
             row += 1

@@ -14,10 +14,10 @@ class MapData:
         self.lock = threading.Lock()
 
         # Map UI attributes
-        self.__setattr__(ZOOM, 20)
-        self.__setattr__(RADIUS, 0.1)
-        self.__setattr__(IMAGE, None)
-        self.__setattr__(MARK, None)
+        setattr(self, ZOOM, 20)
+        setattr(self, RADIUS, 0.1)
+        setattr(self, IMAGE, None)
+        setattr(self, MARK, None)
 
     # Get the value of the item from the map by Id
     def getMapValue(self, valueId):
@@ -29,10 +29,9 @@ class MapData:
         :rtype:
         """
         with self.lock:
-            return self.__getattribute__(valueId)
+            return getattr(self, valueId)
 
     # set the value of the item from the map by Id
-    # TODO review
     def setMapValue(self, valueId, value) -> None:
         """
 
@@ -42,4 +41,4 @@ class MapData:
         :type value:
         """
         with self.lock:
-            self.__setattr__(valueId, value)
+            setattr(self, valueId, value)

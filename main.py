@@ -97,14 +97,12 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.MappingThread.start()
 
     def setup_buttons(self):
-        """
-
-        """
+        """Create all of the buttons for the loaded rocket profile."""
 
         grid_width = math.ceil(math.sqrt(len(self.rocket.buttons)))
 
-        # Trying to replicate PyQt's generated code from a .ui file as closely as possible. Hence the execs and custom
-        # button object names.
+        # Trying to replicate PyQt's generated code from a .ui file as closely as possible. This is why setattr is
+        # being used to keep all of the buttons as named attributes of MainApp and not elements of a list.
         row = 0
         col = 0
         for button in self.rocket.buttons.keys():
@@ -132,14 +130,20 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
             getattr(self, button + "Button").setText(QtCore.QCoreApplication.translate('MainWindow', button))
 
         def gen_send_command(cmd: str) -> Callable[[], None]:
+            """Creates a function that sends the given command to the console."""
             def send() -> None:
                 self.sendCommand(cmd)
             return send
-
+        # Connecting to a more traditional lambda expression would not work in this for loop. It would cause all of the
+        # buttons to map to the last command in the list, hence the workaround with the higher order function.
         for button, command in self.rocket.buttons.items():
             getattr(self, button + "Button").clicked.connect(gen_send_command(command))
 
     def setup_labels(self):
+        """Create all of the data labels for the loaded rocket profile."""
+
+        # Trying to replicate PyQt's generated code from a .ui file as closely as possible. This is why setattr is
+        # being used to keep all of the buttons as named labels of MainApp and not elements of a list.
         row = 0
         for label in self.rocket.labels:
             name = label.name
@@ -158,7 +162,8 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
             qt_label.setObjectName(f"{name}Label")
             self.gridLayout_6.addWidget(qt_label, row, 1, 1, 1)
             row += 1
-
+        # A .py file created from a .ui file will have the labels all defined at the end, for some reason. Two for loops
+        # are being used to be consistent with the PyQt5 conventions.
         for label in self.rocket.labels:
             name = label.name
             getattr(self, name + "Text").setText(QtCore.QCoreApplication.translate("MainWindow", label.display_name))

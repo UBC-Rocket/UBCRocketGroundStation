@@ -8,7 +8,8 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 import start
 from DebugConnectionFactory import DebugConnectionFactory
 from detail import *
-from rocket_profile import co_pilot, tantalus
+from tantalus import tantalus
+from co_pilot import co_pilot
 from SerialConnectionFactory import SerialConnectionFactory
 from SimConnectionFactory import SimConnectionFactory
 

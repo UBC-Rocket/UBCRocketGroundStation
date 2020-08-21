@@ -8,6 +8,16 @@ if TYPE_CHECKING:
 
 
 class Label:
+    """Front-end data representation for a RocketProfile.
+
+    :param name: The internal name for the label. No spaces; letters only.
+    :type name: str
+    :param update_func: A function that creates the label's value from a MainApp object.
+    :type update_func: Callable[["MainApp"], str]
+    :param display_name: The label name that is display on the front-end. Should support most characters.
+    :type display_name: str
+    """
+
     def __init__(
         self,
         name: str,
@@ -71,23 +81,3 @@ def update_chamber_pressure(main_window: "MainApp") -> str:
 # TODO: Implement Co-Pilot chamber temperature label update.
 def update_chamber_temp(main_window: "MainApp") -> str:
     return "283 K"
-
-
-default_labels = [
-    Label("Altitude", update_altitude),
-    Label("MaxAltitude", update_max_altitude, "Max Altitude"),
-    Label("GPS", update_gps),
-    Label("State", update_state),
-    Label("Pressure", update_pressure),
-    Label("Acceleration", update_acceleration),
-]
-
-tantalus_labels = default_labels + [
-    Label("TestSeparation", update_test_separation, "Test Separation")
-]
-
-cp_labels = default_labels + [
-    Label("TankPressure", update_tank_pressure, "Tank Pressure"),
-    Label("ChamberPressure", update_chamber_pressure, "Chamber Pressure"),
-    Label("ChamberTemp", update_chamber_temp, "Chamber Temperature"),
-]

@@ -30,6 +30,20 @@
      </layout>
     </item>
     <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_4">
+      <item>
+       <widget class="QLabel" name="label_4">
+        <property name="text">
+         <string>Rocket Profile</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="rocketBox"/>
+      </item>
+     </layout>
+    </item>
+    <item>
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <property name="sizeConstraint">
        <enum>QLayout::SetDefaultConstraint</enum>

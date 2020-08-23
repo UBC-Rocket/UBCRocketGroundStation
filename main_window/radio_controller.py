@@ -1,8 +1,8 @@
 import struct
-from typing import Any, Callable, Dict, List, Union
+from typing import Any, Callable, Dict, List
 
-import subpacket_ids
-from subpacket_ids import SubpacketEnum
+from . import subpacket_ids
+from .subpacket_ids import SubpacketEnum
 
 # CONSTANTS
 

@@ -1,10 +1,10 @@
 import math
 from typing import TYPE_CHECKING, Callable, Optional, Union
 
-from subpacket_ids import SubpacketEnum
+from main_window.subpacket_ids import SubpacketEnum
 
 if TYPE_CHECKING:
-    from main import MainApp
+    from main_window.main import MainApp
 
 
 class Label:

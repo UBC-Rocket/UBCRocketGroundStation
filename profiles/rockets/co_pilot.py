@@ -1,7 +1,7 @@
 from ..label import (Label, update_acceleration, update_altitude,
-                            update_chamber_pressure, update_chamber_temp,
-                            update_gps, update_max_altitude, update_pressure,
-                            update_state, update_tank_pressure)
+                     update_chamber_pressure, update_chamber_temp, update_gps,
+                     update_max_altitude, update_pressure, update_state,
+                     update_tank_pressure)
 from ..rocket_profile import RocketProfile
 
 cp_labels = [

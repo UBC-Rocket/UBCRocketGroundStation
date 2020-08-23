@@ -5,7 +5,7 @@ import pytest
 from matplotlib import pyplot
 
 from detail import LOCAL
-from mapping import mapbox_utils
+from main_window.mapping import mapbox_utils
 
 
 @pytest.fixture()
@@ -59,8 +59,8 @@ class TestMapTile:
         assert name == "41322_89729"
 
     def test_get_image_no_maps(self, hennings_tile, mocker):
-        mocker.patch("mapping.mapbox_utils.maps", None)
-        mocked_isfile = mocker.patch("mapping.mapbox_utils.os.path.isfile")
+        mocker.patch("main_window.mapping.mapbox_utils.maps", None)
+        mocked_isfile = mocker.patch("main_window.mapping.mapbox_utils.os.path.isfile")
 
         mocked_isfile.return_value = False
 
@@ -71,7 +71,7 @@ class TestMapTile:
         )
 
     def test_get_image_fail(self, hennings_tile, mocker):
-        mocked_isfile = mocker.patch("mapping.mapbox_utils.os.path.isfile")
+        mocked_isfile = mocker.patch("main_window.mapping.mapbox_utils.os.path.isfile")
 
         mocked_isfile.return_value = False
 
@@ -85,7 +85,7 @@ class TestMapTile:
         hennings_image = pyplot.imread(
             os.path.join(LOCAL, "tests", "test_mapbox_utils", "41322_89729.jpg"), "jpeg"
         )
-        mocked_tile = mocker.patch("mapping.mapbox_utils.maps.tile")
+        mocked_tile = mocker.patch("main_window.mapping.mapbox_utils.maps.tile")
         mocked_tile.return_value.status_code = 200
         mocked_tile.return_value.content = hennings_image
 
@@ -95,7 +95,7 @@ class TestMapTile:
 
     @pytest.mark.parametrize("success", [True, False])
     def test_image_exists(self, hennings_tile, mocker, success):
-        mocked_isfile = mocker.patch("mapping.mapbox_utils.os.path.isfile")
+        mocked_isfile = mocker.patch("main_window.mapping.mapbox_utils.os.path.isfile")
 
         mocked_isfile.return_value = success
 
@@ -133,9 +133,9 @@ class TestTileGrid:
         numpy.testing.assert_array_equal(ta, ubc_tile_grid.ta)
 
     def test_download_array_images(self, ubc_tile_grid, mocker):
-        mocked_image_exists = mocker.patch("mapping.mapbox_utils.MapTile.imageExists")
+        mocked_image_exists = mocker.patch("main_window.mapping.mapbox_utils.MapTile.imageExists")
         mocked_image_exists.return_value = False
-        mocked_get_image = mocker.patch("mapping.mapbox_utils.MapTile.getImage")
+        mocked_get_image = mocker.patch("main_window.mapping.mapbox_utils.MapTile.getImage")
 
         ubc_tile_grid.downloadArrayImages()
 

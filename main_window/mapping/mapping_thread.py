@@ -7,8 +7,8 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
 from scipy.misc import imresize
 
-from mapping import map_data, mapbox_utils
-from subpacket_ids import SubpacketEnum
+from ..subpacket_ids import SubpacketEnum
+from . import map_data, mapbox_utils
 
 # Scaling is linear so a scale factor of 1 means no scaling (aka 1*x=x)
 SCALE_FACTOR_NO_SCALE = 1

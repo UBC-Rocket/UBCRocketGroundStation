@@ -1,6 +1,6 @@
-from ..label import (Label, update_acceleration, update_altitude,
-                            update_gps, update_max_altitude, update_pressure,
-                            update_state, update_test_separation)
+from ..label import (Label, update_acceleration, update_altitude, update_gps,
+                     update_max_altitude, update_pressure, update_state,
+                     update_test_separation)
 from ..rocket_profile import RocketProfile
 
 tantalus_labels = [

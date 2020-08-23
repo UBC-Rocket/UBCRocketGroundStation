@@ -9,13 +9,15 @@ from PIL import Image
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import pyqtSignal
 
-import read_thread
-import send_thread
 from connections.connection import Connection
 from detail import LOCAL
-from mapping import map_data, mapbox_utils, mapping_thread
 from profiles.rocket_profile import RocketProfile
-from rocket_data import RocketData
+
+from .mapping import map_data, mapbox_utils
+from .mapping.mapping_thread import MappingThread
+from .read_thread import ReadThread
+from .rocket_data import RocketData
+from .send_thread import SendThread
 
 if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
@@ -69,19 +71,19 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.printToConsole("Starting Connection")
 
         # Init and connection of ReadThread
-        self.ReadThread = read_thread.ReadThread(self.connection, self.data)
+        self.ReadThread = ReadThread(self.connection, self.data)
         self.ReadThread.sig_received.connect(self.receiveData)
         self.ReadThread.sig_print.connect(self.printToConsole)
         self.ReadThread.start()
 
         # Init and connection of SendThread
-        self.SendThread = send_thread.SendThread(self.connection)
+        self.SendThread = SendThread(self.connection)
         self.sig_send.connect(self.SendThread.queueMessage)
         self.SendThread.sig_print.connect(self.printToConsole)
         self.SendThread.start()
 
         # Init and connection of MappingThread
-        self.MappingThread = mapping_thread.MappingThread(self.connection, self.map, self.data)
+        self.MappingThread = MappingThread(self.connection, self.map, self.data)
         self.MappingThread.sig_received.connect(self.receiveMap)
         self.MappingThread.sig_print.connect(self.printToConsole)
         self.MappingThread.start()
@@ -261,3 +263,13 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         :type event:
         """
         self.MappingThread.setDesiredMapSize(event.width, event.height)
+
+
+window = None
+
+
+def start(*args, **kwargs):  # TODO: does this need its own file??
+    global window
+
+    window = MainApp(*args, **kwargs)
+    window.show()

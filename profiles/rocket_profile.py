@@ -3,7 +3,7 @@ from typing import Dict, List
 from .label import TYPE_CHECKING, Label
 
 if TYPE_CHECKING:
-    from main import MainApp
+    from main_window.main import MainApp
 
 
 class RocketProfile:

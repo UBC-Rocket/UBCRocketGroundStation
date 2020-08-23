@@ -1,14 +1,13 @@
-import os
-import sys
 import threading
 import time
 from typing import Dict, Union
 
 import numpy as np
 
-import subpacket_ids
 from detail import *
-from subpacket_ids import SubpacketEnum
+
+from . import subpacket_ids
+from .subpacket_ids import SubpacketEnum
 
 # nametochar : Dict[str, bytes] = { # TODO Deal with legacy data types and conversions. Delete dead code when done.
 #     "Acceleration X": b'X',

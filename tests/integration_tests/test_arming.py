@@ -1,7 +1,7 @@
 import time
 
-import main
 from connections.debug.debug_connection_factory import DebugConnectionFactory
+from main_window import main
 from profiles.rockets.co_pilot import co_pilot
 
 

@@ -2,12 +2,12 @@ import PyQt5
 import serial.tools.list_ports
 from PyQt5 import QtCore, QtWidgets, uic
 
-import start
 from connections.debug.debug_connection_factory import DebugConnectionFactory
 from connections.serial.serial_connection_factory import \
     SerialConnectionFactory
 from connections.sim.sim_connection_factory import SimConnectionFactory
 from detail import *
+from main_window.main import start
 from profiles.rockets.co_pilot import co_pilot
 from profiles.rockets.tantalus import tantalus
 
@@ -63,7 +63,7 @@ class comWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         factory = self.ConnectionFactories[self.typeBox.currentText()]
         connection = factory.construct(comPort=self.comBox.currentText(), baudRate=int(self.baudBox.currentText()))
         rocket = self.RocketProfiles[self.rocketBox.currentText()]
-        start.start(connection, rocket)
+        start(connection, rocket)
         self.close()
 
     def connectionChanged(self) -> None:

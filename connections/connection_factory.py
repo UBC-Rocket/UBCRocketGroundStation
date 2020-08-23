@@ -2,7 +2,7 @@ import abc
 from typing import Union
 
 
-class IConnectionFactory(metaclass=abc.ABCMeta):
+class ConnectionFactory(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def requiresComPort(self) -> bool:
         return False

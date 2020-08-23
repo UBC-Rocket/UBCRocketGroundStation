@@ -1,18 +1,18 @@
-import os
 from typing import Union
 
 from detail import *
-from IConnectionFactory import IConnectionFactory
-from SimConnection import SimConnection
 
-FIRMWARE_DIR = 'FW'
+from ..connection_factory import ConnectionFactory
+from .sim_connection import SimConnection
+
+FIRMWARE_DIR = '../../FW'
 EXECUTABLE_NAME = 'program'
 FILE_EXTENSION = {
     'win32': '.exe'
 }
 
 
-class SimConnectionFactory(IConnectionFactory):
+class SimConnectionFactory(ConnectionFactory):
 
     def requiresComPort(self) -> bool:
         return False

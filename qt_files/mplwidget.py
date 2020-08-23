@@ -20,11 +20,12 @@ class MplCanvas(Canvas):
         Canvas.setSizePolicy(self, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         Canvas.updateGeometry(self)
 
+
 # Matplotlib widget
 class MplWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
-        QtWidgets.QWidget.__init__(self, parent)   # Inherit from QWidget
-        self.canvas = MplCanvas()                  # Create canvas object
-        self.vbl = QtWidgets.QVBoxLayout()         # Set box for plotting
+        QtWidgets.QWidget.__init__(self, parent)  # Inherit from QWidget
+        self.canvas = MplCanvas()  # Create canvas object
+        self.vbl = QtWidgets.QVBoxLayout()  # Set box for plotting
         self.vbl.addWidget(self.canvas)
         self.setLayout(self.vbl)

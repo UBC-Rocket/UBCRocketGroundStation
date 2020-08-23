@@ -1,6 +1,6 @@
 from typing import Dict, List
 
-from label import TYPE_CHECKING, Label
+from .label import TYPE_CHECKING, Label
 
 if TYPE_CHECKING:
     from main import MainApp

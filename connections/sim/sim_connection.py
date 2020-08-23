@@ -3,9 +3,9 @@ import subprocess as sp
 import threading
 from enum import Enum
 
-from IConnection import IConnection
-from StreamLogger import StreamLogger
-from XBeeModuleSim import XBeeModuleSim
+from ..connection import Connection
+from .stream_logger import StreamLogger
+from .xbee_module_sim import XBeeModuleSim
 
 
 class SimPacketId(Enum):
@@ -18,7 +18,7 @@ class SimPacketId(Enum):
 LOG_HISTORY_SIZE = 100
 
 
-class SimConnection(IConnection):
+class SimConnection(Connection):
     def __init__(self, firmwareDir, executableName):
         self.executablePath = os.path.join(firmwareDir, executableName)
         self.firmwareDir = firmwareDir

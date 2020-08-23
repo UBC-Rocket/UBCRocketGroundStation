@@ -4,7 +4,7 @@ from typing import Dict
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
 
-from RadioController import RadioController
+from radio_controller import RadioController
 
 
 class ReadThread(QtCore.QThread):

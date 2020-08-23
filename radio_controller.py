@@ -1,8 +1,8 @@
 import struct
 from typing import Any, Callable, Dict, List, Union
 
-import SubpacketIDs
-from SubpacketIDs import SubpacketEnum
+import subpacket_ids
+from subpacket_ids import SubpacketEnum
 
 # CONSTANTS
 
@@ -15,7 +15,7 @@ PACKET_ID_TO_CONST_LENGTH: Dict[int, int] = {
     SubpacketEnum.ACKNOWLEDGEMENT.value: 0000,  # TODO ack length?
     SubpacketEnum.BULK_SENSOR.value: 42,
 }
-for i in SubpacketIDs.get_list_of_sensor_IDs():
+for i in subpacket_ids.get_list_of_sensor_IDs():
     PACKET_ID_TO_CONST_LENGTH[i] = 5
 
 # Check if packet of given type has constant length
@@ -34,7 +34,7 @@ PACKET_ID_TO_HEADER_SIZE: Dict[int, int] = {
     SubpacketEnum.ACKNOWLEDGEMENT.value: 1,
     SubpacketEnum.BULK_SENSOR.value: 1,
 }
-for i in SubpacketIDs.get_list_of_sensor_IDs():
+for i in subpacket_ids.get_list_of_sensor_IDs():
     PACKET_ID_TO_HEADER_SIZE[i] = 1
 
 
@@ -82,7 +82,7 @@ class RadioController:
         """
         subpacket_id: int = int.from_bytes(byte, "big")
         # check that id is valid:
-        if not SubpacketIDs.isSubpacketID(subpacket_id):
+        if not subpacket_ids.isSubpacketID(subpacket_id):
             # TODO Error log here?
             raise ValueError
         return SubpacketEnum(subpacket_id).value

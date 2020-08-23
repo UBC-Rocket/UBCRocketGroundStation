@@ -2,10 +2,10 @@ from typing import Union
 
 from digi.xbee.devices import XBeeDevice
 
-from IConnection import IConnection
+from ..connection import Connection
 
 
-class SerialConnection(IConnection):
+class SerialConnection(Connection):
 
     def __init__(self, comPort: Union[int, str, None], baudRate: Union[int, None]):
         self.device = XBeeDevice(comPort, baudRate)

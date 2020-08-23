@@ -1,17 +1,14 @@
 import time
 
-import pytest
-
 import main
-import rocket_profile
-from DebugConnectionFactory import DebugConnectionFactory
+from connections.debug.debug_connection_factory import DebugConnectionFactory
+from profiles.rockets.co_pilot import co_pilot
 
 
 def test_arm_signal(qtbot, capsys):
     factory = DebugConnectionFactory()
     connection = factory.construct()
-    rocket = rocket_profile.co_pilot
-    main_window = main.MainApp(connection, rocket)
+    main_window = main.MainApp(connection, co_pilot)
 
     main_window.sendCommand("arm")
     time.sleep(1)

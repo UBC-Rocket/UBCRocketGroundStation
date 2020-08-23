@@ -1,13 +1,10 @@
 from threading import Lock
 from time import sleep
 
-import pytest
-
-from XBeeModuleSim import XBeeModuleSim
+from connections.sim.xbee_module_sim import XBeeModuleSim
 
 
 class TestXBeeModuleSim:
-
     def setup_method(self):
         self.xbee = XBeeModuleSim()
         self.rkt_lock = Lock()
@@ -27,12 +24,14 @@ class TestXBeeModuleSim:
         self.xbee.ground_callback = ground_callback
 
     def test_rocket_rx(self):
-        tx_example = bytearray(b"\x7E\x00\x16\x10\x01\x00\x7D\x33\xA2\x00\x40\x0A\x01\x27"
-                               b"\xFF\xFE\x00\x00\x54\x78\x44\x61\x74\x61\x30\x41\x7D\x33")
+        tx_example = bytearray(
+            b"\x7E\x00\x16\x10\x01\x00\x7D\x33\xA2\x00\x40\x0A\x01\x27"
+            b"\xFF\xFE\x00\x00\x54\x78\x44\x61\x74\x61\x30\x41\x7D\x33"
+        )
 
         self.xbee.recieved_from_rocket(tx_example)
         sleep(0.1)
-        
+
         assert self.msgs_to_ground == [b"TxData0A"]
 
     def test_ground_rx(self):
@@ -44,7 +43,9 @@ class TestXBeeModuleSim:
 
     def test_rocket_rx_pieces(self):
         tx_1 = bytearray(b"\x7E\x00\x16\x10\x01\x00\x7D\x33\xA2\x00\x40\x0A")
-        tx_2 = bytearray(b"\x01\x27\xFF\xFE\x00\x00\x54\x78\x44\x61\x74\x61\x30\x41\x7D\x33")
+        tx_2 = bytearray(
+            b"\x01\x27\xFF\xFE\x00\x00\x54\x78\x44\x61\x74\x61\x30\x41\x7D\x33"
+        )
 
         self.xbee.recieved_from_rocket(tx_1)
         self.xbee.recieved_from_rocket(tx_2)

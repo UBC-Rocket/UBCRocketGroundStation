@@ -1,7 +1,6 @@
 dist/
 build/
-raw/
-out/
+mapbox_cache/
 __pycache__/
 .idea/
 venv/

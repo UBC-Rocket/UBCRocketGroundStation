@@ -3,10 +3,10 @@ import struct
 import threading
 import time
 
-from IConnection import IConnection
+from ..connection import Connection
 
 
-class DebugConnection(IConnection):
+class DebugConnection(Connection):
 
     def __init__(self) -> None:
         """

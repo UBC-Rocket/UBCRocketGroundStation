@@ -1,7 +1,8 @@
 import collections
-from detail import LOCAL
 import os
 import sys
+
+from detail import LOCAL
 
 CR = 0x0D
 LF = 0x0A
@@ -10,8 +11,8 @@ LF = 0x0A
 class StreamLogger:
     def __init__(self, bufstream, size: int) -> None:
         """
-        :param bufstream: Bufferred stream like a subprocess stdout, that supports read() and peek().
-        :type bufstream: Bufferred stream
+        :param bufstream: Buffered stream like a subprocess stdout, that supports read() and peek().
+        :type bufstream: Buffered stream
         :param size: Size of in-memory circular log buffer
         :type size: int
         """

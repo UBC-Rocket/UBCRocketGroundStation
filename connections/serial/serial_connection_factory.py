@@ -1,10 +1,10 @@
 from typing import Union
 
-from IConnectionFactory import IConnectionFactory
-from SerialConnection import SerialConnection
+from ..connection_factory import ConnectionFactory
+from .serial_connection import SerialConnection
 
 
-class SerialConnectionFactory(IConnectionFactory):
+class SerialConnectionFactory(ConnectionFactory):
 
     def requiresComPort(self) -> bool:
         return True

@@ -1,17 +1,15 @@
-import os
-import sys
-
 import PyQt5
 import serial.tools.list_ports
-from PyQt5 import QtCore, QtGui, QtWidgets, uic
+from PyQt5 import QtCore, QtWidgets, uic
 
 import start
-from DebugConnectionFactory import DebugConnectionFactory
+from connections.debug.debug_connection_factory import DebugConnectionFactory
+from connections.serial.serial_connection_factory import \
+    SerialConnectionFactory
+from connections.sim.sim_connection_factory import SimConnectionFactory
 from detail import *
-from tantalus import tantalus
-from co_pilot import co_pilot
-from SerialConnectionFactory import SerialConnectionFactory
-from SimConnectionFactory import SimConnectionFactory
+from profiles.rockets.co_pilot import co_pilot
+from profiles.rockets.tantalus import tantalus
 
 if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
@@ -19,7 +17,7 @@ if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
 if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
 
-qtCreatorFile = os.path.join(LOCAL, "comWindow.ui")
+qtCreatorFile = os.path.join(LOCAL, "qt_files", "com_window.ui")
 
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 

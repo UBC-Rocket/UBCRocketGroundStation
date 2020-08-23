@@ -7,9 +7,8 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
 from scipy.misc import imresize
 
-import map_data
-import MapBox
-from SubpacketIDs import SubpacketEnum
+from mapping import map_data, mapbox_utils
+from subpacket_ids import SubpacketEnum
 
 # Scaling is linear so a scale factor of 1 means no scaling (aka 1*x=x)
 SCALE_FACTOR_NO_SCALE = 1
@@ -104,11 +103,11 @@ class MappingThread(QtCore.QThread):
 
         lat1 = latitude + radius / 110.574
         lon1 = longitude - radius / 111.320 / math.cos(lat1 * math.pi / 180.0)
-        p1 = MapBox.MapPoint(lat1, lon1)  # Map corner 1
+        p1 = mapbox_utils.MapPoint(lat1, lon1)  # Map corner 1
 
         lat2 = latitude - radius / 110.574
         lon2 = longitude + radius / 111.320 / math.cos(lat2 * math.pi / 180.0)
-        p2 = MapBox.MapPoint(lat2, lon2)  # Map corner 2
+        p2 = mapbox_utils.MapPoint(lat2, lon2)  # Map corner 2
 
         desiredSize = self.getDesiredMapSize()
 
@@ -125,7 +124,7 @@ class MappingThread(QtCore.QThread):
         (resizedMapImage, xMin, xMax, yMin, yMax) = result
 
         # Update mark coordinates
-        p = MapBox.MapPoint(latitude, longitude)
+        p = mapbox_utils.MapPoint(latitude, longitude)
         x = (p.x - xMin) / (xMax - xMin)
         y = (p.y - yMin) / (yMax - yMin)
         mark = (x * resizedMapImage.shape[0], y * resizedMapImage.shape[1])
@@ -193,7 +192,7 @@ def processMap(requestQueue, resultQueue):
         try:
             (p1, p2, zoom, desiredSize) = requestQueue.get()
 
-            location = MapBox.TileGrid(p1, p2, zoom)
+            location = mapbox_utils.TileGrid(p1, p2, zoom)
             location.downloadArrayImages()
 
             largeMapImage = location.genStitchedMap()

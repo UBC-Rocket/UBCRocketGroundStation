@@ -4,23 +4,18 @@ import time
 from typing import Callable
 
 import PyQt5
-from matplotlib import pyplot as plt
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
+from PIL import Image
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import pyqtSignal
-from PIL import Image
 
-import map_data
-import MapBox
-import MappingThread
-import mplwidget  # DO NOT REMOVE pyinstller needs this
-import ReadThread
-import SendThread
+import read_thread
+import send_thread
+from connections.connection import Connection
 from detail import LOCAL
-from map_data import MapData
-from rocket_profile import RocketProfile
-from RocketData import RocketData
-from SubpacketIDs import SubpacketEnum
+from mapping import map_data, mapbox_utils, mapping_thread
+from profiles.rocket_profile import RocketProfile
+from rocket_data import RocketData
 
 if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
@@ -28,26 +23,25 @@ if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
 if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
 
-qtCreatorFile = os.path.join(LOCAL, "main.ui")
+qtCreatorFile = os.path.join(LOCAL, "qt_files", "main.ui")
 
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 # The marker image, used to show where the rocket is on the map UI
-MAP_MARKER = Image.open(MapBox.MARKER_PATH).resize((12, 12), Image.LANCZOS)
+MAP_MARKER = Image.open(mapbox_utils.MARKER_PATH).resize((12, 12), Image.LANCZOS)
 
 
 class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
     sig_send = pyqtSignal(str)
 
-    def __init__(self, connection, rocket: RocketProfile) -> None:
+    def __init__(self, connection: Connection, rocket: RocketProfile) -> None:
         """
 
         :param connection:
-        :type connection:
+        :type connection: Connection
         :param rocket:
         :type rocket: RocketProfile
         """
-        # TODO move this set of fields out to application.py
         self.connection = connection
         self.rocket = rocket
         self.data = RocketData()
@@ -74,21 +68,20 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.printToConsole("Starting Connection")
 
-        # TODO move all these thread controls out to application.py
         # Init and connection of ReadThread
-        self.ReadThread = ReadThread.ReadThread(self.connection, self.data)
+        self.ReadThread = read_thread.ReadThread(self.connection, self.data)
         self.ReadThread.sig_received.connect(self.receiveData)
         self.ReadThread.sig_print.connect(self.printToConsole)
         self.ReadThread.start()
 
         # Init and connection of SendThread
-        self.SendThread = SendThread.SendThread(self.connection)
+        self.SendThread = send_thread.SendThread(self.connection)
         self.sig_send.connect(self.SendThread.queueMessage)
         self.SendThread.sig_print.connect(self.printToConsole)
         self.SendThread.start()
 
         # Init and connection of MappingThread
-        self.MappingThread = MappingThread.MappingThread(self.connection, self.map, self.data)
+        self.MappingThread = mapping_thread.MappingThread(self.connection, self.map, self.data)
         self.MappingThread.sig_received.connect(self.receiveMap)
         self.MappingThread.sig_print.connect(self.printToConsole)
         self.MappingThread.start()

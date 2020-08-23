@@ -1,7 +1,7 @@
 import concurrent.futures
 import math
 import time
-import typing
+from typing import Any, Optional
 
 import mapbox
 import numpy as np
@@ -11,14 +11,18 @@ from detail import *
 
 TILE_SIZE = 512
 
-MARKER_PATH = os.path.join(LOCAL, "marker.png")
+MARKER_PATH = os.path.join(LOCAL, "qt_files", "marker.png")
+
+MAPBOX_CACHE = os.path.join(LOCAL, "mapbox_cache")
+if not os.path.exists(MAPBOX_CACHE):
+    os.mkdir(MAPBOX_CACHE)
 
 
-def readKey() -> str or None:
+def readKey() -> Optional[str]:
     """Reads MapBox API key from apikey.txt.
 
     :return: API Key for MapBox
-    :rtype: str or None
+    :rtype: Optional[str]
     """
     if os.path.isfile(os.path.join(LOCAL, "apikey.txt")):
         f = open(os.path.join(LOCAL, "apikey.txt"), "r")
@@ -35,7 +39,6 @@ else:
 
 
 class MapPoint:
-
     def __init__(self, latitude: float, longitude: float) -> None:
         """
 
@@ -66,7 +69,9 @@ class MapPoint:
         :return:
         :rtype: int
         """
-        return int(math.floor(TILE_SIZE * (0.5 + self.longitude / 360) * math.pow(2, zoom)))
+        return int(
+            math.floor(TILE_SIZE * (0.5 + self.longitude / 360) * math.pow(2, zoom))
+        )
 
     def getPixelY(self, zoom: int) -> int:
         """
@@ -83,7 +88,12 @@ class MapPoint:
         siny = min(max(siny, -0.9999), 0.9999)
 
         return int(
-            math.floor(TILE_SIZE * (0.5 - math.log((1 + siny) / (1 - siny)) / (4 * math.pi)) * math.pow(2, zoom)))
+            math.floor(
+                TILE_SIZE
+                * (0.5 - math.log((1 + siny) / (1 - siny)) / (4 * math.pi))
+                * math.pow(2, zoom)
+            )
+        )
 
     def getTileX(self, zoom: int) -> int:
         """
@@ -107,7 +117,6 @@ class MapPoint:
 
 
 class MapTile:
-
     def __init__(self, x: int, y: int, s: int):
         """
 
@@ -125,7 +134,7 @@ class MapTile:
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.x}, {self.y}, {self.s})"
 
-    def __eq__(self, other: typing.Any) -> bool:
+    def __eq__(self, other: Any) -> bool:
         return self.x == other.x and self.y == other.y and self.s == other.s
 
     @property
@@ -145,7 +154,7 @@ class MapTile:
         :return:
         :rtype: numpy.ndarray
         """
-        raw = os.path.join(LOCAL, "raw")
+        raw = os.path.join(MAPBOX_CACHE, "raw")
         if not os.path.isdir(raw):
             os.mkdir(raw)
         scalefolder = os.path.join(raw, str(self.s))
@@ -155,14 +164,16 @@ class MapTile:
         impath = os.path.join(scalefolder, self.getName + ".jpg")
 
         if ((not os.path.exists(impath)) or overwrite) and not (maps is None):
-            response = maps.tile("mapbox.satellite", self.x, self.y, self.s, retina=True)
+            response = maps.tile(
+                "mapbox.satellite", self.x, self.y, self.s, retina=True
+            )
             if response.status_code == 200:
                 with open(impath, "wb") as output:
                     output.write(response.content)
                     # print(f"x: {str(self.x)}, y: {str(self.y)}, s: {str(self.s)}\n")
 
         if os.path.isfile(impath):
-            return plt.imread(impath, 'jpeg')
+            return plt.imread(impath, "jpeg")
         else:
             return np.zeros((TILE_SIZE, TILE_SIZE, 3))
 
@@ -173,11 +184,12 @@ class MapTile:
         :return:
         :rtype: bool
         """
-        return os.path.isfile(os.path.join(LOCAL, "raw", str(self.s), self.getName + ".png"))
+        return os.path.isfile(
+            os.path.join(MAPBOX_CACHE, "raw", str(self.s), self.getName + ".png")
+        )
 
 
 class TileGrid:
-
     def __init__(self, p1: MapPoint, p2: MapPoint, s: int):
         """
 
@@ -253,7 +265,9 @@ class TileGrid:
             executor.map(getRow, self.ta)
             executor.shutdown()
         t2 = time.perf_counter()
-        print(f"Successfully downloaded size {str(self.scale)} tiles in {t2 - t1} seconds.")
+        print(
+            f"Successfully downloaded size {str(self.scale)} tiles in {t2 - t1} seconds."
+        )
 
     def genStitchedMap(self, overwrite: bool = False) -> np.ndarray:
         """
@@ -280,13 +294,16 @@ class TileGrid:
             else:
                 return np.column_stack((A, B))
 
-        out = os.path.join(LOCAL, "out")
+        out = os.path.join(MAPBOX_CACHE, "out")
         if not os.path.isdir(out):
             os.mkdir(out)
 
-        outfile = os.path.join(out, f"output_{str(min(self.p1.x, self.p2.x))}-{str(max(self.p1.x, self.p2.x))}_"
-                                    f"{str(min(self.p1.y, self.p2.y))}-{str(max(self.p1.y, self.p2.y))}_"
-                                    f"{str(self.scale)}.png")
+        outfile = os.path.join(
+            out,
+            f"output_{str(min(self.p1.x, self.p2.x))}-{str(max(self.p1.x, self.p2.x))}_"
+            f"{str(min(self.p1.y, self.p2.y))}-{str(max(self.p1.y, self.p2.y))}_"
+            f"{str(self.scale)}.png",
+        )
 
         if (not os.path.isfile(outfile)) or overwrite:
             print(f"Generating size {str(self.scale)} map!")
@@ -303,11 +320,13 @@ class TileGrid:
 
             plt.imsave(outfile, img)
             t2 = time.perf_counter()
-            print(f"Successfully generated size {str(self.scale)} map in {t2 - t1} seconds.")
+            print(
+                f"Successfully generated size {str(self.scale)} map in {t2 - t1} seconds."
+            )
             return img
         else:
             print(f"Found size {str(self.scale)} map!")
-            return plt.imread(outfile, 'jpeg')
+            return plt.imread(outfile, "jpeg")
 
 
 def pointToTile(p: MapPoint, s: int) -> MapTile:

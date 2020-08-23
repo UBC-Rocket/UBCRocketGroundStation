@@ -6,9 +6,9 @@ from typing import Dict, Union
 
 import numpy as np
 
-import SubpacketIDs
+import subpacket_ids
 from detail import *
-from SubpacketIDs import SubpacketEnum
+from subpacket_ids import SubpacketEnum
 
 # nametochar : Dict[str, bytes] = { # TODO Deal with legacy data types and conversions. Delete dead code when done.
 #     "Acceleration X": b'X',
@@ -75,7 +75,7 @@ class RocketData:
         self.autosaveThread = threading.Thread(target=self.timer, daemon=True)
         self.autosaveThread.start()
 
-        self.callbacks = {k: [] for k in SubpacketIDs.get_list_of_IDs()}
+        self.callbacks = {k: [] for k in subpacket_ids.get_list_of_IDs()}
 
     def timer(self):
         """
@@ -165,19 +165,19 @@ class RocketData:
             if len(self.timeset) <= 0:
                 return
 
-            data = np.empty((len(SubpacketIDs.get_list_of_sensor_IDs()), len(self.timeset) + 1), dtype=object)
+            data = np.empty((len(subpacket_ids.get_list_of_sensor_IDs()), len(self.timeset) + 1), dtype=object)
             times = list(self.timeset.keys())
             times.sort(reverse=False)
             for ix, iy in np.ndindex(data.shape):
                 # Make the first row a list of sensor names
                 if iy == 0:
-                    data[ix, iy] = SubpacketIDs.get_list_of_sensor_names()[ix]
+                    data[ix, iy] = subpacket_ids.get_list_of_sensor_names()[ix]
                 else:
-                    if SubpacketIDs.get_list_of_sensor_names()[ix] == SubpacketEnum.TIME.name:
+                    if subpacket_ids.get_list_of_sensor_names()[ix] == SubpacketEnum.TIME.name:
                         data[ix, iy] = times[iy - 1]
                     else:
-                        if SubpacketIDs.get_list_of_sensor_IDs()[ix] in self.timeset[times[iy - 1]]:
-                            data[ix, iy] = self.timeset[times[iy - 1]][SubpacketIDs.get_list_of_sensor_IDs()[ix]]
+                        if subpacket_ids.get_list_of_sensor_IDs()[ix] in self.timeset[times[iy - 1]]:
+                            data[ix, iy] = self.timeset[times[iy - 1]][subpacket_ids.get_list_of_sensor_IDs()[ix]]
                         else:
                             data[ix, iy] = ""
 
@@ -209,5 +209,5 @@ class RocketData:
         """
 
         """
-        for id in SubpacketIDs.get_list_of_IDs():
+        for id in subpacket_ids.get_list_of_IDs():
             self._notifyCallbacksOfId(id)

@@ -1,7 +1,7 @@
 import math
 from typing import TYPE_CHECKING, Callable, Optional, Union
 
-from SubpacketIDs import SubpacketEnum
+from subpacket_ids import SubpacketEnum
 
 if TYPE_CHECKING:
     from main import MainApp

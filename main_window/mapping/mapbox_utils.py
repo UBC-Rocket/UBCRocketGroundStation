@@ -131,20 +131,14 @@ class MapTile:
         self.y = y
         self.s = s
 
+    def __str__(self) -> str:
+        return f"{self.x}_{self.y}"
+
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.x}, {self.y}, {self.s})"
 
     def __eq__(self, other: Any) -> bool:
         return self.x == other.x and self.y == other.y and self.s == other.s
-
-    @property
-    def getName(self) -> str:
-        """
-
-        :return:
-        :rtype: str
-        """
-        return f"{self.x}_{self.y}"
 
     def getImage(self, overwrite: bool = False) -> np.ndarray:
         """
@@ -161,7 +155,7 @@ class MapTile:
         if not os.path.isdir(scalefolder):
             os.mkdir(scalefolder)
 
-        impath = os.path.join(scalefolder, self.getName + ".jpg")
+        impath = os.path.join(scalefolder, str(self) + ".jpg")
 
         if ((not os.path.exists(impath)) or overwrite) and not (maps is None):
             response = maps.tile(
@@ -177,7 +171,6 @@ class MapTile:
         else:
             return np.zeros((TILE_SIZE, TILE_SIZE, 3))
 
-    @property
     def imageExists(self) -> bool:
         """
 
@@ -185,7 +178,7 @@ class MapTile:
         :rtype: bool
         """
         return os.path.isfile(
-            os.path.join(MAPBOX_CACHE, "raw", str(self.s), self.getName + ".png")
+            os.path.join(MAPBOX_CACHE, "raw", str(self.s), str(self) + ".png")
         )
 
 
@@ -216,7 +209,7 @@ class TileGrid:
         self.height = None
         self.genTileArray()
         if self.width > 5 or self.height > 5:
-            print(f"WARNING: Large map ({self.width}x%{self.height} tiles)")
+            print(f"WARNING: Large map ({self.width}x{self.height} tiles)")
 
     def __str__(self) -> str:
         return f"{self.scale}_{self.tile_x_min}-{self.tile_x_max}_{self.tile_y_min}-{self.tile_y_max}"
@@ -270,7 +263,6 @@ class TileGrid:
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
             executor.map(getRow, self.ta)
-            executor.shutdown()
         t2 = time.perf_counter()
         print(
             f"Successfully downloaded size {str(self.scale)} tiles in {t2 - t1} seconds."

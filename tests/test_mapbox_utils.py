@@ -53,10 +53,6 @@ class TestMapPoint:
 
 
 class TestMapTile:
-    def test_get_name(self, hennings_tile):
-        name = hennings_tile.getName
-
-        assert name == "41322_89729"
 
     def test_get_image_no_maps(self, hennings_tile, mocker):
         mocker.patch("main_window.mapping.mapbox_utils.maps", None)
@@ -99,7 +95,7 @@ class TestMapTile:
 
         mocked_isfile.return_value = success
 
-        ie = hennings_tile.imageExists
+        ie = hennings_tile.imageExists()
 
         mocked_isfile.assert_called_once()
         mocked_isfile.assert_called_with(

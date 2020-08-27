@@ -208,11 +208,18 @@ class TileGrid:
         self.xMax = None
         self.yMin = None
         self.yMax = None
+        self.tile_x_min = None
+        self.tile_x_max = None
+        self.tile_y_min = None
+        self.tile_y_max = None
         self.width = None
         self.height = None
         self.genTileArray()
         if self.width > 5 or self.height > 5:
             print(f"WARNING: Large map ({self.width}x%{self.height} tiles)")
+
+    def __str__(self) -> str:
+        return f"{self.scale}_{self.tile_x_min}-{self.tile_x_max}_{self.tile_y_min}-{self.tile_y_max}"
 
     def genTileArray(self) -> None:
         """
@@ -220,22 +227,22 @@ class TileGrid:
         """
         t1 = pointToTile(self.p1, self.scale)
         t2 = pointToTile(self.p2, self.scale)
-        x1 = min(t1.x, t2.x)
-        x2 = max(t1.x, t2.x)
-        y1 = min(t1.y, t2.y)
-        y2 = max(t1.y, t2.y)
+        self.tile_x_min = min(t1.x, t2.x)
+        self.tile_x_max = max(t1.x, t2.x)
+        self.tile_y_min = min(t1.y, t2.y)
+        self.tile_y_max = max(t1.y, t2.y)
 
-        self.xMin = x1 / pow(2, self.scale)
-        self.xMax = (x2 + 1) / pow(2, self.scale)
-        self.yMin = y1 / pow(2, self.scale)
-        self.yMax = (y2 + 1) / pow(2, self.scale)
+        self.xMin = self.tile_x_min / pow(2, self.scale)
+        self.xMax = (self.tile_x_max + 1) / pow(2, self.scale)
+        self.yMin = self.tile_y_min / pow(2, self.scale)
+        self.yMax = (self.tile_y_max + 1) / pow(2, self.scale)
         # print(str(self.xMin) + "  " + str(self.xMax) + "  " + str(self.yMin) + "  " + str(self.yMax))
 
         ta = []
 
-        for i in range(y1, y2 + 1):
+        for i in range(self.tile_y_min, self.tile_y_max + 1):
             row = []
-            for j in range(x1, x2 + 1):
+            for j in range(self.tile_x_min, self.tile_x_max + 1):
                 row.append(MapTile(j, i, self.scale))
             ta.append(row)
         self.ta = ta
@@ -298,12 +305,7 @@ class TileGrid:
         if not os.path.isdir(out):
             os.mkdir(out)
 
-        outfile = os.path.join(
-            out,
-            f"output_{str(min(self.p1.x, self.p2.x))}-{str(max(self.p1.x, self.p2.x))}_"
-            f"{str(min(self.p1.y, self.p2.y))}-{str(max(self.p1.y, self.p2.y))}_"
-            f"{str(self.scale)}.png",
-        )
+        outfile = os.path.join(out, f"output_{str(self)}.png")
 
         if (not os.path.isfile(outfile)) or overwrite:
             print(f"Generating size {str(self.scale)} map!")

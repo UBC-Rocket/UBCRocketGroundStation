@@ -149,7 +149,7 @@ class TestTileGrid:
                 LOCAL,
                 "tests",
                 "test_mapbox_utils",
-                "output_0.15763062222222224-0.15763549444444447_0.3422889898339514-0.3422932509420217_18.png",
+                "output_18_41321-41323_89729-89730.png",
             ),
             "jpeg",  # Needed to make sure MPL doesn't use Pillow and return decimals.
         )

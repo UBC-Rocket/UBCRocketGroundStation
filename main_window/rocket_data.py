@@ -1,10 +1,11 @@
+import os
 import threading
 import time
 from typing import Dict, Union
 
 import numpy as np
 
-from detail import *
+from detail import LOCAL
 
 from . import subpacket_ids
 from .subpacket_ids import SubpacketEnum

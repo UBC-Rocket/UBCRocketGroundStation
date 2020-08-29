@@ -1,3 +1,6 @@
+import os
+import sys
+
 import PyQt5
 import serial.tools.list_ports
 from PyQt5 import QtCore, QtWidgets, uic
@@ -6,7 +9,7 @@ from connections.debug.debug_connection_factory import DebugConnectionFactory
 from connections.serial.serial_connection_factory import \
     SerialConnectionFactory
 from connections.sim.sim_connection_factory import SimConnectionFactory
-from detail import *
+from detail import LOCAL
 from main_window.main import start
 from profiles.rockets.co_pilot import co_pilot
 from profiles.rockets.tantalus import tantalus

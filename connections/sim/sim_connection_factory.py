@@ -1,6 +1,8 @@
+import os
+import sys
 from typing import Union
 
-from detail import *
+from detail import LOCAL
 
 from ..connection_factory import ConnectionFactory
 from .sim_connection import SimConnection

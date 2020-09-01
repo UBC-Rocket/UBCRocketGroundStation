@@ -169,7 +169,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         self.connection.shutDown()
         print("Saving...")
-        self.data.save(os.path.join(LOCAL, "finalsave_" + str(int(time.time())) + ".csv"))
+        self.data.save(os.path.join(LOCAL, "logs", "finalsave_" + str(int(time.time())) + ".csv"))
         print("Saved!")
 
     # Updates the UI when new data is available for display

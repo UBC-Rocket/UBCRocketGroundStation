@@ -1,6 +1,7 @@
 import math
 from typing import Dict, Any, Callable, Union, List, Tuple
 import struct
+from io import BytesIO
 
 import SubpacketIDs
 from SubpacketIDs import SubpacketEnum
@@ -58,33 +59,14 @@ class RadioController:
         header = self.header(byte_list)
         # data extraction
         data_unit = byte_list[header.header_length : header.total_length]
-        data_length = header.data_length
         try:
-            parsed_data: Dict[any, any] = self.parse_data(header.subpacket_id, data_unit, data_length)
+            parsed_data: Dict[any, any] = self.parse_data(header.subpacket_id, data_unit, header.data_length)
         except Exception as e:
             print(e)
             raise e
         # Add timestamp from header
         parsed_data[SubpacketEnum.TIME.value] = header.timestamp
         return parsed_data, header.total_length
-
-    # Helper to convert byte to subpacket id as is in the SubpacketID enum, throws error otherwise
-    def extract_subpacket_ID(self, byte: List):
-        """
-
-        :param byte:
-        :type byte:
-        :return:
-        :rtype:
-        """
-        # subpacket_id: int = int.from_bytes(byte, "big")
-        subpacket_id: int = byte
-        # check that id is valid:
-        if not SubpacketIDs.isSubpacketID(subpacket_id):
-            # TODO Error log here?
-            raise ValueError
-        return SubpacketEnum(subpacket_id).value
-
 
     # general data parser interface. Routes to the right parse, based on subpacket_id
     def parse_data(self, subpacket_id, byte_list, length) -> Dict[any, any]:
@@ -104,12 +86,24 @@ class RadioController:
     # Header extractor helper.
     # ASSUMES that length values represent data lengths, including headers
     def header(self, byte_list: List) -> Header:
+        """
+\
+        :param byte_list:
+        :type byte_list:
+        :return:
+        :rtype:
+        """
         currByte = Count(0, 1)  # index for which byte is to be processed next. Collected in return as header size
+
         # Get ID
-        subpacket_id: int = self.extract_subpacket_ID(byte_list[currByte.currAndInc(1)])
+        subpacket_id: int = byte_list[currByte.currAndInc(1)]
+        # check that id is valid:
+        if not SubpacketIDs.isSubpacketID(subpacket_id):
+            # TODO Error log here?
+            raise ValueError
 
         # Get timestamp
-        timestamp: int = self.fourtoint(byte_list[currByte.curr(): currByte.next(4)])
+        timestamp: int = self.fourtoint(byte_list[currByte.curr() : currByte.next(4)])
 
         # Set header length, up to this point.
         header_length = currByte.curr()
@@ -199,7 +193,7 @@ class RadioController:
         byte_data = bytearray(byte_list)
         data[SubpacketEnum.MESSAGE.value] = byte_data.decode('ascii')
         # Do something with data TODO Temporary until: saved to RocketData, logged, or displayed
-        print("Incoming message: " + data[SubpacketEnum.MESSAGE.value])
+        print("Incoming message: ", data[SubpacketEnum.MESSAGE.value])
         return data
 
     def event(self, byte_list, **kwargs):
@@ -280,19 +274,19 @@ class RadioController:
         :rtype:
         """
         data: Dict[int, any] = {}
+        # TODO Review experimental form, perhaps consider doing for all https://trello.com/c/5IkOjNDm/161-clean-up-bytes-types
+        bytes_IO = BytesIO(bytes(byte_list))
 
-        curr_byte = Count(0, 4)
-
-        data[SubpacketEnum.CALCULATED_ALTITUDE.value] = self.fourtofloat(byte_list[curr_byte.curr():curr_byte.next(4)])  # TODO Double check it is calculated barometer altitude with firmware
-        data[SubpacketEnum.ACCELERATION_X.value] = self.fourtofloat(byte_list[curr_byte.curr():curr_byte.next(4)])
-        data[SubpacketEnum.ACCELERATION_Y.value] = self.fourtofloat(byte_list[curr_byte.curr():curr_byte.next(4)])
-        data[SubpacketEnum.ACCELERATION_Z.value] = self.fourtofloat(byte_list[curr_byte.curr():curr_byte.next(4)])
-        data[SubpacketEnum.ORIENTATION_1.value] = self.fourtofloat(byte_list[curr_byte.curr():curr_byte.next(4)])
-        data[SubpacketEnum.ORIENTATION_2.value] = self.fourtofloat(byte_list[curr_byte.curr():curr_byte.next(4)])
-        data[SubpacketEnum.ORIENTATION_3.value] = self.fourtofloat(byte_list[curr_byte.curr():curr_byte.next(4)])
-        data[SubpacketEnum.LATITUDE.value] = self.fourtofloat(byte_list[curr_byte.curr():curr_byte.next(4)])  # TODO Should lat+lon be doubles??
-        data[SubpacketEnum.LONGITUDE.value] = self.fourtofloat(byte_list[curr_byte.curr():curr_byte.next(4)])
-        data[SubpacketEnum.STATE.value] = byte_list[curr_byte.currAndInc(1)]
+        data[SubpacketEnum.CALCULATED_ALTITUDE.value] = self.fourtofloat(bytes_IO.read(4))  # TODO Double check it is calculated barometer altitude with firmware
+        data[SubpacketEnum.ACCELERATION_X.value] = self.fourtofloat(bytes_IO.read(4))
+        data[SubpacketEnum.ACCELERATION_Y.value] = self.fourtofloat(bytes_IO.read(4))
+        data[SubpacketEnum.ACCELERATION_Z.value] = self.fourtofloat(bytes_IO.read(4))
+        data[SubpacketEnum.ORIENTATION_1.value] = self.fourtofloat(bytes_IO.read(4))
+        data[SubpacketEnum.ORIENTATION_2.value] = self.fourtofloat(bytes_IO.read(4))
+        data[SubpacketEnum.ORIENTATION_3.value] = self.fourtofloat(bytes_IO.read(4))
+        data[SubpacketEnum.LATITUDE.value] = self.fourtofloat(bytes_IO.read(4))  # TODO Should lat+lon be doubles??
+        data[SubpacketEnum.LONGITUDE.value] = self.fourtofloat(bytes_IO.read(4))
+        data[SubpacketEnum.STATE.value] = int.from_bytes(bytes_IO.read(1), "big")
         return data
 
 

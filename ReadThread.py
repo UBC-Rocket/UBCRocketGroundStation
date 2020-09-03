@@ -48,9 +48,10 @@ class ReadThread(QtCore.QThread):
 
             data = self.dataQueue.get(block=True, timeout=None)  # Block until something new
             self.dataQueue.task_done()
-            print(data)
-            # Convert from bytearray to List[int]
+
+            # Convert from immutable bytearray to List[int]
             byte_list = list(data)  # list of ints ranging from 0 - 255. Equivalent to doing [x for x in data]
+
             # loop that quickly runs through entire data list and extracts subpackets where possible
             while len(byte_list) > 0:
                 parsed_data: Dict[int, any] = {}  # generally any is floats and ints

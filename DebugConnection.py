@@ -31,10 +31,11 @@ class DebugConnection(IConnection):
                 if not self.callback:
                     continue
 
-                # bulk_sensor_arr: bytearray = self.bulk_sensor_mock_random()
-                # statusPingArr: bytearray = self.statusPingMockSetValues()
-                messageArr: bytearray = self.messageValues()
-                self.callback(messageArr)
+                full_arr: bytearray = bytearray()
+                full_arr.extend(self.bulk_sensor_mock_random())
+                full_arr.extend(self.status_ping_mock_set_values())
+                full_arr.extend(self.message_values())
+                self.callback(full_arr)
 
     def bulk_sensor_mock_random(self) -> bytearray:
         """
@@ -57,37 +58,52 @@ class DebugConnection(IConnection):
         bulk_sensor_arr.extend(random.randint(0, 100).to_bytes(length=1, byteorder='big'))  # State
         return bulk_sensor_arr
 
-    def statusPingMockRandom(self) -> bytearray:
-        bulk_sensor_arr: bytearray = bytearray()
-        bulk_sensor_arr.append(SubpacketEnum.STATUS_PING.value)  # id
-        bulk_sensor_arr.extend((int(time.time())).to_bytes(length=4, byteorder='big'))  # use current integer time
-        bulk_sensor_arr.extend(random.randint(0, 3).to_bytes(length=1, byteorder='big'))  # status1
-        bulk_sensor_arr.extend(random.randint(0, 255).to_bytes(length=1, byteorder='big'))  # State
-        bulk_sensor_arr.extend(random.randint(0, 255).to_bytes(length=1, byteorder='big'))  # State
-        bulk_sensor_arr.extend(random.randint(0, 255).to_bytes(length=1, byteorder='big'))  # State
-        bulk_sensor_arr.extend(random.randint(0, 255).to_bytes(length=1, byteorder='big'))  # State
-        return bulk_sensor_arr
+    def status_ping_mock_random(self) -> bytearray:
+        """
 
-    def statusPingMockSetValues(self) -> bytearray:
-        bulk_sensor_arr: bytearray = bytearray()
-        bulk_sensor_arr.append(SubpacketEnum.STATUS_PING.value)  # id
-        bulk_sensor_arr.extend((int(time.time())).to_bytes(length=4, byteorder='big'))  # use current integer time
-        bulk_sensor_arr.extend((int(2)).to_bytes(length=1, byteorder='big'))  # status1
+        :return: data_arr
+        :rtype: bytearray
+        """
+        data_arr: bytearray = bytearray()
+        data_arr.append(SubpacketEnum.STATUS_PING.value)  # id
+        data_arr.extend((int(time.time())).to_bytes(length=4, byteorder='big'))  # use current integer time
+        data_arr.extend(random.randint(0, 3).to_bytes(length=1, byteorder='big'))  # status1
+        data_arr.extend(random.randint(0, 255).to_bytes(length=1, byteorder='big'))  # State
+        data_arr.extend(random.randint(0, 255).to_bytes(length=1, byteorder='big'))  # State
+        data_arr.extend(random.randint(0, 255).to_bytes(length=1, byteorder='big'))  # State
+        data_arr.extend(random.randint(0, 255).to_bytes(length=1, byteorder='big'))  # State
+        return data_arr
+
+    def status_ping_mock_set_values(self) -> bytearray:
+        """
+
+        :return: data_arr
+        :rtype: bytearray
+        """
+        data_arr: bytearray = bytearray()
+        data_arr.append(SubpacketEnum.STATUS_PING.value)  # id
+        data_arr.extend((int(time.time())).to_bytes(length=4, byteorder='big'))  # use current integer time
+        data_arr.extend((int(2)).to_bytes(length=1, byteorder='big'))  # status1
         # OVERALL_STATUS, BAROMETER, GPS, ACCELEROMETER, IMU, TEMPERATURE
-        bulk_sensor_arr.extend((int(252)).to_bytes(length=1, byteorder='big'))  # State of 11111100
-        bulk_sensor_arr.extend((int(255)).to_bytes(length=1, byteorder='big'))  # State of 11111111
+        data_arr.extend((int(252)).to_bytes(length=1, byteorder='big'))  # State of 11111100
+        data_arr.extend((int(255)).to_bytes(length=1, byteorder='big'))  # State of 11111111
         # DROGUE_IGNITER_CONTINUITY, MAIN_IGNITER_CONTINUITY, FILE_OPEN_SUCCESS
-        bulk_sensor_arr.extend((int(224)).to_bytes(length=1, byteorder='big'))  # State of 11100000
-        bulk_sensor_arr.extend((int(255)).to_bytes(length=1, byteorder='big'))  # State of 11111111
-        return bulk_sensor_arr
+        data_arr.extend((int(224)).to_bytes(length=1, byteorder='big'))  # State of 11100000
+        data_arr.extend((int(255)).to_bytes(length=1, byteorder='big'))  # State of 11111111
+        return data_arr
 
-    def messageValues(self) -> bytearray:
-        bulk_sensor_arr: bytearray = bytearray()
-        bulk_sensor_arr.append(SubpacketEnum.MESSAGE.value)  # id
-        bulk_sensor_arr.extend((int(time.time())).to_bytes(length=4, byteorder='big'))  # use current integer time
-        bulk_sensor_arr.extend((int(5)).to_bytes(length=1, byteorder='big'))  # length of the message data
-        bulk_sensor_arr.extend([ord(ch) for ch in 'hello'])  # message
-        return bulk_sensor_arr
+    def message_values(self) -> bytearray:
+        """
+
+        :return: data_arr
+        :rtype: bytearray
+        """
+        data_arr: bytearray = bytearray()
+        data_arr.append(SubpacketEnum.MESSAGE.value)  # id
+        data_arr.extend((int(time.time())).to_bytes(length=4, byteorder='big'))  # use current integer time
+        data_arr.extend((int(5)).to_bytes(length=1, byteorder='big'))  # length of the message data
+        data_arr.extend([ord(ch) for ch in 'hello'])  # message
+        return data_arr
 
     # Register callback to which we will send new data
     def registerCallback(self, fn) -> None:

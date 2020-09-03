@@ -4,8 +4,12 @@ import struct
 
 import SubpacketIDs
 from SubpacketIDs import SubpacketEnum
+from detail import Count
 
 import collections
+
+# Essentially a mini-class, to structure the header data. Doesn't merit its own class due to limited use, 
+# can be expanded if necessary elsewhere.
 Header = collections.namedtuple('Header', ['subpacket_id', 'timestamp', 'header_length', 'data_length', 'total_length'])
 
 # CONSTANTS
@@ -15,7 +19,7 @@ PACKET_ID_TO_CONST_LENGTH: Dict[int, int] = {
     SubpacketEnum.STATUS_PING.value: 5,
     SubpacketEnum.EVENT.value: 1,
     SubpacketEnum.GPS.value: 24,
-    SubpacketEnum.ACKNOWLEDGEMENT.value: 0000,  # TODO ack length??
+    # SubpacketEnum.ACKNOWLEDGEMENT.value: 0000, # TODO
     SubpacketEnum.BULK_SENSOR.value: 37,
 }
 for i in SubpacketIDs.get_list_of_sensor_IDs():
@@ -25,20 +29,6 @@ for i in SubpacketIDs.get_list_of_sensor_IDs():
 def isPacketLengthConst(subpacket_id):
     return subpacket_id in PACKET_ID_TO_CONST_LENGTH.keys()
 
-
-# # TODO remove? since we have header helper that tracks header size. Would be useful, if header size varies more
-# # Map subpacket id to header size in bytes. Only includes types with CONSTANT lengths
-# PACKET_ID_TO_HEADER_SIZE: Dict[int, int] = {
-#     SubpacketEnum.STATUS_PING.value: 5,
-#     SubpacketEnum.MESSAGE.value: 6,
-#     SubpacketEnum.EVENT.value: 5,
-#     SubpacketEnum.CONFIG.value: 5,
-#     SubpacketEnum.GPS.value: 5,
-#     SubpacketEnum.ACKNOWLEDGEMENT.value: ,???
-#     SubpacketEnum.BULK_SENSOR.value: 5,
-# }
-# for i in SubpacketIDs.get_list_of_sensor_IDs():
-#     PACKET_ID_TO_HEADER_SIZE[i] = 1
 
 # This class takes care of converting subpacket data coming in, according to the specifications.
 # The term/parameter name byte list refer to a list of byte data, each byte being represented as ints.
@@ -67,7 +57,7 @@ class RadioController:
         # header extraction
         header = self.header(byte_list)
         # data extraction
-        data_unit = byte_list[header.header_length:header.total_length]
+        data_unit = byte_list[header.header_length : header.total_length]
         data_length = header.data_length
         try:
             parsed_data: Dict[any, any] = self.parse_data(header.subpacket_id, data_unit, data_length)
@@ -96,12 +86,12 @@ class RadioController:
         return SubpacketEnum(subpacket_id).value
 
 
-    # general data parser interface. Routes to the right parse, based on type_id
-    def parse_data(self, type_id, byte_list, length) -> Dict[any, any]:
+    # general data parser interface. Routes to the right parse, based on subpacket_id
+    def parse_data(self, subpacket_id, byte_list, length) -> Dict[any, any]:
         """
 
-        :param type_id:
-        :type type_id:
+        :param subpacket_id:
+        :type subpacket_id:
         :param byte_list:
         :type byte_list:
         :param length:
@@ -109,10 +99,10 @@ class RadioController:
         :return:
         :rtype:
         """
-        return self.packetTypeToParser[type_id](self, byte_list, length=length, type_id=type_id)
+        return self.packetTypeToParser[subpacket_id](self, byte_list, length=length, subpacket_id=subpacket_id)
 
     # Header extractor helper.
-    # ASSUMES that length values represent full subpacket lengths, including headers
+    # ASSUMES that length values represent data lengths, including headers
     def header(self, byte_list: List) -> Header:
         currByte = Count(0, 1)  # index for which byte is to be processed next. Collected in return as header size
         # Get ID
@@ -143,14 +133,13 @@ class RadioController:
 
         :param byte_list:
         :type byte_list:
-        :param **kwargs:
-        :type **kwargs:
+        :key ---: unused
         :return:
         :rtype:
         """
         sensor_bit_field_length = 16
         other_bit_field_length = 16
-        # TODO need these elsewhere? extract (and make enum, or maybe combine with SubpacketIds somehow)
+        # TODO extract and cleanup https://trello.com/c/uFHtaN51/
         NOMINAL = 'NOMINAL'
         NONCRITICAL_FAILURE = 'NONCRITICAL_FAILURE'
         CRITICAL_FAILURE = 'CRITICAL_FAILURE'
@@ -170,7 +159,7 @@ class RadioController:
         curr_byte = Count(0, 1)
 
         # Overall status from 6th and 7th bits
-        overallStatus = bitFromByte(byte_list[curr_byte.curr()], 1) | bitFromByte(byte_list[curr_byte.currAndInc(1)], 0)
+        overallStatus = self.bitfrombyte(byte_list[curr_byte.curr()], 1) | self.bitfrombyte(byte_list[curr_byte.currAndInc(1)], 0)
         if overallStatus == 0b00000000:
             data[SubpacketEnum.STATUS_PING.value] = NOMINAL
         elif overallStatus == 0b00000001:
@@ -183,7 +172,7 @@ class RadioController:
         for i in range(0, num_assigned_bits):
             byte_index = curr_byte.curr() + math.floor(i / 8)
             relative_bit_index = 7 - (i % 8)  # get the bits left to right
-            data[SENSOR_TYPES[i]] = bitFromByte(byte_list[byte_index], relative_bit_index)
+            data[SENSOR_TYPES[i]] = self.bitfrombyte(byte_list[byte_index], relative_bit_index)
         curr_byte.next(math.floor(sensor_bit_field_length / 8))  # move to next section of bytes
 
         # Other misc statuses
@@ -191,7 +180,7 @@ class RadioController:
         for i in range(0, num_assigned_bits):
             byte_index = curr_byte.curr() + math.floor(i / 8)
             relative_bit_index = 7 - (i % 8)
-            data[OTHER_STATUS_TYPES[i]] = bitFromByte(byte_list[byte_index], relative_bit_index)
+            data[OTHER_STATUS_TYPES[i]] = self.bitfrombyte(byte_list[byte_index], relative_bit_index)
         curr_byte.next(math.floor(other_bit_field_length / 8))
         return data
 
@@ -200,8 +189,7 @@ class RadioController:
 
         :param byte_list:
         :type byte_list:
-        :param **kwargs:
-        :type **kwargs:
+        :key ---: unused
         :return:
         :rtype:
         """
@@ -210,7 +198,8 @@ class RadioController:
         # Two step: int[] -> bytearray -> string. Probably a more efficient way
         byte_data = bytearray(byte_list)
         data[SubpacketEnum.MESSAGE.value] = byte_data.decode('ascii')
-        print(data[SubpacketEnum.MESSAGE.value])  # TODO Temporary until: saving to RocketData, logging, or displaying done
+        # Do something with data TODO Temporary until: saved to RocketData, logged, or displayed
+        print("Incoming message: " + data[SubpacketEnum.MESSAGE.value])
         return data
 
     def event(self, byte_list, **kwargs):
@@ -218,8 +207,7 @@ class RadioController:
 
         :param byte_list:
         :type byte_list:
-        :param **kwargs:
-        :type **kwargs:
+        :key ---: unused
         :return:
         :rtype:
         """
@@ -234,8 +222,7 @@ class RadioController:
 
         :param byte_list:
         :type byte_list:
-        :param **kwargs:
-        :type **kwargs:
+        :key ---: unused
         :return:
         :rtype:
         """
@@ -248,19 +235,18 @@ class RadioController:
 
         :param byte_list:
         :type byte_list:
-        :param **kwargs:
-        :type **kwargs:
+        :key subpacket_id: The type of sensor, but mapped to subpacket id TODO Review w/ https://trello.com/c/uFHtaN51
         :return:
         :rtype:
         """
-        type_id = kwargs['type_id']
+        subpacket_id = kwargs['subpacket_id']
         data = {}
-        # TODO Commented out, since apparently we pass along state, or other non-floats as float too??
-        # if type_id == SubpacketEnum.STATE.value:
-        #     data[type_id] = byte_list[0]
+        # TODO Commented out, since apparently we pass along state, and other non-floats items, as float too??
+        # if subpacket_id == SubpacketEnum.STATE.value:
+        #     data[subpacket_id] = byte_list[0]
         # else:
-        #     data[type_id] = self.fourtofloat(byte_list[0])
-        data[type_id] = self.fourtofloat(byte_list[0])
+        #     data[subpacket_id] = self.fourtofloat(byte_list[0])
+        data[subpacket_id] = self.fourtofloat(byte_list[0])
         return data
 
     def gps(self, byte_list, **kwargs):
@@ -268,8 +254,7 @@ class RadioController:
 
         :param byte_list:
         :type byte_list:
-        :param **kwargs:
-        :type **kwargs:
+        :key ---: unused
         :return:
         :rtype:
         """
@@ -286,19 +271,16 @@ class RadioController:
     #     return data
 
     def bulk_sensor(self, byte_list: List, **kwargs):
-        """
+        r"""
 
         :param byte_list:
         :type byte_list:
-        :param **kwargs:
-        :type **kwargs:
+        :key ---: unused
         :return:
         :rtype:
         """
         data: Dict[int, any] = {}
 
-        # # TODO REVIEW/CHANGE in type refactoring: how this is required to convert from List[bytes] to List[int]
-        # byte_list: List[int] = [int(x[0]) for x in byte_list]
         curr_byte = Count(0, 4)
 
         data[SubpacketEnum.CALCULATED_ALTITUDE.value] = self.fourtofloat(byte_list[curr_byte.curr():curr_byte.next(4)])  # TODO Double check it is calculated barometer altitude with firmware
@@ -371,40 +353,18 @@ class RadioController:
         c = struct.unpack('>d' if self.bigEndianInts else '<d', b)
         return c[0]
 
-# Helper class. python way of doing ++ (unlimited incrementing) TODO Put this in utils folder/file?
-class Count:
-    def __init__(self, start=0, interval=1):
-        self.interval = interval
-        self.num = start
+    def bitfrombyte(self, val: int, targetIndex: int):
+        """
+        Helper function. Extract bit at position targetIndex. 0 based index.
 
-    def __iter__(self):
-        return self
-
-    def curr(self):
-        return self.num
-
-    # increments and returns the new value
-    def next(self, interval=0):
-        if interval == 0:
-            self.num += self.interval
-        else:
-            self.num += interval
-
-        return self.num
-
-    # returns the current value then increments
-    def currAndInc(self, interval=9):
-        num = self.num
-        if interval == 0:
-            self.num += self.interval
-        else:
-            self.num += interval
-
-        return num
-
-# Helper function. Extract bit at position targetIndex. 0 based index. TODO Put this in utils folder/file?
-def bitFromByte(val: int, targetIndex: int):
-    mask = 0b1 << targetIndex
-    bit = val & mask
-    bit = bit >> targetIndex
-    return bit
+        :param val:
+        :type int:
+        :param targetIndex:
+        :type int:
+        :return: extracted bit
+        :rtype: int
+        """
+        mask = 0b1 << targetIndex
+        bit = val & mask
+        bit = bit >> targetIndex
+        return bit

@@ -8,6 +8,8 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 import start
 from DebugConnectionFactory import DebugConnectionFactory
 from detail import *
+from tantalus import tantalus
+from co_pilot import co_pilot
 from SerialConnectionFactory import SerialConnectionFactory
 from SimConnectionFactory import SimConnectionFactory
 
@@ -36,6 +38,10 @@ class comWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "Debug": DebugConnectionFactory(),
             "SIM": SimConnectionFactory(),
         }
+        self.RocketProfiles = {
+            "Tantalus": tantalus,
+            "Co Pilot": co_pilot,
+        }
         self.setupUi(self)
         self.MySetup()
 
@@ -45,6 +51,8 @@ class comWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         self.typeBox.currentTextChanged.connect(self.connectionChanged)
         self.typeBox.addItems(self.ConnectionFactories.keys())
+
+        self.rocketBox.addItems(self.RocketProfiles.keys())
 
         self.doneButton.clicked.connect(self.doneButtonPressed)
         comlist = list(map(lambda x: x.device, serial.tools.list_ports.comports()))
@@ -56,7 +64,8 @@ class comWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         factory = self.ConnectionFactories[self.typeBox.currentText()]
         connection = factory.construct(comPort=self.comBox.currentText(), baudRate=int(self.baudBox.currentText()))
-        start.start(connection)
+        rocket = self.RocketProfiles[self.rocketBox.currentText()]
+        start.start(connection, rocket)
         self.close()
 
     def connectionChanged(self) -> None:

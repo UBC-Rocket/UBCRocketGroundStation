@@ -1,14 +1,14 @@
 import math
 import os
 import time
-from typing import Union
+from typing import Callable
 
 import PyQt5
 from matplotlib import pyplot as plt
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import pyqtSignal
-from scipy.misc import imresize
+from PIL import Image
 
 import map_data
 import MapBox
@@ -18,6 +18,7 @@ import ReadThread
 import SendThread
 from detail import LOCAL
 from map_data import MapData
+from rocket_profile import RocketProfile
 from RocketData import RocketData
 from SubpacketIDs import SubpacketEnum
 
@@ -31,26 +32,26 @@ qtCreatorFile = os.path.join(LOCAL, "main.ui")
 
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
-TILES = 14  # TODO Remove if not necessary
-
 # The marker image, used to show where the rocket is on the map UI
-# TODO: imresize removed in latest scipy since it's a duplicate from "Pillow". Update and replace.
-MAP_MARKER = imresize(plt.imread(MapBox.MARKER_PATH), (12, 12))
+MAP_MARKER = Image.open(MapBox.MARKER_PATH).resize((12, 12), Image.LANCZOS)
 
 
 class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
     sig_send = pyqtSignal(str)
 
-    def __init__(self, connection) -> None:
+    def __init__(self, connection, rocket: RocketProfile) -> None:
         """
 
         :param connection:
         :type connection:
+        :param rocket:
+        :type rocket: RocketProfile
         """
         # TODO move this set of fields out to application.py
         self.connection = connection
+        self.rocket = rocket
         self.data = RocketData()
-        self.map = MapData()
+        self.map = map_data.MapData()
 
         QtWidgets.QMainWindow.__init__(self)
         Ui_MainWindow.__init__(self)
@@ -68,9 +69,8 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionSave.setShortcut("Ctrl+S")
         self.actionSave.triggered.connect(self.saveFile)
 
-        self.StatusButton.clicked.connect(lambda _: self.sendCommand("status"))
-        self.ArmButton.clicked.connect(lambda _: self.sendCommand("arm"))
-        self.HaloButton.clicked.connect(lambda _: self.sendCommand("halo"))
+        self.setup_buttons()
+        self.setup_labels()
 
         self.printToConsole("Starting Connection")
 
@@ -93,6 +93,79 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.MappingThread.sig_print.connect(self.printToConsole)
         self.MappingThread.start()
 
+    def setup_buttons(self):
+        """Create all of the buttons for the loaded rocket profile."""
+
+        grid_width = math.ceil(math.sqrt(len(self.rocket.buttons)))
+
+        # Trying to replicate PyQt's generated code from a .ui file as closely as possible. This is why setattr is
+        # being used to keep all of the buttons as named attributes of MainApp and not elements of a list.
+        row = 0
+        col = 0
+        for button in self.rocket.buttons.keys():
+            qt_button = QtWidgets.QPushButton(self.centralwidget)
+            setattr(self, button + "Button", qt_button)
+            sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+            sizePolicy.setHorizontalStretch(0)
+            sizePolicy.setVerticalStretch(0)
+            sizePolicy.setHeightForWidth(getattr(self, button + "Button").sizePolicy().hasHeightForWidth())
+            qt_button.setSizePolicy(sizePolicy)
+            font = QtGui.QFont()
+            font.setPointSize(35)
+            font.setKerning(True)
+            qt_button.setFont(font)
+            qt_button.setObjectName(f"{button}Button")
+            self.gridLayout_5.addWidget(qt_button, row, col, 1, 1)
+            if col + 1 < grid_width:
+                col += 1
+            else:
+                col = 0
+                row += 1
+        # A .py file created from a .ui file will have the labels all defined at the end, for some reason. Two for loops
+        # are being used to be consistent with the PyQt5 conventions.
+        for button in self.rocket.buttons.keys():
+            getattr(self, button + "Button").setText(QtCore.QCoreApplication.translate('MainWindow', button))
+
+        def gen_send_command(cmd: str) -> Callable[[], None]:
+            """Creates a function that sends the given command to the console."""
+            def send() -> None:
+                self.sendCommand(cmd)
+            return send
+        # Connecting to a more traditional lambda expression would not work in this for loop. It would cause all of the
+        # buttons to map to the last command in the list, hence the workaround with the higher order function.
+        for button, command in self.rocket.buttons.items():
+            getattr(self, button + "Button").clicked.connect(gen_send_command(command))
+
+    def setup_labels(self):
+        """Create all of the data labels for the loaded rocket profile."""
+
+        # Trying to replicate PyQt's generated code from a .ui file as closely as possible. This is why setattr is
+        # being used to keep all of the buttons as named labels of MainApp and not elements of a list.
+        row = 0
+        for label in self.rocket.labels:
+            name = label.name
+            qt_text = QtWidgets.QLabel(self.centralwidget)
+            setattr(self, name + "Text", qt_text)
+            sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
+            sizePolicy.setHorizontalStretch(0)
+            sizePolicy.setVerticalStretch(0)
+            sizePolicy.setHeightForWidth(getattr(self, name + "Text").sizePolicy().hasHeightForWidth())
+            qt_text.setSizePolicy(sizePolicy)
+            qt_text.setObjectName(f"{name}Text")
+            self.gridLayout_6.addWidget(qt_text, row, 0, 1, 1)
+
+            qt_label = QtWidgets.QLabel(self.centralwidget)
+            setattr(self, name + "Label", qt_label)
+            qt_label.setObjectName(f"{name}Label")
+            self.gridLayout_6.addWidget(qt_label, row, 1, 1, 1)
+            row += 1
+        # A .py file created from a .ui file will have the labels all defined at the end, for some reason. Two for loops
+        # are being used to be consistent with the PyQt5 conventions.
+        for label in self.rocket.labels:
+            name = label.name
+            getattr(self, name + "Text").setText(QtCore.QCoreApplication.translate("MainWindow", label.display_name))
+            getattr(self, name + "Label").setText(QtCore.QCoreApplication.translate("MainWindow", "0"))
+
     def closeEvent(self, event) -> None:
         """
 
@@ -111,28 +184,8 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         :return:
         :rtype:
         """
-        def nonezero(x: float) -> Union[float, None]:
-            """
 
-            :param x:
-            :type x:
-            :return:
-            :rtype:
-            """
-            return 0 if x is None else x
-
-        latitude = self.data.lastvalue(SubpacketEnum.LATITUDE.value)
-        longitude = self.data.lastvalue(SubpacketEnum.LONGITUDE.value)
-        accel = math.sqrt(nonezero(self.data.lastvalue(SubpacketEnum.ACCELERATION_X.value)) ** 2 +
-                          nonezero(self.data.lastvalue(SubpacketEnum.ACCELERATION_Y.value)) ** 2 +
-                          nonezero(self.data.lastvalue(SubpacketEnum.ACCELERATION_Z.value)) ** 2)
-
-        self.AltitudeLabel.setText(str(self.data.lastvalue(SubpacketEnum.CALCULATED_ALTITUDE.value)))
-        self.MaxAltitudeLabel.setText(str(self.data.highest_altitude))
-        self.GpsLabel.setText(str(latitude) + ", " + str(longitude))
-        self.StateLabel.setText(str(self.data.lastvalue(SubpacketEnum.STATE.value)))
-        self.PressureLabel.setText(str(self.data.lastvalue(SubpacketEnum.PRESSURE.value)))
-        self.AccelerationLabel.setText(str(accel))
+        self.rocket.update_labels(self)
 
     def sendButtonPressed(self) -> None:
         """

@@ -1,13 +1,12 @@
+import collections
 import math
-from typing import Dict, Any, Callable, Union, List, Tuple
 import struct
 from io import BytesIO
+from typing import Any, Callable, Dict, List
 
 import SubpacketIDs
-from SubpacketIDs import SubpacketEnum
 from detail import Count
-
-import collections
+from SubpacketIDs import SubpacketEnum
 
 # Essentially a mini-class, to structure the header data. Doesn't merit its own class due to limited use, 
 # can be expanded if necessary elsewhere.
@@ -60,7 +59,7 @@ class RadioController:
         # data extraction
         data_unit = byte_list[header.header_length : header.total_length]
         try:
-            parsed_data: Dict[any, any] = self.parse_data(header.subpacket_id, data_unit, header.data_length)
+            parsed_data: Dict[Any, Any] = self.parse_data(header.subpacket_id, data_unit, header.data_length)
         except Exception as e:
             print(e)
             raise e
@@ -69,7 +68,7 @@ class RadioController:
         return parsed_data, header.total_length
 
     # general data parser interface. Routes to the right parse, based on subpacket_id
-    def parse_data(self, subpacket_id, byte_list, length) -> Dict[any, any]:
+    def parse_data(self, subpacket_id, byte_list, length) -> Dict[Any, Any]:
         """
 
         :param subpacket_id:
@@ -273,7 +272,7 @@ class RadioController:
         :return:
         :rtype:
         """
-        data: Dict[int, any] = {}
+        data: Dict[int, Any] = {}
         # TODO Review experimental form, perhaps consider doing for all https://trello.com/c/5IkOjNDm/161-clean-up-bytes-types
         bytes_IO = BytesIO(bytes(byte_list))
 
@@ -291,7 +290,7 @@ class RadioController:
 
 
     # Dictionary of subpacket id mapped to function to parse that data
-    packetTypeToParser: Dict[int, Callable[[list, int], Dict[any, any]]] = {  # TODO review this type hint
+    packetTypeToParser: Dict[int, Callable[[list, int], Dict[Any, Any]]] = {  # TODO review this type hint
         SubpacketEnum.STATUS_PING.value: statusPing,
         SubpacketEnum.MESSAGE.value: message,
         SubpacketEnum.EVENT.value: event,

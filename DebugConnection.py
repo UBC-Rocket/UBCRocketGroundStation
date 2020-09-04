@@ -1,7 +1,6 @@
 import random
 import struct
 import threading
-from array import array
 import time
 
 from IConnection import IConnection

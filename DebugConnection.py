@@ -26,7 +26,6 @@ class DebugConnection(IConnection):
 
         """
         while True:
-            time.sleep(5)
             with self.lock:
                 if not self.callback:
                     continue
@@ -36,6 +35,7 @@ class DebugConnection(IConnection):
                 full_arr.extend(self.status_ping_mock_set_values())
                 full_arr.extend(self.message_values())
                 self.callback(full_arr)
+            time.sleep(2)
 
     def bulk_sensor_mock_random(self) -> bytearray:
         """

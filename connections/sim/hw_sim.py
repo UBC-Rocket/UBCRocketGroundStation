@@ -46,8 +46,9 @@ class IgnitorSim:
 
 
 class HWSim:
-    def __init__(self, ignitors: Iterable[Tuple[int, int, int]]):
+    def __init__(self, ignitors: Iterable[Tuple[int, int, int]] = tuple()):
         """
+        Implementation note: Default value for ignitors needs to be an immutable iterable.
         :param ignitors: Iterable of 3-tuples containing test, read, and fire pin numbers.
         In firmware's usage, to test continuity, the test pin is set high, and the voltage level at the read pin is used to determine whether the pin is continuous. To fire the pin, the fire pin is set high.
         """

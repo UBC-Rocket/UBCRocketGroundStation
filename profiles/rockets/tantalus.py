@@ -9,7 +9,7 @@ from ..label import (
     update_test_separation,
 )
 from ..rocket_profile import RocketProfile
-from ...connections.sim.hw_sim import HWSim
+from connections.sim.hw_sim import HWSim
 
 tantalus_labels = [
     Label("Altitude", update_altitude),

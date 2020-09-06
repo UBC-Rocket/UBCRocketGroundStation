@@ -1,7 +1,7 @@
 from typing import Dict, List
 
 from .label import TYPE_CHECKING, Label
-from ...connections.sim.hw_sim import HWSim
+from connections.sim.hw_sim import HWSim
 
 if TYPE_CHECKING:
     from main_window.main import MainApp

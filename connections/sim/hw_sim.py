@@ -41,26 +41,41 @@ class IgnitorSim:
         else:
             return self.OFF
 
+    def fire(self):
+        self._on_level = self.DISCONNECTED
+
 
 class HWSim:
-    def __init__(self, ignitors: Iterable[Tuple[int, int]]):
+    def __init__(self, ignitors: Iterable[Tuple[int, int, int]]):
         """
-        :param ignitors: Iterable of 2-tuples containing test and read pin numbers.
+        :param ignitors: Iterable of 3-tuples containing test, read, and fire pin numbers.
+        In firmware's usage, to test continuity, the test pin is set high, and the voltage level at the read pin is used to determine whether the pin is continuous. To fire the pin, the fire pin is set high.
         """
         self.ignitors = []
         self.ignitor_tests = {}
         self.ignitor_reads = {}
-        for test, read in ignitors:
+        self.ignitor_fires = {}
+        for test, read, fire in ignitors:
             ign = IgnitorSim()
             self.ignitors.append(ign)
             self.ignitor_tests[test] = ign
             self.ignitor_reads[read] = ign
+            self.ignitor_fires[fire] = ign
 
     def digital_write(self, pin, val):
+        """
+        :param pin: Should be a test pin.
+        :param val: True to set high, False to set low
+        """
         if pin in self.ignitor_tests:
             self.ignitor_tests[pin].write(val)
+        elif pin in self.ignitor_fires and val:
+            self.ignitor_fires[pin].fire()
 
     def analog_read(self, pin):
+        """
+        :param pin: Should be a read pin. Don't rely on behaviour if the pin isn't a readable pin.
+        """
         if pin in self.ignitor_reads:
             return self.ignitor_reads[pin].read()
         return 0

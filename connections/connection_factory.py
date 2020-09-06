@@ -13,6 +13,9 @@ class ConnectionFactory(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def construct(
-        self, comPort: Union[int, str, None] = None, baudRate: Union[int, None] = None
+        self,
+        comPort: Union[int, str, None] = None,
+        baudRate: Union[int, None] = None,
+        rocket=None,
     ) -> None:
         pass

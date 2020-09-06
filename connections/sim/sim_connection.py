@@ -3,6 +3,7 @@ import subprocess as sp
 import threading
 from enum import Enum
 
+from .hw_sim import HWSim
 from ..connection import Connection
 from .stream_logger import StreamLogger
 from .xbee_module_sim import XBeeModuleSim
@@ -19,7 +20,7 @@ LOG_HISTORY_SIZE = 100
 
 
 class SimConnection(Connection):
-    def __init__(self, firmwareDir, executableName):
+    def __init__(self, firmwareDir, executableName, hw_sim):
         self.executablePath = os.path.join(firmwareDir, executableName)
         self.firmwareDir = firmwareDir
         self.callback = None
@@ -43,14 +44,16 @@ class SimConnection(Connection):
 
         self._xbee = XBeeModuleSim()
         self._xbee.rocket_callback = self._send_radio_sim
-    
+
+        self._hw_sim = hw_sim
+
     def _rocket_handshake(self):
         assert self.stdout.read(3) == b"SYN"
         # Uncomment for FW debuggers, for a chance to attach debugger
         # input("Recieved rocket SYN; press enter to respond with ACK and continue\n")
         self.rocket.stdin.write(b"ACK")
         self.rocket.stdin.flush()
-        
+
     def send(self, data):
         self._xbee.send_to_rocket(data)
 

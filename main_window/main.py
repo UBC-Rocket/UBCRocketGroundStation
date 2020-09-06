@@ -268,7 +268,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
 window = None
 
 
-def start(*args, **kwargs):  # TODO: does this need its own file??
+def start(*args, **kwargs):
     global window
 
     window = MainApp(*args, **kwargs)

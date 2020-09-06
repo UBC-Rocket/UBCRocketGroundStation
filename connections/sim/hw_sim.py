@@ -1,4 +1,5 @@
 from typing import Iterable, Tuple
+from itertools import repeat
 
 
 class IgnitorSim:
@@ -46,18 +47,23 @@ class IgnitorSim:
 
 
 class HWSim:
-    def __init__(self, ignitors: Iterable[Tuple[int, int, int]] = tuple()):
+    def __init__(
+        self, ignitors: Iterable[Tuple[int, int, int]] = tuple(), broken=False
+    ):
         """
         Implementation note: Default value for ignitors needs to be an immutable iterable.
         :param ignitors: Iterable of 3-tuples containing test, read, and fire pin numbers.
         In firmware's usage, to test continuity, the test pin is set high, and the voltage level at the read pin is used to determine whether the pin is continuous. To fire the pin, the fire pin is set high.
+        :param broken: If boolean, indicates whether all ignitors are broken. If iterable, should be the same length as ``ignitors``, and specify in order which ignitor is broken.
         """
         self.ignitors = []
         self.ignitor_tests = {}
         self.ignitor_reads = {}
         self.ignitor_fires = {}
-        for test, read, fire in ignitors:
-            ign = IgnitorSim()
+        if isinstance(broken, bool):
+            broken = repeat(broken)
+        for (test, read, fire), broke in zip(ignitors, broken):
+            ign = IgnitorSim(broke)
             self.ignitors.append(ign)
             self.ignitor_tests[test] = ign
             self.ignitor_reads[read] = ign

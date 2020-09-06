@@ -1,3 +1,5 @@
+import sys
+
 from com_window.main import *
 
 if __name__ == "__main__":

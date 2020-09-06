@@ -1,5 +1,4 @@
 import os
-import sys
 
 import PyQt5
 import serial.tools.list_ports
@@ -78,10 +77,3 @@ class comWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.comBox.setEnabled(factory.requiresComPort())
         self.baudBox.setEnabled(factory.requiresBaudRate())
-
-
-if __name__ == "__main__":
-    app = QtWidgets.QApplication(sys.argv)
-    window = comWindow()
-    window.show()
-    sys.exit(app.exec_())

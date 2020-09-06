@@ -16,10 +16,9 @@ python -m venv venv
 del .\dist\Station.exe
 .\venv\Scripts\pyinstaller.exe -F -n Station .\comWindow.py
 
-xcopy .\comWindow.ui .\dist\ /y
-xcopy .\main.ui .\dist\ /y
-xcopy .\marker.png .\dist\ /y
-xcopy .\tiles\* .\dist\tiles\ /e /i /y
+xcopy .\qt_files\com_window.ui .\dist\qt_files\ /y
+xcopy .\qt_files\main.ui .\dist\qt_files\ /y
+xcopy .\qt_files\marker.png .\dist\qt_files\ /y
 
 
 PAUSE

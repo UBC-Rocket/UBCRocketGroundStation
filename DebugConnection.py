@@ -4,6 +4,7 @@ import threading
 import time
 
 from IConnection import IConnection
+from SubpacketIDs import SubpacketEnum
 
 
 class DebugConnection(IConnection):
@@ -24,13 +25,16 @@ class DebugConnection(IConnection):
 
         """
         while True:
-            time.sleep(1)
             with self.lock:
                 if not self.callback:
                     continue
 
-                bulk_sensor_arr: bytearray = self.bulk_sensor_mock_random()
-                self.callback(bulk_sensor_arr)
+                full_arr: bytearray = bytearray()
+                full_arr.extend(self.bulk_sensor_mock_random())
+                full_arr.extend(self.status_ping_mock_set_values())
+                full_arr.extend(self.message_values())
+                self.callback(full_arr)
+            time.sleep(2)
 
     def bulk_sensor_mock_random(self) -> bytearray:
         """
@@ -52,6 +56,53 @@ class DebugConnection(IConnection):
         bulk_sensor_arr.extend(struct.pack(">f", random.uniform(-123.250990, -123.246956)))  # Longitude
         bulk_sensor_arr.extend(random.randint(0, 100).to_bytes(length=1, byteorder='big'))  # State
         return bulk_sensor_arr
+
+    def status_ping_mock_random(self) -> bytearray:
+        """
+
+        :return: data_arr
+        :rtype: bytearray
+        """
+        data_arr: bytearray = bytearray()
+        data_arr.append(SubpacketEnum.STATUS_PING.value)  # id
+        data_arr.extend((int(time.time())).to_bytes(length=4, byteorder='big'))  # use current integer time
+        data_arr.extend(random.randint(0, 3).to_bytes(length=1, byteorder='big'))  # status1
+        data_arr.extend(random.randint(0, 255).to_bytes(length=1, byteorder='big'))  # State
+        data_arr.extend(random.randint(0, 255).to_bytes(length=1, byteorder='big'))  # State
+        data_arr.extend(random.randint(0, 255).to_bytes(length=1, byteorder='big'))  # State
+        data_arr.extend(random.randint(0, 255).to_bytes(length=1, byteorder='big'))  # State
+        return data_arr
+
+    def status_ping_mock_set_values(self) -> bytearray:
+        """
+
+        :return: data_arr
+        :rtype: bytearray
+        """
+        data_arr: bytearray = bytearray()
+        data_arr.append(SubpacketEnum.STATUS_PING.value)  # id
+        data_arr.extend((int(time.time())).to_bytes(length=4, byteorder='big'))  # use current integer time
+        data_arr.extend((int(2)).to_bytes(length=1, byteorder='big'))  # status1
+        # OVERALL_STATUS, BAROMETER, GPS, ACCELEROMETER, IMU, TEMPERATURE
+        data_arr.extend((int(252)).to_bytes(length=1, byteorder='big'))  # State of 11111100
+        data_arr.extend((int(255)).to_bytes(length=1, byteorder='big'))  # State of 11111111
+        # DROGUE_IGNITER_CONTINUITY, MAIN_IGNITER_CONTINUITY, FILE_OPEN_SUCCESS
+        data_arr.extend((int(224)).to_bytes(length=1, byteorder='big'))  # State of 11100000
+        data_arr.extend((int(255)).to_bytes(length=1, byteorder='big'))  # State of 11111111
+        return data_arr
+
+    def message_values(self) -> bytearray:
+        """
+
+        :return: data_arr
+        :rtype: bytearray
+        """
+        data_arr: bytearray = bytearray()
+        data_arr.append(SubpacketEnum.MESSAGE.value)  # id
+        data_arr.extend((int(time.time())).to_bytes(length=4, byteorder='big'))  # use current integer time
+        data_arr.extend((int(5)).to_bytes(length=1, byteorder='big'))  # length of the message data
+        data_arr.extend([ord(ch) for ch in 'hello'])  # message
+        return data_arr
 
     # Register callback to which we will send new data
     def registerCallback(self, fn) -> None:

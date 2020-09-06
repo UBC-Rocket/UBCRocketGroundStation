@@ -1,7 +1,8 @@
 import collections
-from detail import LOCAL
 import os
 import sys
+
+from detail import LOCAL
 
 CR = 0x0D
 LF = 0x0A

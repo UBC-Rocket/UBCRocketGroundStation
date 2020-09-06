@@ -2,6 +2,7 @@ import os
 import subprocess as sp
 import threading
 from enum import Enum
+from functools import partialmethod
 
 from .hw_sim import HWSim
 from ..connection import Connection
@@ -14,6 +15,7 @@ class SimPacketId(Enum):
     BUZZER = 0x07
     DIGITAL_PIN_WRITE = 0x50
     RADIO = 0x52
+    ANALOG_READ = 0x61
 
 
 LOG_HISTORY_SIZE = 100
@@ -57,14 +59,13 @@ class SimConnection(Connection):
     def send(self, data):
         self._xbee.send_to_rocket(data)
 
-    def _send_radio_sim(self, data):
-        packet = b"R"
-        packet += len(data).to_bytes(length=2, byteorder="big")
-        packet += data
-
+    def _send_sim_packet(self, id_, data):
+        packet = id_ + len(data).to_bytes(length=2, byteorder="big") + data
         for b in packet:  # Work around for windows turning LF to CRLF
             self.rocket.stdin.write(bytes([b]))
         self.rocket.stdin.flush()
+
+    _send_radio_sim = partialmethod(_send_sim_packet, b"R")
 
     def registerCallback(self, fn):
         self._xbee.ground_callback = fn
@@ -110,8 +111,9 @@ class SimConnection(Connection):
     def _handleDigitalPinWrite(self):
         length = self._getLength()
         assert length == 2
-        [pin, value] = self.stdout.read(2)
+        pin, value = self.stdout.read(2)
 
+        self._hw_sim.digital_write(pin, value)
         print("SIM: Pin %s set to %s" % (pin, value))
 
     def _handleRadio(self):
@@ -119,11 +121,19 @@ class SimConnection(Connection):
         data = self.stdout.read(length)
         self._xbee.recieved_from_rocket(data)
 
+    def _handleAnalogRead(self):
+        length = self._getLength()
+        assert length == 1
+        pin = self.stdout.read(length)[0]
+        result = self._hw_sim.analog_read(pin).to_bytes(2, "big")
+        self._send_sim_packet(b"a", result)
+
     packetHandlers = {
         # DO NOT HANDLE "CONFIG" - it should be received only once at the start
         SimPacketId.BUZZER.value: _handleBuzzer,
         SimPacketId.DIGITAL_PIN_WRITE.value: _handleDigitalPinWrite,
         SimPacketId.RADIO.value: _handleRadio,
+        SimPacketId.ANALOG_READ.value: _handleAnalogRead,
     }
 
     def _run(self):

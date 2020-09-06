@@ -7,7 +7,7 @@ from detail import LOCAL
 from ..connection_factory import ConnectionFactory
 from .sim_connection import SimConnection
 
-FIRMWARE_DIR = "../../FW"
+FIRMWARE_DIR = "FW"
 EXECUTABLE_NAME = "program"
 FILE_EXTENSION = {"win32": ".exe"}
 

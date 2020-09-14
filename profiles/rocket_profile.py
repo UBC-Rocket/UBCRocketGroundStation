@@ -9,13 +9,11 @@ if TYPE_CHECKING:
 
 class RocketProfile:
     def __init__(
-        self, buttons: Dict[str, str], labels: List[Label], hw_sim: HWSim = None
+        self, buttons: Dict[str, str], labels: List[Label], hw_sim_dat: HWSim = None
     ):
         self.buttons = buttons
         self.labels = labels
-        if not hw_sim:
-            hw_sim = HWSim()
-        self.hw_sim = hw_sim
+        self.hw_sim_dat = hw_sim_dat
 
     def update_labels(self, main_window: "MainApp") -> None:
         for label in self.labels:

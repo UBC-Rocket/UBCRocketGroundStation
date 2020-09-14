@@ -6,6 +6,7 @@ from detail import LOCAL
 
 from ..connection_factory import ConnectionFactory
 from .sim_connection import SimConnection
+from .hw_sim import HWSim
 
 FIRMWARE_DIR = "FW"
 EXECUTABLE_NAME = "program"
@@ -32,5 +33,5 @@ class SimConnectionFactory(ConnectionFactory):
             executableName += FILE_EXTENSION[sys.platform]
 
         return SimConnection(
-            os.path.join(LOCAL, FIRMWARE_DIR), executableName, rocket.hw_sim
+            os.path.join(LOCAL, FIRMWARE_DIR), executableName, HWSim(rocket.hw_sim_dat)
         )

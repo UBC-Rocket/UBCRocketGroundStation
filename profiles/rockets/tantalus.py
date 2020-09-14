@@ -29,12 +29,13 @@ _DROGUE_IGN_READ = 34
 _DROGUE_IGN_FIRE = 35
 
 
-_hw_sim = HWSim(
-    [
-        (_MAIN_IGN_TEST, _MAIN_IGN_READ, _MAIN_IGN_FIRE),
-        (_DROGUE_IGN_TEST, _DROGUE_IGN_READ, _DROGUE_IGN_FIRE),
-    ]
-)
+_hw_sim_dat = [
+    (_MAIN_IGN_TEST, _MAIN_IGN_READ, _MAIN_IGN_FIRE),
+    (_DROGUE_IGN_TEST, _DROGUE_IGN_READ, _DROGUE_IGN_FIRE),
+]
 
-tantalus = RocketProfile({"Arm": "arm", "Status": "status"}, tantalus_labels, _hw_sim)
+
+tantalus = RocketProfile(
+    {"Arm": "arm", "Status": "status"}, tantalus_labels, _hw_sim_dat
+)
 

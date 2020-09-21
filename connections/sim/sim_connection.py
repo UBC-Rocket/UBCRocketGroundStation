@@ -2,7 +2,6 @@ import os
 import subprocess as sp
 import threading
 from enum import Enum
-from functools import partialmethod
 
 from .hw_sim import HWSim
 from ..connection import Connection
@@ -10,10 +9,15 @@ from .stream_logger import StreamLogger
 from .xbee_module_sim import XBeeModuleSim
 
 
-class SimPacketId(Enum):
+class SimRxId(Enum):
     CONFIG = 0x01
     BUZZER = 0x07
     DIGITAL_PIN_WRITE = 0x50
+    RADIO = 0x52
+    ANALOG_READ = 0x61
+
+
+class SimTxId(Enum):
     RADIO = 0x52
     ANALOG_READ = 0x61
 
@@ -60,12 +64,15 @@ class SimConnection(Connection):
         self._xbee.send_to_rocket(data)
 
     def _send_sim_packet(self, id_, data):
-        packet = id_ + len(data).to_bytes(length=2, byteorder="big") + data
+        id_ = id_.to_bytes(length=1, byteorder="big")
+        length = len(data).to_bytes(length=2, byteorder="big")
+        packet = id_ + length + data
         for b in packet:  # Work around for windows turning LF to CRLF
             self.rocket.stdin.write(bytes([b]))
         self.rocket.stdin.flush()
 
-    _send_radio_sim = partialmethod(_send_sim_packet, b"R")
+    def _send_radio_sim(self, data):
+        self._send_sim_packet(SimTxId.RADIO.value, data)
 
     def registerCallback(self, fn):
         self._xbee.ground_callback = fn
@@ -86,7 +93,7 @@ class SimConnection(Connection):
     # AKA handle "Config" packet
     def _getEndianness(self):
         id = self.stdout.read(1)[0]
-        assert id == SimPacketId.CONFIG.value
+        assert id == SimRxId.CONFIG.value
 
         length = self._getLength()
         assert length == 8
@@ -126,14 +133,14 @@ class SimConnection(Connection):
         assert length == 1
         pin = self.stdout.read(length)[0]
         result = self._hw_sim.analog_read(pin).to_bytes(2, "big")
-        self._send_sim_packet(b"a", result)
+        self._send_sim_packet(SimTxId.ANALOG_READ.value, result)
 
     packetHandlers = {
         # DO NOT HANDLE "CONFIG" - it should be received only once at the start
-        SimPacketId.BUZZER.value: _handleBuzzer,
-        SimPacketId.DIGITAL_PIN_WRITE.value: _handleDigitalPinWrite,
-        SimPacketId.RADIO.value: _handleRadio,
-        SimPacketId.ANALOG_READ.value: _handleAnalogRead,
+        SimRxId.BUZZER.value: _handleBuzzer,
+        SimRxId.DIGITAL_PIN_WRITE.value: _handleDigitalPinWrite,
+        SimRxId.RADIO.value: _handleRadio,
+        SimRxId.ANALOG_READ.value: _handleAnalogRead,
     }
 
     def _run(self):

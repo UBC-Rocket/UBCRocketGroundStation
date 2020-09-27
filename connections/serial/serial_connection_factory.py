@@ -5,12 +5,16 @@ from .serial_connection import SerialConnection
 
 
 class SerialConnectionFactory(ConnectionFactory):
-
     def requiresComPort(self) -> bool:
         return True
 
     def requiresBaudRate(self) -> bool:
         return True
 
-    def construct(self, comPort: Union[int, str, None] = None, baudRate: Union[int, None] = None):
+    def construct(
+        self,
+        comPort: Union[int, str, None] = None,
+        baudRate: Union[int, None] = None,
+        rocket=None,
+    ):
         return SerialConnection(comPort, baudRate)

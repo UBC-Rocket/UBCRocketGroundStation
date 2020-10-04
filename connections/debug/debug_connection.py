@@ -32,6 +32,7 @@ class DebugConnection(Connection):
                 full_arr: bytearray = bytearray()
                 full_arr.extend(self.bulk_sensor_mock_random())
                 full_arr.extend(self.status_ping_mock_set_values())
+                full_arr.extend(self.config_mock_set_values())
                 full_arr.extend(self.message_values())
                 self.callback(full_arr)
             time.sleep(2)
@@ -102,6 +103,20 @@ class DebugConnection(Connection):
         data_arr.extend((int(time.time())).to_bytes(length=4, byteorder='big'))  # use current integer time
         data_arr.extend((int(5)).to_bytes(length=1, byteorder='big'))  # length of the message data
         data_arr.extend([ord(ch) for ch in 'hello'])  # message
+        return data_arr
+
+    def config_mock_set_values(self) -> bytearray:
+        """
+
+        :return: data_arr
+        :rtype: bytearray
+        """
+        data_arr: bytearray = bytearray()
+        data_arr.append(SubpacketEnum.CONFIG.value)  # id
+        data_arr.extend((int(time.time())).to_bytes(length=4, byteorder='big'))  # use current integer time
+        data_arr.extend((int(2)).to_bytes(length=1, byteorder='big'))  # length of the config
+        data_arr.extend((int(1)).to_bytes(length=1, byteorder='big'))  # is sim
+        data_arr.extend((int(0)).to_bytes(length=1, byteorder='big'))  # rocket type: tantalus stage 1
         return data_arr
 
     # Register callback to which we will send new data

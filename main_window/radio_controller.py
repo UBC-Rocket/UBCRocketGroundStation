@@ -86,7 +86,7 @@ class RadioController:
     # ASSUMES that length values represent data lengths, including headers
     def header(self, byte_list: List) -> Header:
         """
-\
+
         :param byte_list:
         :type byte_list:
         :return:
@@ -219,8 +219,13 @@ class RadioController:
         :return:
         :rtype:
         """
+        # TODO Extract
+        ROCKET_TYPE = 'ROCKET_TYPE'
+        IS_SIM = 'IS_SIM'
+
         data = {}
-        data[SubpacketEnum.CONFIG.value] = byte_list[0]
+        data[IS_SIM] = byte_list[0]
+        data[ROCKET_TYPE] = byte_list[1] # TODO Extract
         return data
 
     def single_sensor(self, byte_list, **kwargs):

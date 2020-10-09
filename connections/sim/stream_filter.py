@@ -8,7 +8,7 @@ CR = 0x0D
 LF = 0x0A
 
 
-class StreamLogger:
+class StreamFilter:
     def __init__(self, bufstream, size: int) -> None:
         """
         :param bufstream: Buffered stream like a subprocess stdout, that supports read() and peek().
@@ -42,7 +42,7 @@ class StreamLogger:
     def _crcrlfFilter(self, stream):
         while True:
             c = stream.read(1)
-            if c == CR and stream.peek(1)[0] == LF:
+            if c[0] == CR and stream.peek(1)[0] == LF:
                 yield stream.read(1)  # yields the LF, skipping the CR
             else:
                 yield c

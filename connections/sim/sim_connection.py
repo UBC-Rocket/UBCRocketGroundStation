@@ -5,7 +5,7 @@ from enum import Enum
 
 from .hw_sim import HWSim
 from ..connection import Connection
-from .stream_logger import StreamLogger
+from .stream_filter import StreamFilter
 from .xbee_module_sim import XBeeModuleSim
 
 
@@ -22,7 +22,7 @@ class SimTxId(Enum):
     ANALOG_READ = 0x61
 
 
-LOG_HISTORY_SIZE = 100
+LOG_HISTORY_SIZE = 500
 
 
 class SimConnection(Connection):
@@ -38,7 +38,7 @@ class SimConnection(Connection):
         self.rocket = sp.Popen(
             self.executablePath, cwd=self.firmwareDir, stdin=sp.PIPE, stdout=sp.PIPE
         )
-        self.stdout = StreamLogger(self.rocket.stdout, LOG_HISTORY_SIZE)
+        self.stdout = StreamFilter(self.rocket.stdout, LOG_HISTORY_SIZE)
         self._rocket_handshake()
 
         # Gets endianess of ints and floats
@@ -151,9 +151,9 @@ class SimConnection(Connection):
                 if id not in SimConnection.packetHandlers.keys():
                     print("SIM protocol violation!!! Shutting down.")
                     for b in self.stdout.getHistory():
-                        print(hex(b))
+                        print(hex(b[0]))
                     print("^^^^ violation.")
-                    continue
+                    return
 
                 # Call packet handler
                 SimConnection.packetHandlers[id](self)

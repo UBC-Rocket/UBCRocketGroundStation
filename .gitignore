@@ -136,3 +136,5 @@ mapbox_cache/
 *.csv
 apikey.txt
 .DS_Store
+out/
+raw/

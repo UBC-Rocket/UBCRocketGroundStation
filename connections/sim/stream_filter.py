@@ -8,7 +8,7 @@ CR = 0x0D
 LF = 0x0A
 
 
-class StreamLogger:
+class StreamFilter:
     def __init__(self, bufstream, size: int) -> None:
         """
         :param bufstream: Buffered stream like a subprocess stdout, that supports read() and peek().

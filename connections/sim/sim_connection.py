@@ -5,7 +5,7 @@ from enum import Enum
 
 from .hw_sim import HWSim
 from ..connection import Connection
-from .stream_logger import StreamLogger
+from .stream_filter import StreamFilter
 from .xbee_module_sim import XBeeModuleSim
 
 
@@ -38,7 +38,7 @@ class SimConnection(Connection):
         self.rocket = sp.Popen(
             self.executablePath, cwd=self.firmwareDir, stdin=sp.PIPE, stdout=sp.PIPE
         )
-        self.stdout = StreamLogger(self.rocket.stdout, LOG_HISTORY_SIZE)
+        self.stdout = StreamFilter(self.rocket.stdout, LOG_HISTORY_SIZE)
         self._rocket_handshake()
 
         # Gets endianess of ints and floats

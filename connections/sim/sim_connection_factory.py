@@ -1,3 +1,4 @@
+
 import os
 import sys
 from typing import Union
@@ -9,7 +10,7 @@ from .sim_connection import SimConnection
 from .hw_sim import HWSim
 
 FIRMWARE_DIR = "FW"
-EXECUTABLE_NAME = "program"
+BUILD_DIR = "FLARE/avionics/build/"
 FILE_EXTENSION = {"win32": ".exe"}
 
 
@@ -27,11 +28,19 @@ class SimConnectionFactory(ConnectionFactory):
         rocket=None,
     ):
         assert rocket is not None
-        executableName = EXECUTABLE_NAME
+
+        dirs = LOCAL.split("/")
+        parent = "/".join(dirs[0:len(dirs) - 1])
+        flare = parent + "/" + BUILD_DIR
+
+        # TODO: Make sure build file names always contain needle (works for Tantalus, but wb CoPilot?)
+        needle = rocket.rocket_name
+        exNames = [s for s in os.listdir(flare) if needle.lower() in s.lower()]
+        executableName = "program" if not exNames else exNames[0]
 
         if sys.platform in FILE_EXTENSION.keys():
             executableName += FILE_EXTENSION[sys.platform]
 
         return SimConnection(
-            os.path.join(LOCAL, FIRMWARE_DIR), executableName, HWSim(rocket.hw_sim_dat)
+            flare, executableName, HWSim(rocket.hw_sim_dat)
         )

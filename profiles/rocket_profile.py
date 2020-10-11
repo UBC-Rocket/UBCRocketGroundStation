@@ -9,8 +9,9 @@ if TYPE_CHECKING:
 
 class RocketProfile:
     def __init__(
-        self, buttons: Dict[str, str], labels: List[Label], hw_sim_dat: HWSim = None
+            self, rocket_name:str, buttons: Dict[str, str], labels: List[Label], hw_sim_dat: HWSim = None
     ):
+        self.rocket_name = rocket_name
         self.buttons = buttons
         self.labels = labels
         self.hw_sim_dat = hw_sim_dat

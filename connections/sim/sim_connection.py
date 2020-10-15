@@ -146,7 +146,7 @@ class SimConnection(Connection):
     def _run(self):
         while True:
             try:
-                id = self.stdout.read(1)[0]  # Returns 0 if process
+                id = self.stdout.read(1)[0]  # Returns 0 if process was killed
 
                 if id not in SimConnection.packetHandlers.keys():
                     print("SIM protocol violation!!! Shutting down.")

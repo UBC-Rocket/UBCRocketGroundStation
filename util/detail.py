@@ -9,6 +9,15 @@ if getattr(sys, 'frozen', False):
 elif __file__:
     LOCAL = os.path.dirname(__file__)
 
+assert os.path.basename(LOCAL) == "util"
+
+LOCAL = os.path.abspath(os.path.join(LOCAL, os.pardir))
+
+LOGS_DIR = os.path.join(LOCAL, "logs")
+
+if not os.path.exists(LOGS_DIR):
+    os.mkdir(LOGS_DIR)
+
 # Helper class. python way of doing ++ (unlimited incrementing)
 class Count:
     def __init__(self, start=0, interval=1):

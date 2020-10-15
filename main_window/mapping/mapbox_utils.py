@@ -8,7 +8,7 @@ import mapbox
 import numpy as np
 from matplotlib import pyplot as plt
 
-from detail import LOCAL
+from util.detail import LOCAL
 
 TILE_SIZE = 512
 

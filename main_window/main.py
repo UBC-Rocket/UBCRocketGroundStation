@@ -10,7 +10,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import pyqtSignal
 
 from connections.connection import Connection
-from detail import LOCAL
+from util.detail import LOCAL, LOGS_DIR
 from profiles.rocket_profile import RocketProfile
 
 from .mapping import map_data, mapbox_utils
@@ -169,7 +169,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         self.connection.shutDown()
         print("Saving...")
-        self.data.save(os.path.join(LOCAL, "logs", "finalsave_" + str(int(time.time())) + ".csv"))
+        self.data.save(os.path.join(LOGS_DIR, "finalsave_" + str(int(time.time())) + ".csv"))
         print("Saved!")
 
     # Updates the UI when new data is available for display

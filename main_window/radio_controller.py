@@ -5,7 +5,7 @@ from io import BytesIO
 from typing import Any, Callable, Dict, List
 
 from . import subpacket_ids
-from detail import Count
+from util.detail import Count
 from .subpacket_ids import SubpacketEnum
 
 # Essentially a mini-class, to structure the header data. Doesn't merit its own class due to limited use,

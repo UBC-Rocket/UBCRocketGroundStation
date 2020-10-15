@@ -1,5 +1,4 @@
 import os
-import sys
 import threading
 import time
 from typing import Dict, Union
@@ -7,7 +6,7 @@ from typing import Dict, Union
 import numpy as np
 
 from . import subpacket_ids
-from detail import LOCAL
+from util.detail import LOGS_DIR
 from .subpacket_ids import SubpacketEnum
 
 # nametochar : Dict[str, bytes] = { # TODO Deal with legacy data types and conversions. Delete dead code when done.
@@ -67,14 +66,11 @@ class RocketData:
 
         """
 
-        if not os.path.exists(os.path.join(LOCAL, "logs")):
-            os.mkdir(os.path.join(LOCAL, "logs"))
-
         self.lock = threading.RLock()  # acquire lock ASAP since self.lock needs to be defined when autosave starts
         self.timeset: Dict[int, Dict[str, Union[int, float]]] = {}
         self.lasttime = 0  # TODO REVIEW/CHANGE THIS, once all subpackets have their own timestamp.
         self.highest_altitude = 0
-        self.sessionName = os.path.join(LOCAL, "autosave_" + str(int(time.time())) + ".csv")
+        self.sessionName = os.path.join(LOGS_DIR, "autosave_" + str(int(time.time())) + ".csv")
         self.autosaveThread = threading.Thread(target=self.timer, daemon=True)
         self.autosaveThread.start()
 

@@ -6,6 +6,9 @@ import time
 from ..connection import Connection
 from main_window.subpacket_ids import SubpacketEnum
 from util.detail import LOGGER
+from util.event_stats import increment_event_stats
+
+ARMED_EVENT = "ARMED"
 
 
 class DebugConnection(Connection):
@@ -133,6 +136,9 @@ class DebugConnection(Connection):
         :type data:
         """
         with self.lock:  # Currently not needed, but good to have for future
+            if data == b'r':
+                increment_event_stats(ARMED_EVENT)
+
             LOGGER.info(f"{data} sent to DebugConnection")
 
     def shutDown(self) -> None:

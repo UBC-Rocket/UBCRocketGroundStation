@@ -4,6 +4,7 @@ from queue import SimpleQueue
 from threading import Lock, Thread
 
 from util.detail import LOGGER
+from util.event_stats import increment_event_stats
 
 START_DELIMITER = 0x7E
 ESCAPE_CHAR = 0x7D
@@ -12,6 +13,9 @@ XON = 0x11
 XOFF = 0x13
 NEEDS_ESCAPING = (START_DELIMITER, ESCAPE_CHAR, XON, XOFF)
 SOURCE_ADDRESS = b"\x01\x23\x45\x67\x89\xAB\xCD\xEF"  # Dummy address
+
+FRAME_PARSED_EVENT = 'frame_parsed'
+SENT_TO_ROCKET_EVENT = 'sent_to_rocket'
 
 
 class FrameType(IntEnum):
@@ -40,6 +44,8 @@ class XBeeModuleSim:
                 FrameType.RX_INDICATOR, SOURCE_ADDRESS + reserved + rx_options + data,
             )
         )
+
+        increment_event_stats(SENT_TO_ROCKET_EVENT)
 
     def recieved_from_rocket(self, data):
         """
@@ -159,6 +165,8 @@ class XBeeModuleSim:
         frame_type = next(unescaped)
         assert frame_type in self._frame_parsers
         self._frame_parsers[frame_type](self, unescaped, frame_len)
+
+        increment_event_stats(FRAME_PARSED_EVENT)
 
     def _escape(self, unescaped) -> bytearray:
         """

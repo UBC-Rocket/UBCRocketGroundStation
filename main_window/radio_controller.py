@@ -5,7 +5,7 @@ from io import BytesIO
 from typing import Any, Callable, Dict, List
 
 from . import subpacket_ids
-from util.detail import Count
+from util.detail import LOGGER, Count
 from .subpacket_ids import SubpacketEnum
 
 # Essentially a mini-class, to structure the header data. Doesn't merit its own class due to limited use,
@@ -61,7 +61,7 @@ class RadioController:
         try:
             parsed_data: Dict[Any, Any] = self.parse_data(header.subpacket_id, data_unit, header.data_length)
         except Exception as e:
-            print(e)
+            LOGGER.exception("Error parsing data") # Automatically grabs and prints exception info
             raise e
         # Add timestamp from header
         parsed_data[SubpacketEnum.TIME.value] = header.timestamp
@@ -192,7 +192,7 @@ class RadioController:
         byte_data = bytearray(byte_list)
         data[SubpacketEnum.MESSAGE.value] = byte_data.decode('ascii')
         # Do something with data TODO Temporary until: saved to RocketData, logged, or displayed
-        print("Incoming message: ", data[SubpacketEnum.MESSAGE.value])
+        LOGGER.info("Incoming message: " + str(data[SubpacketEnum.MESSAGE.value]))
         return data
 
     def event(self, byte_list, **kwargs):

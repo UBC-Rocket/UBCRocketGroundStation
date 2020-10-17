@@ -8,7 +8,7 @@ import mapbox
 import numpy as np
 from matplotlib import pyplot as plt
 
-from util.detail import LOCAL
+from util.detail import LOCAL, LOGGER
 
 TILE_SIZE = 512
 
@@ -165,7 +165,7 @@ class MapTile:
             if response.status_code == 200:
                 with open(impath, "wb") as output:
                     output.write(response.content)
-                    # print(f"x: {str(self.x)}, y: {str(self.y)}, s: {str(self.s)}\n")
+                    # LOGGER.debug(f"x: {str(self.x)}, y: {str(self.y)}, s: {str(self.s)}\n")
 
         if os.path.isfile(impath):
             return plt.imread(impath, "jpeg")
@@ -210,7 +210,7 @@ class TileGrid:
         self.height = None
         self.genTileArray()
         if self.width > 5 or self.height > 5:
-            print(f"WARNING: Large map ({self.width}x{self.height} tiles)")
+            LOGGER.warning(f"Large map ({self.width}x{self.height} tiles)")
 
     def __str__(self) -> str:
         return f"{self.scale}_{self.tile_x_min}-{self.tile_x_max}_{self.tile_y_min}-{self.tile_y_max}"
@@ -230,7 +230,7 @@ class TileGrid:
         self.xMax = (self.tile_x_max + 1) / pow(2, self.scale)
         self.yMin = self.tile_y_min / pow(2, self.scale)
         self.yMax = (self.tile_y_max + 1) / pow(2, self.scale)
-        # print(str(self.xMin) + "  " + str(self.xMax) + "  " + str(self.yMin) + "  " + str(self.yMax))
+        # LOGGER.debug(str(self.xMin) + "  " + str(self.xMax) + "  " + str(self.yMin) + "  " + str(self.yMax))
 
         ta = []
 
@@ -252,7 +252,7 @@ class TileGrid:
         :param overwrite:
         :type overwrite: bool
         """
-        print(f"Beginning download of size {str(self.scale)} tiles.")
+        LOGGER.debug(f"Beginning download of size {str(self.scale)} tiles.")
         t1 = time.perf_counter()
 
         def getRow(row):
@@ -265,9 +265,7 @@ class TileGrid:
         with concurrent.futures.ThreadPoolExecutor() as executor:
             executor.map(getRow, self.ta)
         t2 = time.perf_counter()
-        print(
-            f"Successfully downloaded size {str(self.scale)} tiles in {t2 - t1} seconds."
-        )
+        LOGGER.debug(f"Successfully downloaded size {str(self.scale)} tiles in {t2 - t1} seconds.")
 
     def genStitchedMap(self, overwrite: bool = False) -> np.ndarray:
         """
@@ -301,7 +299,7 @@ class TileGrid:
         outfile = os.path.join(out, f"output_{str(self)}.png")
 
         if (not os.path.isfile(outfile)) or overwrite:
-            print(f"Generating size {str(self.scale)} map!")
+            LOGGER.debug(f"Generating size {str(self.scale)} map!")
 
             t1 = time.perf_counter()
 
@@ -315,12 +313,10 @@ class TileGrid:
 
             plt.imsave(outfile, img)
             t2 = time.perf_counter()
-            print(
-                f"Successfully generated size {str(self.scale)} map in {t2 - t1} seconds."
-            )
+            LOGGER.debug(f"Successfully generated size {str(self.scale)} map in {t2 - t1} seconds.")
             return img
         else:
-            print(f"Found size {str(self.scale)} map!")
+            LOGGER.debug(f"Found size {str(self.scale)} map!")
             return plt.imread(outfile, "jpeg")
 
 

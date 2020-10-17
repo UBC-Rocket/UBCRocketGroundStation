@@ -1,8 +1,7 @@
 import collections
 import os
 import sys
-
-from util.detail import LOGS_DIR
+from util.detail import LOGS_DIR, SESSION_ID
 
 CR = 0x0D
 LF = 0x0A
@@ -26,7 +25,7 @@ class StreamFilter:
         self._logged_stream = self._read_and_log(filtered_stream)
 
     def _read_and_log(self, stream_gen):
-        self._logfilePath = os.path.join(LOGS_DIR, "streamlog")
+        self._logfilePath = os.path.join(LOGS_DIR, "streamlog_" + SESSION_ID)
         with open(self._logfilePath, "wb") as f:
             while True:
                 c = next(stream_gen)

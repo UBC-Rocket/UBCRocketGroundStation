@@ -1,8 +1,9 @@
-import sys  # to quickly exit
 from collections import deque
 from enum import IntEnum
 from queue import SimpleQueue
 from threading import Lock, Thread
+
+from util.detail import LOGGER
 
 START_DELIMITER = 0x7E
 ESCAPE_CHAR = 0x7D
@@ -99,7 +100,7 @@ class XBeeModuleSim:
             try:
                 self._parse_API_frame()
             except UnescapedDelimiterError:
-                print("WARNING: Caught UnescapedDelimiterError exception")
+                LOGGER.warning("Caught UnescapedDelimiterError exception")
                 continue  # drop it and try again
             else:
                 start = next(self._rocket_rx_queue)

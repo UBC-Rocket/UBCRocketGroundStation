@@ -5,6 +5,7 @@ import time
 
 from ..connection import Connection
 from main_window.subpacket_ids import SubpacketEnum
+from util.detail import LOGGER
 
 
 class DebugConnection(Connection):
@@ -132,7 +133,7 @@ class DebugConnection(Connection):
         :type data:
         """
         with self.lock:  # Currently not needed, but good to have for future
-            print(f"{data} sent to DebugConnection")
+            LOGGER.info(f"{data} sent to DebugConnection")
 
     def shutDown(self) -> None:
         pass

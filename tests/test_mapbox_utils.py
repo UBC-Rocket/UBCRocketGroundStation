@@ -4,7 +4,7 @@ import numpy
 import pytest
 from matplotlib import pyplot
 
-from detail import LOCAL
+from util.detail import LOCAL
 from main_window.mapping import mapbox_utils
 
 

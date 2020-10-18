@@ -6,6 +6,9 @@ from connections.sim.xbee_module_sim import XBeeModuleSim
 
 class TestXBeeModuleSim:
     def setup_method(self):
+        """ setup any state tied to the execution of the given method in a
+        class.  setup_method is invoked for every test method of a class.
+        """
         self.xbee = XBeeModuleSim()
         self.rkt_lock = Lock()
         self.gnd_lock = Lock()
@@ -22,6 +25,11 @@ class TestXBeeModuleSim:
 
         self.xbee.rocket_callback = rocket_callback
         self.xbee.ground_callback = ground_callback
+
+    def teardown_method(self):
+        """ teardown any state that was previously setup with a setup_method
+        call.
+        """
 
     def test_rocket_rx(self):
         tx_example = bytearray(

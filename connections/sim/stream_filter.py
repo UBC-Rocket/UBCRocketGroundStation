@@ -1,8 +1,7 @@
 import collections
 import os
 import sys
-
-from detail import LOCAL
+from util.detail import LOGS_DIR, SESSION_ID
 
 CR = 0x0D
 LF = 0x0A
@@ -16,10 +15,6 @@ class StreamFilter:
         :param size: Size of in-memory circular log buffer
         :type size: int
         """
-        try:
-            os.mkdir(os.path.join(LOCAL, ".log"))
-        except FileExistsError:
-            pass  # directory exists
 
         if sys.platform == "win32":
             filtered_stream = self._crcrlfFilter(bufstream)
@@ -30,7 +25,7 @@ class StreamFilter:
         self._logged_stream = self._read_and_log(filtered_stream)
 
     def _read_and_log(self, stream_gen):
-        self._logfilePath = os.path.join(LOCAL, ".log", "streamlog")
+        self._logfilePath = os.path.join(LOGS_DIR, "streamlog_" + SESSION_ID)
         with open(self._logfilePath, "wb") as f:
             while True:
                 c = next(stream_gen)

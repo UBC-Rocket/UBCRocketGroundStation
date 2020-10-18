@@ -74,7 +74,7 @@ class RocketData:
         self.timeset: Dict[int, Dict[str, Union[int, float]]] = {}
         self.lasttime = 0  # TODO REVIEW/CHANGE THIS, once all subpackets have their own timestamp.
         self.highest_altitude = 0
-        self.sessionName = os.path.join(LOCAL, "autosave_" + str(int(time.time())) + ".csv")
+        self.sessionName = os.path.join(LOCAL, "logs", "autosave_" + str(int(time.time())) + ".csv")
         self.autosaveThread = threading.Thread(target=self.timer, daemon=True)
         self.autosaveThread.start()
 

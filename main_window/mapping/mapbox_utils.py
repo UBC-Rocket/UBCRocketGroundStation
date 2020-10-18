@@ -1,6 +1,7 @@
 import concurrent.futures
 import math
 import os
+from sys import platform
 import time
 from typing import Any, Optional
 
@@ -32,11 +33,18 @@ def readKey() -> Optional[str]:
     else:
         return None
 
-
-if not (readKey() is None):
-    maps = mapbox.Maps(access_token=readKey())
-else:
-    maps = None
+maps = None
+def initializeMap():
+    """
+    Enforce initialization of a 'singleton' (map instance).
+    :return:
+    """
+    # MacOS specific fix
+    if platform == 'darwin':
+        os.environ['NO_PROXY'] = '*'
+    global maps
+    if not (readKey() is None):
+        maps = mapbox.Maps(access_token=readKey())
 
 
 class MapPoint:
@@ -262,8 +270,10 @@ class TileGrid:
                     i.getImage(overwrite=overwrite)
                     a = a - 1
 
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            executor.map(getRow, self.ta)
+        for row in self.ta:
+            getRow(row)
+        # with concurrent.futures.ThreadPoolExecutor() as executor:
+        #     executor.map(getRow, self.ta)
         t2 = time.perf_counter()
         print(
             f"Successfully downloaded size {str(self.scale)} tiles in {t2 - t1} seconds."

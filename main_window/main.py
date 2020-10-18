@@ -30,7 +30,7 @@ qtCreatorFile = os.path.join(LOCAL, "qt_files", "main.ui")
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 # The marker image, used to show where the rocket is on the map UI
-MAP_MARKER = Image.open(mapbox_utils.MARKER_PATH).resize((12, 12), Image.LANCZOS) # os.path.join(LOCAL, "qt_files", "marker.png")
+MAP_MARKER = Image.open(mapbox_utils.MARKER_PATH).resize((12, 12), Image.LANCZOS)
 
 
 class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -83,7 +83,6 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.SendThread.start()
 
         # Init and connection of MappingThread
-        mapbox_utils.initializeMap()
         self.MappingThread = MappingThread(self.connection, self.map, self.data)
         self.MappingThread.sig_received.connect(self.receiveMap)
         self.MappingThread.sig_print.connect(self.printToConsole)

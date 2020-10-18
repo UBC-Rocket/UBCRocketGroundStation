@@ -33,18 +33,15 @@ def readKey() -> Optional[str]:
     else:
         return None
 
-maps = None
-def initializeMap():
-    """
-    Enforce initialization of a 'singleton' (map instance).
-    :return:
-    """
-    # MacOS specific fix
-    if platform == 'darwin':
-        os.environ['NO_PROXY'] = '*'
-    global maps
-    if not (readKey() is None):
-        maps = mapbox.Maps(access_token=readKey())
+# Initialize the mapbox map instance
+if not (readKey() is None):
+    maps = mapbox.Maps(access_token=readKey())
+else:
+    maps = None
+
+# MacOS specific fix for image downloading
+if platform == 'darwin':
+    os.environ['NO_PROXY'] = '*'
 
 
 class MapPoint:
@@ -270,10 +267,8 @@ class TileGrid:
                     i.getImage(overwrite=overwrite)
                     a = a - 1
 
-        for row in self.ta:
-            getRow(row)
-        # with concurrent.futures.ThreadPoolExecutor() as executor:
-        #     executor.map(getRow, self.ta)
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            executor.map(getRow, self.ta)
         t2 = time.perf_counter()
         print(
             f"Successfully downloaded size {str(self.scale)} tiles in {t2 - t1} seconds."

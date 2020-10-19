@@ -5,6 +5,7 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
 
 from .radio_controller import RadioController
+from util.detail import LOGGER
 
 
 class ReadThread(QtCore.QThread):
@@ -63,7 +64,6 @@ class ReadThread(QtCore.QThread):
                     # notify UI that new data is available to be displayed
                     self.sig_received.emit()
                 except Exception as e:
-                    print(e)
-                    print("Error decoding new data!")
+                    LOGGER.exception("Error decoding new data!") # Automatically grabs and prints exception info
 
                 del byte_list[0:length]

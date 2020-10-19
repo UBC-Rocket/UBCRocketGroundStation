@@ -7,7 +7,10 @@ import numpy as np
 
 from . import subpacket_ids
 from util.detail import LOGS_DIR, SESSION_ID, LOGGER
+from util.event_stats import increment_event_stats
 from .subpacket_ids import SubpacketEnum
+
+BUNDLE_ADDED_EVENT = 'bundle_added'
 
 # nametochar : Dict[str, bytes] = { # TODO Deal with legacy data types and conversions. Delete dead code when done.
 #     "Acceleration X": b'X',
@@ -110,12 +113,14 @@ class RocketData:
             # write the data and call the respective callbacks
             for data_id in incoming_data.keys():
                 self.timeset[self.lasttime][data_id] = incoming_data[data_id]
-        tempvar = 1 # for debug
 
         # Notify after all data has been updated
         # Also, do so outside lock to prevent mutex contention with notification listeners
         for data_id in incoming_data.keys():
             self._notifyCallbacksOfId(data_id)
+
+        increment_event_stats(BUNDLE_ADDED_EVENT)
+
 
     # TODO REMOVE this function once data types refactored
     # # In the previous version this is supposed to save very specifically formatted incoming data into RocketData

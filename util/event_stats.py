@@ -5,6 +5,13 @@ _stats_lock = Lock()
 _stats_cv = Condition(_stats_lock)
 _stats = dict()
 
+"""
+
+Stats are just counters that can be used to aid with debugging, unit tests, and integration tests. Just like the name 
+suggests, they can be placed around the code to count how many times something happened and allows tests/debuggers to 
+check if something happened or didnt happen. No actual functionality should depend on this module, only tests. 
+
+"""
 
 def increment_event_stats(event, num=1):
     """Increments the counter for an event, indicating that it has occurred.

@@ -1,6 +1,8 @@
 import inspect
 from threading import Lock, Condition
 
+# Event stats are tracked together so that we can take snapshots at a point in time of all of them
+# This can be useful for debugging and profiling
 _stats_lock = Lock()
 _stats_cv = Condition(_stats_lock)
 _stats = dict()
@@ -13,33 +15,59 @@ check if something happened or didnt happen. No actual functionality should depe
 
 """
 
-def increment_event_stats(event, num=1):
-    """Increments the counter for an event, indicating that it has occurred.
 
-    :param event: Name of the event
-    :type event: str
-    :param num: Number by which to increment event counter
-    :type num: int
-    """
+class Event:
+    def __init__(self, name: str):
+        self._name = name
+        # Module names are used in conjunction with event name to help prevent event name collision as the code base scales up
+        self._module = _get_calling_module()
+        self._key = _hash(name, self._module)
 
-    if type(num) is not int or num < 1:
-        raise ValueError("Invalid value for num")
+    def increment(self, num=1):
+        """Increments the counter for the event, indicating that it has occurred.
 
-    frm = inspect.stack()[1]
-    # Module names are used in conjunction with event name to help prevent event name collision as the code base scales up
-    module = inspect.getmodule(frm[0]).__name__
+        :param num: Number by which to increment event counter
+        :type num: int
+        """
 
-    event_hash = _hash(event, module)
+        if _get_calling_module() != self._module:
+            raise Exception("Calling module is not the same as the module in which event was defined")
 
-    with _stats_cv:
-        if event_hash in _stats.keys():
-            _stats[event_hash] += num
-        else:
-            _stats[event_hash] = num
+        if type(num) is not int or num < 1:
+            raise ValueError("Invalid value for num")
 
-        _stats_cv.notify_all()
+        with _stats_cv:
+            if self._key in _stats.keys():
+                _stats[self._key] += num
+            else:
+                _stats[self._key] = num
 
+            _stats_cv.notify_all()
 
+    def wait(self, snapshot, timeout=60):
+        """Waits for the event counter to change compared to snapshot, indicating that it has occurred.
+
+        Difference in event counter is returned so that tests can assert on number of occurrences.
+
+        :param snapshot: A previously captured snapshot to use for comparision
+        :type snapshot: dict
+        :param timeout: Seconds after which to return
+        :type timeout: float
+        :return: difference in event counter
+        :rtype: int
+        """
+
+        initial_value = snapshot[self._key] if self._key in snapshot.keys() else 0
+
+        with _stats_cv:
+            def current_value(): return _stats[self._key] if self._key in _stats.keys() else 0
+
+            if current_value() < initial_value:
+                raise ValueError("Invalid snapshot. Event counter greater than current value.")
+
+            _stats_cv.wait_for(lambda: current_value() > initial_value, timeout=timeout)
+
+            return current_value() - initial_value
 
 
 def get_event_stats_snapshot():
@@ -55,38 +83,15 @@ def get_event_stats_snapshot():
         return _stats.copy()
 
 
-def wait_for_event(snapshot, event, module, timeout=60):
-    """Increments the counter for an event, indicating that it has occurred.
+def _get_calling_module():
+    """Returns the name of the module that called the function that called this function
 
-    Module names are used in conjunction with event name to help prevent event name collision as the code base scales up
-
-    :param snapshot: A previously captured snapshot to use for comparision
-    :type snapshot: dict
-    :param event: Name of the event
-    :type event: str
-    :param module: Name of module in which event was incremented
-    :type module: str
-    :param timeout: Seconds after which to return
-    :type timeout: float
-    :return: difference in event counter
-    :rtype: int
+    :return: Calling module name
+    :rtype: str
     """
-
-    event_hash = _hash(event, module)
-
-    initial_value = snapshot[event_hash] if event_hash in snapshot.keys() else 0
-
-    with _stats_cv:
-
-        def current_value(): return _stats[event_hash] if event_hash in _stats.keys() else 0
-
-        if current_value() < initial_value:
-            raise ValueError("Invalid snapshot. Event counter greater than current value.")
-
-        _stats_cv.wait_for(lambda: current_value() > initial_value, timeout=timeout)
-
-        return current_value() - initial_value
-
+    frm = inspect.stack()[2] # 2 because we are not interested in two frames up (the previous frame wants to know who called it)
+    module = inspect.getmodule(frm[0]).__name__
+    return module
 
 
 def _hash(event, module):

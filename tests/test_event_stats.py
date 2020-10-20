@@ -1,9 +1,10 @@
 import util.event_stats as event_stats
+from util.event_stats import Event, get_event_stats_snapshot
 from time import time
 import pytest
 
-TEST_EVENT = 'TestEvent'
-TEST_MODULE = 'tests.test_event_stats'
+TEST_EVENT = Event('test_event')
+
 
 class TestEventStats:
 
@@ -21,49 +22,54 @@ class TestEventStats:
         event_stats._stats = dict()
 
     def test_general_usage(self):
-        snapshot = event_stats.get_event_stats_snapshot()
+        snapshot = get_event_stats_snapshot()
 
-        event_stats.increment_event_stats(TEST_EVENT)
+        TEST_EVENT.increment()
 
-        ret = event_stats.wait_for_event(snapshot, TEST_EVENT, TEST_MODULE)
+        ret = TEST_EVENT.wait(snapshot)
 
         assert ret == 1
 
-        snapshot = event_stats.get_event_stats_snapshot()
+        snapshot = get_event_stats_snapshot()
 
-        event_stats.increment_event_stats(TEST_EVENT, num=5)
+        TEST_EVENT.increment(num=5)
 
-        ret = event_stats.wait_for_event(snapshot, TEST_EVENT, TEST_MODULE)
+        ret = TEST_EVENT.wait(snapshot)
 
         assert ret == 5
 
     def test_bad_snapshot(self):
-        event_stats.increment_event_stats(TEST_EVENT)
-        snapshot = event_stats.get_event_stats_snapshot()
-        snapshot[event_stats._hash(TEST_EVENT, TEST_MODULE)] += 1
+        TEST_EVENT.increment()
+        snapshot = get_event_stats_snapshot()
+        snapshot[TEST_EVENT._key] += 1
 
         with pytest.raises(ValueError) as ex:
-            event_stats.wait_for_event(snapshot, TEST_EVENT, TEST_MODULE)
+            TEST_EVENT.wait(snapshot)
 
     def test_module_differentiation(self):
-        snapshot = event_stats.get_event_stats_snapshot()
+        snapshot = get_event_stats_snapshot()
 
-        snapshot[event_stats._hash(TEST_EVENT, 'other_module')] = 5
+        snapshot[event_stats._hash(TEST_EVENT._name, 'other_module')] = 5
 
-        event_stats.increment_event_stats(TEST_EVENT)
+        TEST_EVENT.increment()
 
-        ret = event_stats.wait_for_event(snapshot, TEST_EVENT, TEST_MODULE)
+        ret = TEST_EVENT.wait(snapshot)
 
         assert ret == 1
 
     def test_timeout(self):
-        snapshot = event_stats.get_event_stats_snapshot()
+        snapshot = get_event_stats_snapshot()
 
         start = time()
-        ret = event_stats.wait_for_event(snapshot, TEST_EVENT, TEST_MODULE, 0.2)
+        ret = TEST_EVENT.wait(snapshot, timeout=0.2)
         end = time()
 
         assert ret == 0
         assert 0.1 < end - start < 1
 
+    def test_call_from_other_module(self):
+        event = Event('other_event')
+        event._module = 'other_module'
 
+        with pytest.raises(Exception) as ex:
+            event.increment()

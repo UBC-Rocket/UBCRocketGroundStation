@@ -6,9 +6,9 @@ import time
 import connections.debug.radio_packets as radio_packets
 from ..connection import Connection
 from util.detail import LOGGER
-from util.event_stats import increment_event_stats
+from util.event_stats import Event
 
-ARMED_EVENT = "ARMED"
+ARMED_EVENT = Event('armed')
 
 
 class DebugConnection(Connection):
@@ -115,7 +115,7 @@ class DebugConnection(Connection):
         """
         with self.lock:  # Currently not needed, but good to have for future
             if data == b'r':
-                increment_event_stats(ARMED_EVENT)
+                ARMED_EVENT.increment()
 
             LOGGER.info(f"{data} sent to DebugConnection")
 

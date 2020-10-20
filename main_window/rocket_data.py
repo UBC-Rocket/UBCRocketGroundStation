@@ -7,10 +7,10 @@ import numpy as np
 
 from . import subpacket_ids
 from util.detail import LOGS_DIR, SESSION_ID, LOGGER
-from util.event_stats import increment_event_stats
+from util.event_stats import Event
 from .subpacket_ids import SubpacketEnum
 
-BUNDLE_ADDED_EVENT = 'bundle_added'
+BUNDLE_ADDED_EVENT = Event('bundle_added')
 
 # nametochar : Dict[str, bytes] = { # TODO Deal with legacy data types and conversions. Delete dead code when done.
 #     "Acceleration X": b'X',
@@ -119,7 +119,7 @@ class RocketData:
         for data_id in incoming_data.keys():
             self._notifyCallbacksOfId(data_id)
 
-        increment_event_stats(BUNDLE_ADDED_EVENT)
+        BUNDLE_ADDED_EVENT.increment()
 
 
     # TODO REMOVE this function once data types refactored

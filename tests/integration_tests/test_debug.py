@@ -6,7 +6,7 @@ from main_window.rocket_data import BUNDLE_ADDED_EVENT
 from main_window.subpacket_ids import SubpacketEnum
 from main_window.radio_controller import IS_SIM, ROCKET_TYPE, NONCRITICAL_FAILURE, SENSOR_TYPES, OTHER_STATUS_TYPES
 
-from util.event_stats import wait_for_event, get_event_stats_snapshot
+from util.event_stats import get_event_stats_snapshot
 
 def test_arm_signal(qtbot):
     connection = DebugConnection(generate_radio_packets=False)
@@ -16,7 +16,7 @@ def test_arm_signal(qtbot):
 
     main_window.sendCommand("arm")
 
-    num = wait_for_event(snapshot, ARMED_EVENT, 'connections.debug.debug_connection')
+    num = ARMED_EVENT.wait(snapshot)
 
     assert num == 1
 
@@ -31,7 +31,7 @@ def test_bulk_sensor_packet(qtbot):
     with qtbot.waitSignal(main_window.ReadThread.sig_received): # Needed otherwise signals wont process because UI is in same thread
         connection.send_to_rocket(packet)
 
-    num = wait_for_event(snapshot, BUNDLE_ADDED_EVENT, 'main_window.rocket_data')
+    num = BUNDLE_ADDED_EVENT.wait(snapshot)
     assert num == 1
     assert main_window.data.lastvalue(SubpacketEnum.CALCULATED_ALTITUDE.value) == 2
     assert main_window.data.lastvalue(SubpacketEnum.ACCELERATION_X.value) == 3
@@ -44,7 +44,7 @@ def test_bulk_sensor_packet(qtbot):
     assert main_window.data.lastvalue(SubpacketEnum.LONGITUDE.value) == 10
     assert main_window.data.lastvalue(SubpacketEnum.STATE.value) == 11
 
-    num = wait_for_event(snapshot, LABLES_UPDATED_EVENT, 'main_window.main')
+    num = LABLES_UPDATED_EVENT.wait(snapshot)
     assert num == 1
     assert float(main_window.AltitudeLabel.text()) == 2.0
     assert main_window.GPSLabel.text() == '9.0, 10.0'
@@ -60,7 +60,7 @@ def test_message_packet(qtbot, caplog):
 
     connection.send_to_rocket(packet)
 
-    num = wait_for_event(snapshot, BUNDLE_ADDED_EVENT, 'main_window.rocket_data')
+    num = BUNDLE_ADDED_EVENT.wait(snapshot)
 
     assert num == 1
     assert main_window.data.lastvalue(SubpacketEnum.MESSAGE.value) == "test_message"
@@ -76,7 +76,7 @@ def test_config_packet(qtbot):
 
     connection.send_to_rocket(packet)
 
-    num = wait_for_event(snapshot, BUNDLE_ADDED_EVENT, 'main_window.rocket_data')
+    num = BUNDLE_ADDED_EVENT.wait(snapshot)
 
     assert num == 1
     assert main_window.data.lastvalue(IS_SIM) == True
@@ -92,7 +92,7 @@ def test_status_ping_packet(qtbot):
 
     connection.send_to_rocket(packet)
 
-    num = wait_for_event(snapshot, BUNDLE_ADDED_EVENT, 'main_window.rocket_data')
+    num = BUNDLE_ADDED_EVENT.wait(snapshot)
 
     assert num == 1
     assert main_window.data.lastvalue(SubpacketEnum.STATUS_PING.value) == NONCRITICAL_FAILURE

@@ -1,6 +1,7 @@
 import concurrent.futures
 import math
 import os
+from sys import platform
 import time
 from typing import Any, Optional
 
@@ -32,11 +33,15 @@ def readKey() -> Optional[str]:
     else:
         return None
 
-
+# Initialize the mapbox map instance
 if not (readKey() is None):
     maps = mapbox.Maps(access_token=readKey())
 else:
     maps = None
+
+# MacOS specific fix for image downloading
+if platform == 'darwin':
+    os.environ['NO_PROXY'] = '*'
 
 
 class MapPoint:

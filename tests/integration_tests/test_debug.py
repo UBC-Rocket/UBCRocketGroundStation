@@ -1,7 +1,7 @@
 from connections.debug.debug_connection import DebugConnection, ARMED_EVENT
 from main_window.main import MainApp, LABLES_UPDATED_EVENT
 from profiles.rockets.co_pilot import co_pilot
-import connections.debug.radio_packets as radio_packets
+from connections.debug import radio_packets
 from main_window.rocket_data import BUNDLE_ADDED_EVENT
 from main_window.subpacket_ids import SubpacketEnum
 from main_window.radio_controller import IS_SIM, ROCKET_TYPE, NONCRITICAL_FAILURE, SENSOR_TYPES, OTHER_STATUS_TYPES

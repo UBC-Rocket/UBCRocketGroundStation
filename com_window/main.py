@@ -11,6 +11,7 @@ from detail import LOCAL
 from main_window.main import start
 from profiles.rockets.co_pilot import co_pilot
 from profiles.rockets.tantalus import tantalus
+from profiles.rockets.whistler_blackcomb import whistler_blackcomb
 
 if hasattr(QtCore.Qt, "AA_EnableHighDpiScaling"):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
@@ -39,6 +40,7 @@ class comWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.RocketProfiles = {
             "Tantalus": tantalus,
             "Co Pilot": co_pilot,
+            "Whistler-Blackcomb": whistler_blackcomb
         }
         self.setupUi(self)
         self.MySetup()

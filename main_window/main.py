@@ -33,6 +33,7 @@ Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 MAP_MARKER = Image.open(mapbox_utils.MARKER_PATH).resize((12, 12), Image.LANCZOS)
 
 
+
 class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
     sig_send = pyqtSignal(str)
 
@@ -264,12 +265,27 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         self.MappingThread.setDesiredMapSize(event.width, event.height)
 
+class WBApp(MainApp):
+    def __init__(self, connection: Connection, rocket: RocketProfile):
+        self.connection = connection
+        self.rocket = rocket
+        self.data = RocketData()
+
+        QtWidgets.QMainWindow.__init__(self)
+        Ui_MainWindow.__init__(self)
+        self.setupUi(self)
+
+        self.printToConsole("Starting Connection")
+
 
 window = None
 
 
-def start(*args, **kwargs):
+def start(app, *args, **kwargs):
     global window
 
-    window = MainApp(*args, **kwargs)
+    if(app == "main"):
+        window = MainApp(*args, **kwargs)
+    elif(app == "wb"):
+        window = WBApp(*args, **kwargs)
     window.show()

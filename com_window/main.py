@@ -69,7 +69,11 @@ class comWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             baudRate=int(self.baudBox.currentText()),
             rocket=rocket,
         )
-        start(connection, rocket)
+
+        if(rocket == whistler_blackcomb):
+            start("wb",connection, rocket)
+        else:
+            start("main",connection, rocket)
         self.close()
 
     def connectionChanged(self) -> None:

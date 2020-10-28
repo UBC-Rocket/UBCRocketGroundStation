@@ -17,5 +17,5 @@ cp_labels = [
 ]
 
 whistler_blackcomb = RocketProfile(
-    {"Arm": "arm", "Halo": "halo", "Data": "data", "Status": "status"}, cp_labels
+    {"Arm": "arm"}, cp_labels
 )

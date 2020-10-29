@@ -7,6 +7,8 @@ from detail import LOCAL
 from ..connection_factory import ConnectionFactory
 from .sim_connection import SimConnection
 from .hw_sim import HWSim
+from pathlib import Path
+
 
 FIRMWARE_DIR = "FW"
 FILE_EXTENSION = {"win32": ".exe"}
@@ -19,10 +21,6 @@ class SimConnectionFactory(ConnectionFactory):
     def requiresBaudRate(self) -> bool:
         return False
 
-    def _getParentDir(self, dir):
-        dirs = dir.split("/")
-        return "/".join(dirs[0:len(dirs) - 1])
-
     def construct(
             self,
             comPort: Union[int, str, None] = None,
@@ -33,11 +31,12 @@ class SimConnectionFactory(ConnectionFactory):
 
         # Check FW (child) dir and FLARE (neighbour) dir for rocket build files
         # If multiple build files found throw exception
-        flarePath = self._getParentDir(LOCAL) + "/FLARE/avionics/build/"
+        flarePath = os.path.join(Path(LOCAL).parent, 'FLARE', 'avionics', 'build')
+        localPath = os.path.join(os.curdir, 'FW')
         neighbourBuildFiles = [s for s in os.listdir(flarePath) if rocket.rocket_name.lower() in s.lower()]
-
-        childBuildFileExists = "program" in os.listdir('./FW')
         neighbourBuildFileExists = bool(neighbourBuildFiles)
+
+        childBuildFileExists = "program" in os.listdir(localPath)
 
         if childBuildFileExists and neighbourBuildFileExists:
             raise Exception(
@@ -47,7 +46,7 @@ class SimConnectionFactory(ConnectionFactory):
             path = flarePath
         elif childBuildFileExists:
             executableName = "program"
-            path = os.path.join(LOCAL, FIRMWARE_DIR)
+            path = localPath
         else:
             raise Exception(f"No build files found for rocket named {rocket.rocket_name}")
 

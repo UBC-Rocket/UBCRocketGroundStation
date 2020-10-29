@@ -5,7 +5,8 @@ from multiprocessing import Process, Queue
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
-from scipy.misc import imresize
+import numpy as np
+from PIL import Image
 
 from ..subpacket_ids import SubpacketEnum
 from . import map_data, mapbox_utils
@@ -217,8 +218,7 @@ def processMap(requestQueue, resultQueue):
 
             # Downsizing the map here to the ideal size for the plot reduces the amount of work required in the main
             # thread and thus reduces stuttering
-            resizedMapImage = imresize(largeMapImage, (
-            int(scaleFactor * largeMapImage.shape[0]), int(scaleFactor * largeMapImage.shape[1])))
+            resizedMapImage = np.array(Image.fromarray(largeMapImage).resize((int(scaleFactor * largeMapImage.shape[0]), int(scaleFactor * largeMapImage.shape[1]))))
 
             resultQueue.put((resizedMapImage, location.xMin, location.xMax, location.yMin, location.yMax))
         except Exception as ex:

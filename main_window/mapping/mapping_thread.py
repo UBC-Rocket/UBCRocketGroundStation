@@ -5,7 +5,7 @@ from multiprocessing import Process, Queue
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
-# from scipy.misc import imresize
+from scipy.misc import imresize
 
 from ..subpacket_ids import SubpacketEnum
 from . import map_data, mapbox_utils

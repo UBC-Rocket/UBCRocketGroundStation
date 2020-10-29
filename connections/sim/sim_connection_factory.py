@@ -10,7 +10,6 @@ from .hw_sim import HWSim
 from pathlib import Path
 
 
-FIRMWARE_DIR = "FW"
 FILE_EXTENSION = {"win32": ".exe"}
 
 

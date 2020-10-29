@@ -17,7 +17,7 @@ install:
 - export DISPLAY=":1"
 
 # Start setting up stuff for GS
-- sudo apt-get install -y python3.7 python3-pip python3.7-venv python3-tk
+- sudo apt-get install -y python3.7 python3-pip python3.7-venv python3-tk libpython3.7-dev
 - python3.7 --version
 - python3.7 -m pip install --upgrade pip setuptools wheel
 - python3.7 -m venv venv

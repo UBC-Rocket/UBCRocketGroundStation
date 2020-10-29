@@ -1,8 +1,7 @@
 from threading import Lock
-from time import sleep
 
-from connections.sim.xbee_module_sim import XBeeModuleSim
-
+from connections.sim.xbee_module_sim import XBeeModuleSim, FRAME_PARSED_EVENT, SENT_TO_ROCKET_EVENT
+from util.event_stats import get_event_stats_snapshot
 
 class TestXBeeModuleSim:
     def setup_method(self):
@@ -37,15 +36,19 @@ class TestXBeeModuleSim:
             b"\xFF\xFE\x00\x00\x54\x78\x44\x61\x74\x61\x30\x41\x7D\x33"
         )
 
+        snapshot = get_event_stats_snapshot()
         self.xbee.recieved_from_rocket(tx_example)
-        sleep(0.1)
+        num = FRAME_PARSED_EVENT.wait(snapshot)
 
+        assert num == 1
         assert self.msgs_to_ground == [b"TxData0A"]
 
     def test_ground_rx(self):
+        snapshot = get_event_stats_snapshot()
         self.xbee.send_to_rocket(b"HelloRocket")  # 11 bytes
-        sleep(0.1)
+        num = SENT_TO_ROCKET_EVENT.wait(snapshot)
 
+        assert num == 1
         assert len(self.msgs_to_rocket[0]) == 27
         assert self.msgs_to_rocket[0][15:-1] == b"HelloRocket"
 
@@ -55,8 +58,10 @@ class TestXBeeModuleSim:
             b"\x01\x27\xFF\xFE\x00\x00\x54\x78\x44\x61\x74\x61\x30\x41\x7D\x33"
         )
 
+        snapshot = get_event_stats_snapshot()
         self.xbee.recieved_from_rocket(tx_1)
         self.xbee.recieved_from_rocket(tx_2)
-        sleep(0.1)
+        num = FRAME_PARSED_EVENT.wait(snapshot)
 
+        assert num == 1
         assert self.msgs_to_ground == [b"TxData0A"]

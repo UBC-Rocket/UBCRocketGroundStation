@@ -29,23 +29,20 @@ SESSION_ID = str(int(time.time()))
 # CRITICAL   Impending crash, application terminating event.
 LOGGER = logging.getLogger("main")
 
-def init_logger():
-    global LOGGER
+LOGGER.setLevel(logging.DEBUG)
 
-    LOGGER.setLevel(logging.DEBUG)
+_logger_format = logging.Formatter("[%(asctime)s] (%(levelname)s) %(filename)s:%(funcName)s: %(message)s")
 
-    _logger_format = logging.Formatter("[%(asctime)s] (%(levelname)s) %(filename)s:%(funcName)s: %(message)s")
+_file_handler = logging.FileHandler(os.path.join(LOGS_DIR, "debuglog_" + SESSION_ID + ".txt"))
+_file_handler.setLevel(logging.DEBUG)
+_file_handler.setFormatter(_logger_format)
 
-    _file_handler = logging.FileHandler(os.path.join(LOGS_DIR, "debuglog_" + SESSION_ID + ".txt"))
-    _file_handler.setLevel(logging.DEBUG)
-    _file_handler.setFormatter(_logger_format)
+_stdout_handler = logging.StreamHandler(sys.stdout)
+_stdout_handler.setLevel(logging.DEBUG)
+_stdout_handler.setFormatter(_logger_format)
 
-    _stdout_handler = logging.StreamHandler(sys.stdout)
-    _stdout_handler.setLevel(logging.DEBUG)
-    _stdout_handler.setFormatter(_logger_format)
-
-    LOGGER.addHandler(_file_handler)
-    LOGGER.addHandler(_stdout_handler)
+LOGGER.addHandler(_file_handler)
+LOGGER.addHandler(_stdout_handler)
 
 # Helper class. python way of doing ++ (unlimited incrementing)
 class Count:

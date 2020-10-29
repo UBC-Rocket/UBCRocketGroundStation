@@ -10,6 +10,7 @@ from PyQt5.QtCore import pyqtSignal
 
 from connections.connection import Connection
 from util.detail import LOCAL, LOGS_DIR, SESSION_ID, LOGGER
+from util.event_stats import Event
 from profiles.rocket_profile import RocketProfile
 
 from .mapping import map_data, mapbox_utils
@@ -31,6 +32,7 @@ Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 # The marker image, used to show where the rocket is on the map UI
 MAP_MARKER = Image.open(mapbox_utils.MARKER_PATH).resize((12, 12), Image.LANCZOS)
 
+LABLES_UPDATED_EVENT = Event('lables_updated')
 
 class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
     sig_send = pyqtSignal(str)
@@ -180,6 +182,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         """
 
         self.rocket.update_labels(self)
+        LABLES_UPDATED_EVENT.increment()
 
     def sendButtonPressed(self) -> None:
         """

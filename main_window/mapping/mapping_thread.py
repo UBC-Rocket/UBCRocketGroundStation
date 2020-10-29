@@ -10,7 +10,7 @@ from PIL import Image
 
 from ..subpacket_ids import SubpacketEnum
 from . import map_data, mapbox_utils
-from util.detail import LOGGER, init_logger
+from util.detail import LOGGER
 
 # Scaling is linear so a scale factor of 1 means no scaling (aka 1*x=x)
 SCALE_FACTOR_NO_SCALE = 1
@@ -191,14 +191,13 @@ def processMap(requestQueue, resultQueue):
     :type resultQueue: Queue
     """
 
-    # On Windows, process forking does not copy globals and thus we need to reinitialize the logger to configure it to
-    # log like everything else. This needs to be done for every new process on windows. Not threads though.
+    # On Windows, process forking does not copy globals and thus all packeges are re-imported. Not for threads
+    # though.
+    # Note: This means that on Windows the logger will create one log file per process because the session ID
+    # is based on the import time
     # https://docs.python.org/3/library/multiprocessing.html#logging
-    # Note: This problem exists for all globals and is why packages need to be re-imported for every process. This means
-    # that on Windows the logger will create one log file per process because the session ID is based on the import time
-    # TODO: Fix by creating .session file which contains session ID and other process-global constants.
-    #  Look into file-locks to make this multiprocessing saft. This is an OS feature
-    init_logger()
+    # TODO: Fix by creating .session file which contains session ID and other
+    #  process-global constants. Look into file-locks to make this multiprocessing saft. This is an OS feature
 
     while True:
         try:

@@ -13,6 +13,24 @@ from .subpacket_ids import SubpacketEnum
 Header = collections.namedtuple('Header', ['subpacket_id', 'timestamp', 'header_length', 'data_length', 'total_length'])
 
 # CONSTANTS
+# TODO Extract
+ROCKET_TYPE = 'ROCKET_TYPE'
+IS_SIM = 'IS_SIM'
+# TODO extract and cleanup https://trello.com/c/uFHtaN51/
+NOMINAL = 'NOMINAL'
+NONCRITICAL_FAILURE = 'NONCRITICAL_FAILURE'
+CRITICAL_FAILURE = 'CRITICAL_FAILURE'
+OVERALL_STATUS = 'OVERALL_STATUS'
+BAROMETER = 'BAROMETER'
+GPS = 'GPS'
+ACCELEROMETER = 'ACCELEROMETER'
+TEMPERATURE = 'TEMPERATURE'
+IMU = 'IMU'
+SENSOR_TYPES = [OVERALL_STATUS, BAROMETER, GPS, ACCELEROMETER, IMU, TEMPERATURE]
+DROGUE_IGNITER_CONTINUITY = 'DROGUE_IGNITER_CONTINUITY'
+MAIN_IGNITER_CONTINUITY = 'MAIN_IGNITER_CONTINUITY'
+FILE_OPEN_SUCCESS = 'FILE_OPEN_SUCCESS'
+OTHER_STATUS_TYPES = [DROGUE_IGNITER_CONTINUITY, MAIN_IGNITER_CONTINUITY, FILE_OPEN_SUCCESS]
 
 # Map subpacket id to DATA length (excluding header) in bytes. Only includes types with CONSTANT lengths.
 PACKET_ID_TO_CONST_LENGTH: Dict[int, int] = {
@@ -132,21 +150,6 @@ class RadioController:
         """
         sensor_bit_field_length = 16
         other_bit_field_length = 16
-        # TODO extract and cleanup https://trello.com/c/uFHtaN51/
-        NOMINAL = 'NOMINAL'
-        NONCRITICAL_FAILURE = 'NONCRITICAL_FAILURE'
-        CRITICAL_FAILURE = 'CRITICAL_FAILURE'
-        OVERALL_STATUS = 'OVERALL_STATUS'
-        BAROMETER = 'BAROMETER'
-        GPS = 'GPS'
-        ACCELEROMETER = 'ACCELEROMETER'
-        TEMPERATURE = 'TEMPERATURE'
-        IMU = 'IMU'
-        SENSOR_TYPES = [OVERALL_STATUS, BAROMETER, GPS, ACCELEROMETER, IMU, TEMPERATURE]
-        DROGUE_IGNITER_CONTINUITY = 'DROGUE_IGNITER_CONTINUITY'
-        MAIN_IGNITER_CONTINUITY = 'MAIN_IGNITER_CONTINUITY'
-        FILE_OPEN_SUCCESS = 'FILE_OPEN_SUCCESS'
-        OTHER_STATUS_TYPES = [DROGUE_IGNITER_CONTINUITY, MAIN_IGNITER_CONTINUITY, FILE_OPEN_SUCCESS]
 
         data: Dict = {}
         curr_byte = Count(0, 1)
@@ -219,9 +222,6 @@ class RadioController:
         :return:
         :rtype:
         """
-        # TODO Extract
-        ROCKET_TYPE = 'ROCKET_TYPE'
-        IS_SIM = 'IS_SIM'
 
         data = {}
         data[IS_SIM] = byte_list[0]

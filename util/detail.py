@@ -2,12 +2,47 @@
 
 import os
 import sys
+import time
+import logging
 
 # Path to executable
 if getattr(sys, 'frozen', False):
     LOCAL = os.path.dirname(sys.executable)
 elif __file__:
     LOCAL = os.path.dirname(__file__)
+
+assert os.path.basename(LOCAL) == "util"
+
+LOCAL = os.path.abspath(os.path.join(LOCAL, os.pardir))
+
+LOGS_DIR = os.path.join(LOCAL, "logs")
+
+if not os.path.exists(LOGS_DIR):
+    os.mkdir(LOGS_DIR)
+
+SESSION_ID = str(int(time.time()))
+
+# DEBUG      Informational log, useful only to developers
+# INFO       Informational log, useful to users
+# WARNING    Warning of unusual events
+# ERROR      Warning that something broke
+# CRITICAL   Impending crash, application terminating event.
+LOGGER = logging.getLogger("main")
+
+LOGGER.setLevel(logging.DEBUG)
+
+_logger_format = logging.Formatter("[%(asctime)s] (%(levelname)s) %(filename)s:%(funcName)s: %(message)s")
+
+_file_handler = logging.FileHandler(os.path.join(LOGS_DIR, "debuglog_" + SESSION_ID + ".txt"))
+_file_handler.setLevel(logging.DEBUG)
+_file_handler.setFormatter(_logger_format)
+
+_stdout_handler = logging.StreamHandler(sys.stdout)
+_stdout_handler.setLevel(logging.DEBUG)
+_stdout_handler.setFormatter(_logger_format)
+
+LOGGER.addHandler(_file_handler)
+LOGGER.addHandler(_stdout_handler)
 
 # Helper class. python way of doing ++ (unlimited incrementing)
 class Count:

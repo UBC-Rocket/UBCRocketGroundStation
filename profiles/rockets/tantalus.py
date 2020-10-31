@@ -36,6 +36,6 @@ _hw_sim_ignitors = [
 
 
 tantalus = RocketProfile(
-    {"Arm": "arm", "Status": "status"}, tantalus_labels, _hw_sim_ignitors
+    "Tantalus", {"Arm": "arm", "Status": "status"}, tantalus_labels, _hw_sim_ignitors
 )
 

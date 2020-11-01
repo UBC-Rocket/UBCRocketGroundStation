@@ -1,6 +1,34 @@
 from typing import Iterable, Tuple
 from itertools import repeat
 
+# TODO is it better for each sensor to have its own class inheriting from SensorSim?
+class SensorSim:
+    """
+    Simulates all sensors on rocket.
+    """
+
+    sensor_values = {
+        0x01: (0.0, 0.0, 0.0),
+        0x02: (0.0, 0.0, 0.0, 0.0),
+        0x03: (1000.0, 25.0),
+        0x04: (15.0),
+        0x05: (12.0),
+    }
+
+    def read(self, sensor_id: int) -> tuple:
+        """
+        :brief: return values for given sensor
+        :param sensor_id: the sensor ID from which to retrieve data.
+        :return: the sensor data
+        """
+        return self.sensor_values[sensor_id]
+
+    def write(self, sensor_id: int, new_values: tuple):
+        """
+        :brief: write values for specific sensor
+        :param sensor_id: the sensor ID to write to
+        """
+        self.sensor_values[sensor_id] = new_values
 
 class IgnitorSim:
     """
@@ -50,6 +78,8 @@ class HWSim:
     def __init__(
         self, ignitors: Iterable[Tuple[int, int, int]] = tuple(), broken=False
     ):
+
+        self.sensor_sim = SensorSim()
         """
         Implementation note: Default value for ignitors needs to be an immutable iterable.
         :param ignitors: Iterable of 3-tuples containing test, read, and fire pin numbers.
@@ -86,4 +116,11 @@ class HWSim:
         if pin in self.ignitor_reads:
             return self.ignitor_reads[pin].read()
         return 0
+
+    def sensor_read(self, sensor_id: int) -> tuple:
+        """
+        :param sensor_id: the sensor ID to read from
+        :return: the sensor data
+        """
+        return self.sensor_sim.read(sensor_id)
 

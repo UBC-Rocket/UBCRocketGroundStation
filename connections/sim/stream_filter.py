@@ -1,14 +1,13 @@
 import collections
 import os
 import sys
-
-from detail import LOCAL
+from util.detail import LOGS_DIR, SESSION_ID
 
 CR = 0x0D
 LF = 0x0A
 
 
-class StreamLogger:
+class StreamFilter:
     def __init__(self, bufstream, size: int) -> None:
         """
         :param bufstream: Buffered stream like a subprocess stdout, that supports read() and peek().
@@ -16,10 +15,6 @@ class StreamLogger:
         :param size: Size of in-memory circular log buffer
         :type size: int
         """
-        try:
-            os.mkdir(os.path.join(LOCAL, ".log"))
-        except FileExistsError:
-            pass  # directory exists
 
         if sys.platform == "win32":
             filtered_stream = self._crcrlfFilter(bufstream)
@@ -30,7 +25,7 @@ class StreamLogger:
         self._logged_stream = self._read_and_log(filtered_stream)
 
     def _read_and_log(self, stream_gen):
-        self._logfilePath = os.path.join(LOCAL, ".log", "streamlog")
+        self._logfilePath = os.path.join(LOGS_DIR, "streamlog_" + SESSION_ID)
         with open(self._logfilePath, "wb") as f:
             while True:
                 c = next(stream_gen)
@@ -42,7 +37,7 @@ class StreamLogger:
     def _crcrlfFilter(self, stream):
         while True:
             c = stream.read(1)
-            if c == CR and stream.peek(1)[0] == LF:
+            if c[0] == CR and stream.peek(1)[0] == LF:
                 yield stream.read(1)  # yields the LF, skipping the CR
             else:
                 yield c

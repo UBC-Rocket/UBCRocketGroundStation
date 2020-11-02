@@ -1,5 +1,4 @@
 import os
-import sys
 import threading
 import time
 from typing import Dict, Union
@@ -7,8 +6,11 @@ from typing import Dict, Union
 import numpy as np
 
 from . import subpacket_ids
-from detail import LOCAL
+from util.detail import LOGS_DIR, SESSION_ID, LOGGER
+from util.event_stats import Event
 from .subpacket_ids import SubpacketEnum
+
+BUNDLE_ADDED_EVENT = Event('bundle_added')
 
 # nametochar : Dict[str, bytes] = { # TODO Deal with legacy data types and conversions. Delete dead code when done.
 #     "Acceleration X": b'X',
@@ -67,15 +69,12 @@ class RocketData:
 
         """
 
-        if not os.path.exists(os.path.join(LOCAL, "logs")):
-            os.mkdir(os.path.join(LOCAL, "logs"))
-
         self.lock = threading.RLock()  # acquire lock ASAP since self.lock needs to be defined when autosave starts
         self.timeset: Dict[int, Dict[str, Union[int, float]]] = {}
         self.lasttime = 0  # TODO REVIEW/CHANGE THIS, once all subpackets have their own timestamp.
         self.highest_altitude = 0
-        self.sessionName = os.path.join(LOCAL, "autosave_" + str(int(time.time())) + ".csv")
-        self.autosaveThread = threading.Thread(target=self.timer, daemon=True)
+        self.sessionName = os.path.join(LOGS_DIR, "autosave_" + SESSION_ID + ".csv")
+        self.autosaveThread = threading.Thread(target=self.timer, daemon=True, name="AutosaveThread")
         self.autosaveThread.start()
 
         #  Create Dict of lists, with ids as keys
@@ -88,10 +87,9 @@ class RocketData:
         while True:
             try:
                 self.save(self.sessionName)
-                print("Auto-Save successful.")
+                LOGGER.debug("Auto-Save successful.")
             except Exception as e:
-                print(e)
-                print("FAILED TO SAVE. Something went wrong")
+                LOGGER.exception("Exception in autosave thread") # Automatically grabs and prints exception info
             time.sleep(10)
 
     # adding a bundle of data points and trigger callbacks according to id
@@ -115,12 +113,14 @@ class RocketData:
             # write the data and call the respective callbacks
             for data_id in incoming_data.keys():
                 self.timeset[self.lasttime][data_id] = incoming_data[data_id]
-        tempvar = 1 # for debug
 
         # Notify after all data has been updated
         # Also, do so outside lock to prevent mutex contention with notification listeners
         for data_id in incoming_data.keys():
             self._notifyCallbacksOfId(data_id)
+
+        BUNDLE_ADDED_EVENT.increment()
+
 
     # TODO REMOVE this function once data types refactored
     # # In the previous version this is supposed to save very specifically formatted incoming data into RocketData

@@ -4,6 +4,8 @@ from digi.xbee.exception import TimeoutException, XBeeException
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
 
+from util.detail import LOGGER
+
 # TODO change this section with new Radio protocol comm refactoring
 COM_ID = {
     # TODO ASK Are we going to continue to send single characters according to user commands? If yes, then why not
@@ -79,4 +81,4 @@ class SendThread(QtCore.QThread):
 
             except Exception as ex:
                 self.sig_print.emit("Unexpected error while sending!")
-                print(ex)
+                LOGGER.exception("Exception in send thread") # Automatically grabs and prints exception info

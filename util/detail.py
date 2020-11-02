@@ -5,7 +5,6 @@ import sys
 import time
 import logging
 
-IS_PYINSTALLER = False
 
 # Path to executable
 if getattr(sys, 'frozen', False):
@@ -15,6 +14,7 @@ if getattr(sys, 'frozen', False):
     BUNDLED_DATA = sys._MEIPASS # Files that we bundle with the final file (e.g .ui files, images, etc.)
 elif __file__:
     # Running normally
+    IS_PYINSTALLER = False
     LOCAL = os.path.dirname(__file__)
     assert os.path.basename(LOCAL) == "util"
     LOCAL = os.path.abspath(os.path.join(LOCAL, os.pardir))

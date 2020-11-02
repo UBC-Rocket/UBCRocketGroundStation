@@ -1,6 +1,8 @@
 import sys
 import multiprocessing
 import argparse
+import matplotlib
+matplotlib.use('QT5Agg') # Ensures that the Qt5 backend is used, otherwise there might be some issues on some OSs (Mac)
 from com_window.main import comWindow
 from PyQt5 import QtWidgets
 from main_window.main import MainApp

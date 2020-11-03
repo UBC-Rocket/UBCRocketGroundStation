@@ -3,7 +3,7 @@ import multiprocessing
 import argparse
 import matplotlib
 matplotlib.use('QT5Agg') # Ensures that the Qt5 backend is used, otherwise there might be some issues on some OSs (Mac)
-from com_window.main import comWindow
+from com_window.main import ComWindow
 from PyQt5 import QtWidgets
 from main_window.main import MainApp
 from connections.debug.debug_connection_factory import DebugConnectionFactory
@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     if not args.self_test:
         # Open com_window dialog to get startup details
-        com_window = comWindow()
+        com_window = ComWindow()
         com_window.show()
         return_code = app.exec_()
         if return_code != 0 or com_window.chosen_rocket is None or com_window.chosen_connection is None:

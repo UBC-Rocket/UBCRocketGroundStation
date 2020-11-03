@@ -35,6 +35,7 @@ MAP_MARKER = Image.open(mapbox_utils.MARKER_PATH).resize((12, 12), Image.LANCZOS
 LABLES_UPDATED_EVENT = Event('lables_updated')
 MAP_UPDATED_EVENT = Event('map_updated')
 
+
 class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
     sig_send = pyqtSignal(str)
 
@@ -46,6 +47,9 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         :param rocket_profile:
         :type rocket_profile: RocketProfile
         """
+        # Prints constructor arguments, leave at top of constructor
+        LOGGER.debug(f"Starting MainApp with {locals()}")
+
         self.connection = connection
         self.rocket_profile = rocket_profile
         self.rocket_data = RocketData()
@@ -125,9 +129,12 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
 
         def gen_send_command(cmd: str) -> Callable[[], None]:
             """Creates a function that sends the given command to the console."""
+
             def send() -> None:
                 self.sendCommand(cmd)
+
             return send
+
         # Connecting to a more traditional lambda expression would not work in this for loop. It would cause all of the
         # buttons to map to the last command in the list, hence the workaround with the higher order function.
         for button, command in self.rocket_profile.buttons.items():

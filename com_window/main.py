@@ -7,8 +7,7 @@ from PyQt5 import QtCore, QtWidgets, uic
 from connections.debug.debug_connection_factory import DebugConnectionFactory
 from connections.serial.serial_connection_factory import SerialConnectionFactory
 from connections.sim.sim_connection_factory import SimConnectionFactory
-from util.detail import LOCAL
-from main_window.main import start
+from util.detail import BUNDLED_DATA
 from profiles.rockets.co_pilot import co_pilot
 from profiles.rockets.tantalus import tantalus
 
@@ -18,7 +17,7 @@ if hasattr(QtCore.Qt, "AA_EnableHighDpiScaling"):
 if hasattr(QtCore.Qt, "AA_UseHighDpiPixmaps"):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
 
-qtCreatorFile = os.path.join(LOCAL, "qt_files", "com_window.ui")
+qtCreatorFile = os.path.join(BUNDLED_DATA, "qt_files", "com_window.ui")
 
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
@@ -40,6 +39,10 @@ class comWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "Tantalus": tantalus,
             "Co Pilot": co_pilot,
         }
+
+        self.chosen_connection = None
+        self.chosen_rocket = None
+
         self.setupUi(self)
         self.MySetup()
 
@@ -61,13 +64,12 @@ class comWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         """
         factory = self.ConnectionFactories[self.typeBox.currentText()]
-        rocket = self.RocketProfiles[self.rocketBox.currentText()]
-        connection = factory.construct(
+        self.chosen_rocket = self.RocketProfiles[self.rocketBox.currentText()]
+        self.chosen_connection = factory.construct(
             comPort=self.comBox.currentText(),
             baudRate=int(self.baudBox.currentText()),
-            rocket=rocket,
+            rocket=self.chosen_rocket,
         )
-        start(connection, rocket)
         self.close()
 
     def connectionChanged(self) -> None:

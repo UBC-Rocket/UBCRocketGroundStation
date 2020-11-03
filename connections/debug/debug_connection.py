@@ -21,7 +21,7 @@ class DebugConnection(Connection):
         self.callback = None
         self.lock = threading.RLock()  # Protects callback variable and any other "state" variables
         if generate_radio_packets:
-            self.connectionThread = threading.Thread(target=self._run, daemon=True)
+            self.connectionThread = threading.Thread(target=self._run, daemon=True, name="DebugConnectionThread")
             self.connectionThread.start()
 
     # Thread loop that creates fake data at constant interval and returns it via callback

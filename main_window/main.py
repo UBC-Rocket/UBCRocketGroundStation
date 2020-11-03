@@ -9,7 +9,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import pyqtSignal
 
 from connections.connection import Connection
-from util.detail import LOCAL, LOGS_DIR, SESSION_ID, LOGGER
+from util.detail import LOCAL, BUNDLED_DATA, LOGS_DIR, SESSION_ID, LOGGER
 from util.event_stats import Event
 from profiles.rocket_profile import RocketProfile
 
@@ -25,7 +25,7 @@ if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
 if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
 
-qtCreatorFile = os.path.join(LOCAL, "qt_files", "main.ui")
+qtCreatorFile = os.path.join(BUNDLED_DATA, "qt_files", "main.ui")
 
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
@@ -33,6 +33,7 @@ Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 MAP_MARKER = Image.open(mapbox_utils.MARKER_PATH).resize((12, 12), Image.LANCZOS)
 
 LABLES_UPDATED_EVENT = Event('lables_updated')
+MAP_UPDATED_EVENT = Event('map_updated')
 
 class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
     sig_send = pyqtSignal(str)
@@ -257,6 +258,8 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.plotWidget.canvas.draw()
 
+        MAP_UPDATED_EVENT.increment()
+
     # Called whenever the map plot is resized, also is called once at the start
     def mapResizedEvent(self, event) -> None:
         """
@@ -265,13 +268,3 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         :type event:
         """
         self.MappingThread.setDesiredMapSize(event.width, event.height)
-
-
-window = None
-
-
-def start(*args, **kwargs):
-    global window
-
-    window = MainApp(*args, **kwargs)
-    window.show()

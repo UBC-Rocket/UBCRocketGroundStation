@@ -46,7 +46,7 @@ def test_bulk_sensor_packet(qtbot):
     num = BUNDLE_ADDED_EVENT.wait(snapshot)
 
     def get_val(val):
-        return main_window.data.lastvalue(val.value)
+        return main_window.rocket_data.lastvalue(val.value)
 
     vals_to_get = (
         SubpacketEnum.CALCULATED_ALTITUDE,
@@ -85,7 +85,7 @@ def test_message_packet(qtbot, caplog):
     num = BUNDLE_ADDED_EVENT.wait(snapshot)
 
     assert num == 1
-    assert main_window.data.lastvalue(SubpacketEnum.MESSAGE.value) == "test_message"
+    assert main_window.rocket_data.lastvalue(SubpacketEnum.MESSAGE.value) == "test_message"
     assert "test_message" in caplog.text
 
 
@@ -102,8 +102,8 @@ def test_config_packet(qtbot):
     num = BUNDLE_ADDED_EVENT.wait(snapshot)
 
     assert num == 1
-    assert main_window.data.lastvalue(IS_SIM) == True
-    assert main_window.data.lastvalue(ROCKET_TYPE) == 2
+    assert main_window.rocket_data.lastvalue(IS_SIM) == True
+    assert main_window.rocket_data.lastvalue(ROCKET_TYPE) == 2
 
 
 def test_status_ping_packet(qtbot):
@@ -122,10 +122,10 @@ def test_status_ping_packet(qtbot):
 
     assert num == 1
     assert (
-        main_window.data.lastvalue(SubpacketEnum.STATUS_PING.value)
+        main_window.rocket_data.lastvalue(SubpacketEnum.STATUS_PING.value)
         == NONCRITICAL_FAILURE
     )
     for sensor in SENSOR_TYPES:
-        assert main_window.data.lastvalue(sensor) == 1
+        assert main_window.rocket_data.lastvalue(sensor) == 1
     for other in OTHER_STATUS_TYPES:
-        assert main_window.data.lastvalue(other) == 1
+        assert main_window.rocket_data.lastvalue(other) == 1

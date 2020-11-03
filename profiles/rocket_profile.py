@@ -9,15 +9,9 @@ if TYPE_CHECKING:
 
 class RocketProfile:
     def __init__(
-            self, rocket_name:str, buttons: Dict[str, str], labels: List[Label], hw_sim_dat: HWSim = None
+            self, rocket_name:str, buttons: Dict[str, str], labels: List[Label], hw_sim: HWSim = None
     ):
         self.rocket_name = rocket_name
         self.buttons = buttons
         self.labels = labels
-        self.hw_sim_dat = hw_sim_dat
-
-    def update_labels(self, main_window: "MainApp") -> None:
-        for label in self.labels:
-            getattr(main_window, label.name + "Label").setText(
-                label.update(main_window)
-            )
+        self.hw_sim = hw_sim

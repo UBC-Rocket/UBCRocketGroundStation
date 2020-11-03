@@ -38,17 +38,17 @@ MAP_UPDATED_EVENT = Event('map_updated')
 class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
     sig_send = pyqtSignal(str)
 
-    def __init__(self, connection: Connection, rocket: RocketProfile) -> None:
+    def __init__(self, connection: Connection, rocket_profile: RocketProfile) -> None:
         """
 
         :param connection:
         :type connection: Connection
-        :param rocket:
-        :type rocket: RocketProfile
+        :param rocket_profile:
+        :type rocket_profile: RocketProfile
         """
         self.connection = connection
-        self.rocket = rocket
-        self.data = RocketData()
+        self.rocket_profile = rocket_profile
+        self.rocket_data = RocketData()
         self.map = map_data.MapData()
 
         QtWidgets.QMainWindow.__init__(self)
@@ -73,7 +73,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.printToConsole("Starting Connection")
 
         # Init and connection of ReadThread
-        self.ReadThread = ReadThread(self.connection, self.data)
+        self.ReadThread = ReadThread(self.connection, self.rocket_data)
         self.ReadThread.sig_received.connect(self.receiveData)
         self.ReadThread.sig_print.connect(self.printToConsole)
         self.ReadThread.start()
@@ -85,7 +85,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.SendThread.start()
 
         # Init and connection of MappingThread
-        self.MappingThread = MappingThread(self.connection, self.map, self.data)
+        self.MappingThread = MappingThread(self.connection, self.map, self.rocket_data)
         self.MappingThread.sig_received.connect(self.receiveMap)
         self.MappingThread.sig_print.connect(self.printToConsole)
         self.MappingThread.start()
@@ -93,13 +93,13 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
     def setup_buttons(self):
         """Create all of the buttons for the loaded rocket profile."""
 
-        grid_width = math.ceil(math.sqrt(len(self.rocket.buttons)))
+        grid_width = math.ceil(math.sqrt(len(self.rocket_profile.buttons)))
 
         # Trying to replicate PyQt's generated code from a .ui file as closely as possible. This is why setattr is
         # being used to keep all of the buttons as named attributes of MainApp and not elements of a list.
         row = 0
         col = 0
-        for button in self.rocket.buttons.keys():
+        for button in self.rocket_profile.buttons.keys():
             qt_button = QtWidgets.QPushButton(self.centralwidget)
             setattr(self, button + "Button", qt_button)
             sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
@@ -120,7 +120,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
                 row += 1
         # A .py file created from a .ui file will have the labels all defined at the end, for some reason. Two for loops
         # are being used to be consistent with the PyQt5 conventions.
-        for button in self.rocket.buttons.keys():
+        for button in self.rocket_profile.buttons.keys():
             getattr(self, button + "Button").setText(QtCore.QCoreApplication.translate('MainWindow', button))
 
         def gen_send_command(cmd: str) -> Callable[[], None]:
@@ -130,7 +130,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
             return send
         # Connecting to a more traditional lambda expression would not work in this for loop. It would cause all of the
         # buttons to map to the last command in the list, hence the workaround with the higher order function.
-        for button, command in self.rocket.buttons.items():
+        for button, command in self.rocket_profile.buttons.items():
             getattr(self, button + "Button").clicked.connect(gen_send_command(command))
 
     def setup_labels(self):
@@ -139,7 +139,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         # Trying to replicate PyQt's generated code from a .ui file as closely as possible. This is why setattr is
         # being used to keep all of the buttons as named labels of MainApp and not elements of a list.
         row = 0
-        for label in self.rocket.labels:
+        for label in self.rocket_profile.labels:
             name = label.name
             qt_text = QtWidgets.QLabel(self.centralwidget)
             setattr(self, name + "Text", qt_text)
@@ -158,7 +158,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
             row += 1
         # A .py file created from a .ui file will have the labels all defined at the end, for some reason. Two for loops
         # are being used to be consistent with the PyQt5 conventions.
-        for label in self.rocket.labels:
+        for label in self.rocket_profile.labels:
             name = label.name
             getattr(self, name + "Text").setText(QtCore.QCoreApplication.translate("MainWindow", label.display_name))
             getattr(self, name + "Label").setText(QtCore.QCoreApplication.translate("MainWindow", "0"))
@@ -171,7 +171,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         self.connection.shutDown()
         LOGGER.info("Saving...")
-        self.data.save(os.path.join(LOGS_DIR, "finalsave_" + SESSION_ID + ".csv"))
+        self.rocket_data.save(os.path.join(LOGS_DIR, "finalsave_" + SESSION_ID + ".csv"))
         LOGGER.info("Saved!")
 
     # Updates the UI when new data is available for display
@@ -182,7 +182,11 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         :rtype:
         """
 
-        self.rocket.update_labels(self)
+        for label in self.rocket_profile.labels:
+            getattr(self, label.name + "Label").setText(
+                label.update(self.rocket_data)
+            )
+
         LABLES_UPDATED_EVENT.increment()
 
     def sendButtonPressed(self) -> None:
@@ -222,7 +226,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
             else:
                 name = result[0] + result[1]
 
-            self.data.save(name)
+            self.rocket_data.save(name)
 
     # Updates the UI when a new map is available for display
     def receiveMap(self) -> None:

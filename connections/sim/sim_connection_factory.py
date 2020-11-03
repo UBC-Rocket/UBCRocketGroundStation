@@ -6,7 +6,6 @@ from util.detail import LOCAL
 
 from ..connection_factory import ConnectionFactory
 from .sim_connection import SimConnection
-from .hw_sim import HWSim
 from pathlib import Path
 
 
@@ -51,6 +50,11 @@ class SimConnectionFactory(ConnectionFactory):
         else:
             raise Exception(f"No build files found for rocket named {rocket.rocket_name}")
 
+        hw_sim = rocket.construct_hw_sim()
+
+        if not hw_sim:
+            raise Exception(f"No HW Sim defined for rocket named {rocket.rocket_name}")
+
         return SimConnection(
-            path, executableName, HWSim(rocket.hw_sim_dat)
+            path, executableName, hw_sim
         )

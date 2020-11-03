@@ -7,7 +7,7 @@ from com_window.main import comWindow
 from PyQt5 import QtWidgets
 from main_window.main import MainApp
 from connections.debug.debug_connection_factory import DebugConnectionFactory
-from profiles.rockets.tantalus import tantalus
+from profiles.rockets.tantalus import TantalusProfile
 from util.self_test import SelfTest
 
 if __name__ == "__main__":
@@ -36,7 +36,7 @@ if __name__ == "__main__":
         connection = com_window.chosen_connection
 
     else:
-        rocket = tantalus
+        rocket = TantalusProfile()
         connection = DebugConnectionFactory().construct(rocket=rocket)
         test = SelfTest()
         test.start()

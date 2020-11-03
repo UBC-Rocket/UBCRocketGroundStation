@@ -8,8 +8,8 @@ from connections.debug.debug_connection_factory import DebugConnectionFactory
 from connections.serial.serial_connection_factory import SerialConnectionFactory
 from connections.sim.sim_connection_factory import SimConnectionFactory
 from util.detail import BUNDLED_DATA
-from profiles.rockets.co_pilot import co_pilot
-from profiles.rockets.tantalus import tantalus
+from profiles.rockets.co_pilot import CoPilotProfile
+from profiles.rockets.tantalus import TantalusProfile
 
 if hasattr(QtCore.Qt, "AA_EnableHighDpiScaling"):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
@@ -36,8 +36,8 @@ class comWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "SIM": SimConnectionFactory(),
         }
         self.RocketProfiles = {
-            "Tantalus": tantalus,
-            "Co Pilot": co_pilot,
+            "Tantalus": TantalusProfile(),
+            "Co Pilot": CoPilotProfile(),
         }
 
         self.chosen_connection = None

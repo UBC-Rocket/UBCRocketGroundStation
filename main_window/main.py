@@ -1,6 +1,5 @@
 import math
 import os
-import time
 from typing import Callable
 
 import PyQt5
@@ -10,7 +9,8 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import pyqtSignal
 
 from connections.connection import Connection
-from detail import LOCAL
+from util.detail import LOCAL, LOGS_DIR, SESSION_ID, LOGGER
+from util.event_stats import Event
 from profiles.rocket_profile import RocketProfile
 
 from .mapping import map_data, mapbox_utils
@@ -32,6 +32,7 @@ Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 # The marker image, used to show where the rocket is on the map UI
 MAP_MARKER = Image.open(mapbox_utils.MARKER_PATH).resize((12, 12), Image.LANCZOS)
 
+LABLES_UPDATED_EVENT = Event('lables_updated')
 
 class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
     sig_send = pyqtSignal(str)
@@ -168,9 +169,9 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         :type event:
         """
         self.connection.shutDown()
-        print("Saving...")
-        self.data.save(os.path.join(LOCAL, "logs", "finalsave_" + str(int(time.time())) + ".csv"))
-        print("Saved!")
+        LOGGER.info("Saving...")
+        self.data.save(os.path.join(LOGS_DIR, "finalsave_" + SESSION_ID + ".csv"))
+        LOGGER.info("Saved!")
 
     # Updates the UI when new data is available for display
     def receiveData(self) -> None:
@@ -181,6 +182,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         """
 
         self.rocket.update_labels(self)
+        LABLES_UPDATED_EVENT.increment()
 
     def sendButtonPressed(self) -> None:
         """

@@ -6,8 +6,9 @@ from enum import Enum
 
 from .hw_sim import HWSim
 from ..connection import Connection
-from .stream_logger import StreamLogger
+from .stream_filter import StreamFilter
 from .xbee_module_sim import XBeeModuleSim
+from util.detail import LOGGER
 
 class SimRxId(Enum):
     CONFIG = 0x01
@@ -24,7 +25,7 @@ class SimTxId(Enum):
     SENSOR_READ = 0x73
 
 
-LOG_HISTORY_SIZE = 100
+LOG_HISTORY_SIZE = 500
 
 
 class SimConnection(Connection):
@@ -40,7 +41,7 @@ class SimConnection(Connection):
         self.rocket = sp.Popen(
             self.executablePath, cwd=self.firmwareDir, stdin=sp.PIPE, stdout=sp.PIPE
         )
-        self.stdout = StreamLogger(self.rocket.stdout, LOG_HISTORY_SIZE)
+        self.stdout = StreamFilter(self.rocket.stdout, LOG_HISTORY_SIZE)
         self._rocket_handshake()
 
         # Gets endianess of ints and floats
@@ -104,7 +105,7 @@ class SimConnection(Connection):
         self.bigEndianInts = data[0] == 0x04
         self.bigEndianFloats = data[4] == 0xC0
 
-        print(
+        LOGGER.info(
             "SIM: Big Endian Ints - %s, Big Endian Floats - %s"
             % (self.bigEndianInts, self.bigEndianFloats)
         )
@@ -115,7 +116,7 @@ class SimConnection(Connection):
         data = self.stdout.read(length)
 
         songType = int(data[0])
-        print("SIM: Bell rang with song type %s" % songType)
+        LOGGER.info("SIM: Bell rang with song type %s" % songType)
 
     def _handleDigitalPinWrite(self):
         length = self._getLength()
@@ -123,7 +124,7 @@ class SimConnection(Connection):
         pin, value = self.stdout.read(2)
 
         self._hw_sim.digital_write(pin, value)
-        print("SIM: Pin %s set to %s" % (pin, value))
+        LOGGER.info("SIM: Pin %s set to %s" % (pin, value))
 
     def _handleRadio(self):
         length = self._getLength()
@@ -158,14 +159,14 @@ class SimConnection(Connection):
     def _run(self):
         while True:
             try:
-                id = self.stdout.read(1)[0]  # Returns 0 if process
+                id = self.stdout.read(1)[0]  # Returns 0 if process was killed
 
                 if id not in SimConnection.packetHandlers.keys():
-                    print("SIM protocol violation!!! Shutting down.")
+                    LOGGER.error("SIM protocol violation!!! Shutting down.")
                     for b in self.stdout.getHistory():
-                        print(hex(b))
-                    print("^^^^ violation.")
-                    continue
+                        LOGGER.error(hex(b[0]))
+                    LOGGER.error("^^^^ violation.")
+                    return
 
                 # Call packet handler
                 SimConnection.packetHandlers[id](self)

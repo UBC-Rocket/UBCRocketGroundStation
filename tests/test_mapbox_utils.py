@@ -4,7 +4,7 @@ import numpy
 import pytest
 from matplotlib import pyplot
 
-from detail import LOCAL
+from util.detail import LOCAL
 from main_window.mapping import mapbox_utils
 
 
@@ -149,10 +149,14 @@ class TestTileGrid:
             ),
             "jpeg",  # Needed to make sure MPL doesn't use Pillow and return decimals.
         )
+        
         ubc_tile_grid.downloadArrayImages()
         stitched_map = ubc_tile_grid.genStitchedMap()
 
-        numpy.testing.assert_array_equal(hennings_image, stitched_map)
+        # assert_allclose because linux vs. windows can decode the images slightly differently
+        # https://github.com/python-pillow/Pillow/issues/3833
+        # https://github.com/python-pillow/Pillow/issues/4686
+        numpy.testing.assert_allclose(hennings_image[:,:,:3], stitched_map[:,:,:3], rtol=0, atol=20) # Some systems return alpha channels for one and not the other, needs to be removed before comparison
 
 
 def test_point_to_tile(ubc_point_1):

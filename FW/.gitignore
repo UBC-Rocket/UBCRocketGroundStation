@@ -1,2 +1,5 @@
-program
 # Put the firmware executable here, naming it program.
+program
+*.exe
+*.dll
+FW_SIM_log

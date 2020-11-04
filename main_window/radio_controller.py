@@ -5,7 +5,7 @@ from io import BytesIO
 from typing import Any, Callable, Dict, List
 
 from . import subpacket_ids
-from detail import Count
+from util.detail import LOGGER, Count
 from .subpacket_ids import SubpacketEnum
 
 # Essentially a mini-class, to structure the header data. Doesn't merit its own class due to limited use,
@@ -13,6 +13,24 @@ from .subpacket_ids import SubpacketEnum
 Header = collections.namedtuple('Header', ['subpacket_id', 'timestamp', 'header_length', 'data_length', 'total_length'])
 
 # CONSTANTS
+# TODO Extract
+ROCKET_TYPE = 'ROCKET_TYPE'
+IS_SIM = 'IS_SIM'
+# TODO extract and cleanup https://trello.com/c/uFHtaN51/
+NOMINAL = 'NOMINAL'
+NONCRITICAL_FAILURE = 'NONCRITICAL_FAILURE'
+CRITICAL_FAILURE = 'CRITICAL_FAILURE'
+OVERALL_STATUS = 'OVERALL_STATUS'
+BAROMETER = 'BAROMETER'
+GPS = 'GPS'
+ACCELEROMETER = 'ACCELEROMETER'
+TEMPERATURE = 'TEMPERATURE'
+IMU = 'IMU'
+SENSOR_TYPES = [OVERALL_STATUS, BAROMETER, GPS, ACCELEROMETER, IMU, TEMPERATURE]
+DROGUE_IGNITER_CONTINUITY = 'DROGUE_IGNITER_CONTINUITY'
+MAIN_IGNITER_CONTINUITY = 'MAIN_IGNITER_CONTINUITY'
+FILE_OPEN_SUCCESS = 'FILE_OPEN_SUCCESS'
+OTHER_STATUS_TYPES = [DROGUE_IGNITER_CONTINUITY, MAIN_IGNITER_CONTINUITY, FILE_OPEN_SUCCESS]
 
 # Map subpacket id to DATA length (excluding header) in bytes. Only includes types with CONSTANT lengths.
 PACKET_ID_TO_CONST_LENGTH: Dict[int, int] = {
@@ -61,7 +79,7 @@ class RadioController:
         try:
             parsed_data: Dict[Any, Any] = self.parse_data(header.subpacket_id, data_unit, header.data_length)
         except Exception as e:
-            print(e)
+            LOGGER.exception("Error parsing data") # Automatically grabs and prints exception info
             raise e
         # Add timestamp from header
         parsed_data[SubpacketEnum.TIME.value] = header.timestamp
@@ -86,7 +104,7 @@ class RadioController:
     # ASSUMES that length values represent data lengths, including headers
     def header(self, byte_list: List) -> Header:
         """
-\
+
         :param byte_list:
         :type byte_list:
         :return:
@@ -132,21 +150,6 @@ class RadioController:
         """
         sensor_bit_field_length = 16
         other_bit_field_length = 16
-        # TODO extract and cleanup https://trello.com/c/uFHtaN51/
-        NOMINAL = 'NOMINAL'
-        NONCRITICAL_FAILURE = 'NONCRITICAL_FAILURE'
-        CRITICAL_FAILURE = 'CRITICAL_FAILURE'
-        OVERALL_STATUS = 'OVERALL_STATUS'
-        BAROMETER = 'BAROMETER'
-        GPS = 'GPS'
-        ACCELEROMETER = 'ACCELEROMETER'
-        TEMPERATURE = 'TEMPERATURE'
-        IMU = 'IMU'
-        SENSOR_TYPES = [OVERALL_STATUS, BAROMETER, GPS, ACCELEROMETER, IMU, TEMPERATURE]
-        DROGUE_IGNITER_CONTINUITY = 'DROGUE_IGNITER_CONTINUITY'
-        MAIN_IGNITER_CONTINUITY = 'MAIN_IGNITER_CONTINUITY'
-        FILE_OPEN_SUCCESS = 'FILE_OPEN_SUCCESS'
-        OTHER_STATUS_TYPES = [DROGUE_IGNITER_CONTINUITY, MAIN_IGNITER_CONTINUITY, FILE_OPEN_SUCCESS]
 
         data: Dict = {}
         curr_byte = Count(0, 1)
@@ -192,7 +195,7 @@ class RadioController:
         byte_data = bytearray(byte_list)
         data[SubpacketEnum.MESSAGE.value] = byte_data.decode('ascii')
         # Do something with data TODO Temporary until: saved to RocketData, logged, or displayed
-        print("Incoming message: ", data[SubpacketEnum.MESSAGE.value])
+        LOGGER.info("Incoming message: " + str(data[SubpacketEnum.MESSAGE.value]))
         return data
 
     def event(self, byte_list, **kwargs):
@@ -219,8 +222,10 @@ class RadioController:
         :return:
         :rtype:
         """
+
         data = {}
-        data[SubpacketEnum.CONFIG.value] = byte_list[0]
+        data[IS_SIM] = byte_list[0]
+        data[ROCKET_TYPE] = byte_list[1] # TODO Extract
         return data
 
     def single_sensor(self, byte_list, **kwargs):

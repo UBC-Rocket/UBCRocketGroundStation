@@ -92,13 +92,10 @@ class HWSim:
         self, ignitors: Iterable[Tuple[int, int, int]] = tuple(), broken=False
     ):
 
-        self.sensors = {}
-        
-        self.barometer = SensorSim(SensorIDs.BAROMETER, (1000, 25))
-        self.gps = SensorSim(SensorIDs.GPS, (12.6, 13.2, 175))
-
-        self.sensors[self.barometer.sensor_id] = self.barometer
-        self.sensors[self.gps.sensor_id] = self.gps
+        self.sensors = {
+            SensorIDs.BAROMETER.value[0]: SensorSim(SensorIDs.BAROMETER, (1000, 25)),
+            SensorIDs.GPS.value[0]: SensorSim(SensorIDs.GPS, (12.6, 13.2, 175))
+        }
 
         
         """

@@ -9,7 +9,6 @@ from ..connection import Connection
 from .stream_logger import StreamLogger
 from .xbee_module_sim import XBeeModuleSim
 
-
 class SimRxId(Enum):
     CONFIG = 0x01
     BUZZER = 0x07

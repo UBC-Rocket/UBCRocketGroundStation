@@ -1,34 +1,47 @@
 from typing import Iterable, Tuple
 from itertools import repeat
+from enum import Enum
 
-# TODO is it better for each sensor to have its own class inheriting from SensorSim?
+class SensorIDs(Enum):
+    """
+    Sensor IDs - Sensor ID specifications
+    format (sensor id, number of data floats)
+    """
+    GPS = 0x00, 3
+    IMU = 0x01, 4
+    ACCELEROMETER = 0x02, 3
+    BAROMETER = 0x03, 2
+    TEMPERATURE = 0x04, 1
+    THERMOCOUPLE = 0x05, 1
+
 class SensorSim:
     """
     Simulates all sensors on rocket.
     """
 
-    sensor_values = {
-        0x01: (0.0, 0.0, 0.0),
-        0x02: (0.0, 0.0, 0.0, 0.0),
-        0x03: (1000.0, 25.0),
-        0x04: (15.0),
-        0x05: (12.0),
-    }
+    def __init__(self, sensor: SensorIDs, initial_values: tuple) -> None:
+        self.sensor_id = sensor.value[0]
+        self.num_floats = sensor.value[1]
+        if len(initial_values) != self.num_floats:
+            raise Exception("Given values do not correspond to required number of floats.")
+        self._sensor_values = initial_values
 
-    def read(self, sensor_id: int) -> tuple:
+    def read(self) -> tuple:
         """
-        :brief: return values for given sensor
-        :param sensor_id: the sensor ID from which to retrieve data.
+        :brief: return data for sensor
         :return: the sensor data
         """
-        return self.sensor_values[sensor_id]
+        return self._sensor_values
 
-    def write(self, sensor_id: int, new_values: tuple):
+    def write(self, new_values: tuple):
         """
         :brief: write values for specific sensor
-        :param sensor_id: the sensor ID to write to
+        :param new_values: new sensor data. Much match the number of
+        floats required.
         """
-        self.sensor_values[sensor_id] = new_values
+        if len(new_values) != self.num_floats:
+            raise Exception("Given values do not correspond to required number of floats.")
+        self._sensor_values = new_values
 
 class IgnitorSim:
     """
@@ -79,7 +92,15 @@ class HWSim:
         self, ignitors: Iterable[Tuple[int, int, int]] = tuple(), broken=False
     ):
 
-        self.sensor_sim = SensorSim()
+        self.sensors = {}
+        
+        self.barometer = SensorSim(SensorIDs.BAROMETER, (1000, 25))
+        self.gps = SensorSim(SensorIDs.GPS, (12.6, 13.2, 175))
+
+        self.sensors[self.barometer.sensor_id] = self.barometer
+        self.sensors[self.gps.sensor_id] = self.gps
+
+        
         """
         Implementation note: Default value for ignitors needs to be an immutable iterable.
         :param ignitors: Iterable of 3-tuples containing test, read, and fire pin numbers.
@@ -122,5 +143,5 @@ class HWSim:
         :param sensor_id: the sensor ID to read from
         :return: the sensor data
         """
-        return self.sensor_sim.read(sensor_id)
+        return self.sensors[sensor_id].read()
 

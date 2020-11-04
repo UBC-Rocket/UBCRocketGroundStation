@@ -1,6 +1,6 @@
 from connections.debug.debug_connection import DebugConnection, ARMED_EVENT
 from main_window.main import MainApp, LABLES_UPDATED_EVENT
-from profiles.rockets.co_pilot import co_pilot
+from profiles.rockets.co_pilot import CoPilotProfile
 from connections.debug import radio_packets
 from main_window.rocket_data import BUNDLE_ADDED_EVENT
 from main_window.subpacket_ids import SubpacketEnum
@@ -17,7 +17,7 @@ from util.event_stats import get_event_stats_snapshot
 
 def test_arm_signal(qtbot):
     connection = DebugConnection(generate_radio_packets=False)
-    main_window = MainApp(connection, co_pilot)
+    main_window = MainApp(connection, CoPilotProfile())
 
     snapshot = get_event_stats_snapshot()
 
@@ -30,7 +30,7 @@ def test_arm_signal(qtbot):
 
 def test_bulk_sensor_packet(qtbot):
     connection = DebugConnection(generate_radio_packets=False)
-    main_window = MainApp(connection, co_pilot)
+    main_window = MainApp(connection, CoPilotProfile())
 
     sensor_inputs = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
 
@@ -74,7 +74,7 @@ def test_bulk_sensor_packet(qtbot):
 
 def test_message_packet(qtbot, caplog):
     connection = DebugConnection(generate_radio_packets=False)
-    main_window = MainApp(connection, co_pilot)
+    main_window = MainApp(connection, CoPilotProfile())
 
     packet = radio_packets.message(0, "test_message")
 
@@ -91,7 +91,7 @@ def test_message_packet(qtbot, caplog):
 
 def test_config_packet(qtbot):
     connection = DebugConnection(generate_radio_packets=False)
-    main_window = MainApp(connection, co_pilot)
+    main_window = MainApp(connection, CoPilotProfile())
 
     packet = radio_packets.config(0, True, 2)
 
@@ -108,7 +108,7 @@ def test_config_packet(qtbot):
 
 def test_status_ping_packet(qtbot):
     connection = DebugConnection(generate_radio_packets=False)
-    main_window = MainApp(connection, co_pilot)
+    main_window = MainApp(connection, CoPilotProfile())
 
     packet = radio_packets.status_ping(
         0, radio_packets.StatusType.CRITICAL_FAILURE, 0xFF, 0xFF, 0xFF, 0xFF

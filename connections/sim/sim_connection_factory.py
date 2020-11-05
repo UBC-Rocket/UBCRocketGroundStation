@@ -33,8 +33,11 @@ class SimConnectionFactory(ConnectionFactory):
 
         # Check FW (child) dir and FLARE (neighbour) dir for rocket build files
         # If multiple build files found throw exception
-        neighbourBuildFiles = [s for s in os.listdir(FLARE_PATH) if rocket.rocket_name.lower() in s.lower()]
-        neighbourBuildFileExists = bool(neighbourBuildFiles)
+        if os.path.exists(FLARE_PATH):
+            neighbourBuildFiles = [s for s in os.listdir(FLARE_PATH) if rocket.rocket_name.lower() in s.lower()]
+            neighbourBuildFileExists = bool(neighbourBuildFiles)
+        else:
+            neighbourBuildFileExists = False
 
         childBuildFileExists = LOCAL_NAME in os.listdir(LOCAL_PATH)
 

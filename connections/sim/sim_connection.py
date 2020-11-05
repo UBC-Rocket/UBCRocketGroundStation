@@ -4,11 +4,12 @@ import threading
 import struct
 from enum import Enum
 
-from .hw_sim import HWSim
+from .hw_sim import SensorType
 from ..connection import Connection
 from .stream_filter import StreamFilter
 from .xbee_module_sim import XBeeModuleSim
 from util.detail import LOGGER
+
 
 class SimRxId(Enum):
     CONFIG = 0x01
@@ -26,6 +27,15 @@ class SimTxId(Enum):
 
 
 LOG_HISTORY_SIZE = 500
+
+ID_TO_SENSOR = {
+    0x00: SensorType.GPS,
+    0x01: SensorType.IMU,
+    0x02: SensorType.ACCELEROMETER,
+    0x03: SensorType.BAROMETER,
+    0x04: SensorType.TEMPERATURE,
+    0x05: SensorType.THERMOCOUPLE
+}
 
 
 class SimConnection(Connection):
@@ -141,10 +151,10 @@ class SimConnection(Connection):
     def _handleSensorRead(self):
         length = self._getLength()
         assert length == 1
-        sensor = self.stdout.read(length)[0]
-        sensor_data = self._hw_sim.sensor_read(sensor)
+        sensor_id = self.stdout.read(length)[0]
+        sensor_data = self._hw_sim.sensor_read(ID_TO_SENSOR[sensor_id])
         endianness = ">" if self.bigEndianFloats else "<"
-        result = bytearray(struct.pack(f"{endianness}{len(sensor_data)}f", *sensor_data))
+        result = struct.pack(f"{endianness}{len(sensor_data)}f", *sensor_data)
         self._send_sim_packet(SimTxId.SENSOR_READ.value, result)
 
     packetHandlers = {

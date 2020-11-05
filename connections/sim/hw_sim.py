@@ -1,49 +1,79 @@
-from typing import Iterable, Tuple
-from itertools import repeat
-from enum import Enum
+from typing import Iterable
+from enum import Enum, auto
+from abc import ABC, abstractmethod
+from util.detail import LOGGER
 
-class SensorIDs(Enum):
-    """
-    Sensor IDs - Sensor ID specifications
-    format (sensor id, number of data floats)
-    """
-    GPS = 0x00, 3
-    IMU = 0x01, 4
-    ACCELEROMETER = 0x02, 3
-    BAROMETER = 0x03, 2
-    TEMPERATURE = 0x04, 1
-    THERMOCOUPLE = 0x05, 1
 
-class SensorSim:
+class SensorType(Enum):
+    GPS = auto()
+    IMU = auto()
+    ACCELEROMETER = auto()
+    BAROMETER = auto()
+    TEMPERATURE = auto()
+    THERMOCOUPLE = auto()
+
+
+REQUIRED_SENSOR_FLOATS = {
+    SensorType.GPS: 3,
+    SensorType.IMU: 4,
+    SensorType.ACCELEROMETER: 3,
+    SensorType.BAROMETER: 2,
+    SensorType.TEMPERATURE: 1,
+    SensorType.THERMOCOUPLE: 1
+}
+
+class IgnitorType(Enum):
+    MAIN = auto()
+    DROGUE = auto()
+
+class Sensor(ABC):
+
+    @abstractmethod
+    def read(self) -> tuple:
+        # TODO: Ideally we should try to further decouple HW sim from the SIM protocol by finding a way to make the
+        #  return values order invariant.
+        pass
+
+    @abstractmethod
+    def get_type(self) -> SensorType:
+        pass
+
+
+class DummySensor(Sensor):
     """
-    Simulates all sensors on rocket.
+    Simulates a generic sensor on rocket.
     """
 
-    def __init__(self, sensor: SensorIDs, initial_values: tuple) -> None:
-        self.sensor_id = sensor.value[0]
-        self.num_floats = sensor.value[1]
-        if len(initial_values) != self.num_floats:
-            raise Exception("Given values do not correspond to required number of floats.")
+    def __init__(self, sensor_type: SensorType, initial_values: tuple) -> None:
+        self.sensor_type = sensor_type
         self._sensor_values = initial_values
+
+        if len(initial_values) != REQUIRED_SENSOR_FLOATS[self.sensor_type]:
+            raise Exception("Given values do not correspond to required number of floats.")
 
     def read(self) -> tuple:
         """
         :brief: return data for sensor
         :return: the sensor data
         """
+
         return self._sensor_values
 
-    def write(self, new_values: tuple):
+    def set_value(self, new_values: tuple):
         """
-        :brief: write values for specific sensor
-        :param new_values: new sensor data. Much match the number of
-        floats required.
+        :brief: set the values for sensor
+        :param new_values: new sensor data. Must match the number of floats required.
         """
-        if len(new_values) != self.num_floats:
+
+        if len(new_values) != REQUIRED_SENSOR_FLOATS[self.sensor_type]:
             raise Exception("Given values do not correspond to required number of floats.")
         self._sensor_values = new_values
 
-class IgnitorSim:
+    def get_type(self) -> SensorType:
+        return self.sensor_type
+
+
+class Ignitor:
     """
     Simulates the hardware used for continuity checks.
     """
@@ -53,10 +83,23 @@ class IgnitorSim:
     DISCONNECTED = 600  # Discontinuous
     OFF = 0
 
-    def __init__(self, broken=False):
+    def __init__(self, ignitor_type: IgnitorType, test_pin: int, read_pin: int, fire_pin: int, broken=False):
         """
+        In firmware's usage, to test continuity, the test pin is set high, and the voltage level at the read pin is used
+        to determine whether the pin is continuous. To fire the pin, the fire pin is set high.
+
+        :param ignitor_type: Purpose of ignitor (aka what's connected to it). Used for asserting in tests
+        :param test_pin: Pin number for testing
+        :param read_pin: Pin number for reading
+        :param fire_pin: Pin number for firing
         :param broken: If true, then it will simulate a used ignitor (and the continuity check should fail)
         """
+
+        self.type = ignitor_type
+        self.test_pin = test_pin
+        self.read_pin = read_pin
+        self.fire_pin = fire_pin
+
         self._on = False
         if broken:
             self._on_level = self.DISCONNECTED
@@ -89,39 +132,26 @@ class IgnitorSim:
 
 class HWSim:
     def __init__(
-        self, ignitors: Iterable[Tuple[int, int, int]] = tuple(), broken=False
+            self, sensors: Iterable[Sensor], ignitors: Iterable[Ignitor]
     ):
-
-        self.sensors = {
-            SensorIDs.BAROMETER.value[0]: SensorSim(SensorIDs.BAROMETER, (1000, 25)),
-            SensorIDs.GPS.value[0]: SensorSim(SensorIDs.GPS, (12.6, 13.2, 175))
-        }
-
-        
         """
-        Implementation note: Default value for ignitors needs to be an immutable iterable.
-        :param ignitors: Iterable of 3-tuples containing test, read, and fire pin numbers.
-        In firmware's usage, to test continuity, the test pin is set high, and the voltage level at the read pin is used to determine whether the pin is continuous. To fire the pin, the fire pin is set high.
-        :param broken: If boolean, indicates whether all ignitors are broken. If iterable, should be the same length as ``ignitors``, and specify in order which ignitor is broken.
+        :param sensors: Iterable of all the sensors that the HW contains
+        :param ignitors: Iterable of all the ignitors that the HW contains
         """
-        self.ignitors = []
-        self.ignitor_tests = {}
-        self.ignitor_reads = {}
-        self.ignitor_fires = {}
-        if isinstance(broken, bool):
-            broken = repeat(broken)
-        for (test, read, fire), broke in zip(ignitors, broken):
-            ign = IgnitorSim(broke)
-            self.ignitors.append(ign)
-            self.ignitor_tests[test] = ign
-            self.ignitor_reads[read] = ign
-            self.ignitor_fires[fire] = ign
+
+        self.sensors = {s.get_type(): s for s in sensors}
+
+        self.ignitors = {i.type: i for i in ignitors}
+        self.ignitor_tests = {i.test_pin: i for i in ignitors}
+        self.ignitor_reads = {i.read_pin: i for i in ignitors}
+        self.ignitor_fires = {i.fire_pin: i for i in ignitors}
 
     def digital_write(self, pin, val):
         """
         :param pin: Should be a test pin.
         :param val: True to set high, False to set low
         """
+        LOGGER.debug(f"Digital write to pin={pin} with value value={val}")
         if pin in self.ignitor_tests:
             self.ignitor_tests[pin].write(val)
         elif pin in self.ignitor_fires and val:
@@ -131,14 +161,22 @@ class HWSim:
         """
         :param pin: Should be a read pin. Don't rely on behaviour if the pin isn't a readable pin.
         """
+        val = 0
         if pin in self.ignitor_reads:
-            return self.ignitor_reads[pin].read()
-        return 0
+            val = self.ignitor_reads[pin].read()
 
-    def sensor_read(self, sensor_id: int) -> tuple:
+        LOGGER.debug(f"Analog read from pin={pin} returned value={val}")
+        return val
+
+    def sensor_read(self, sensor_type: SensorType) -> tuple:
         """
-        :param sensor_id: the sensor ID to read from
+        :param sensor_type: the sensor to read from
         :return: the sensor data
         """
-        return self.sensors[sensor_id].read()
+        val = self.sensors[sensor_type].read()
 
+        if len(val) != REQUIRED_SENSOR_FLOATS[sensor_type]:
+            raise Exception("Returned values do not correspond to required number of floats.")
+
+        #LOGGER.debug(f"Reading from sensor={sensor_type.name} returned value={val}")
+        return val

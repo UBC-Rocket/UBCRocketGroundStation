@@ -9,14 +9,8 @@ from ..label import (
     update_test_separation,
 )
 from ..rocket_profile import RocketProfile
-from connections.sim.hw_sim import HWSim
+from connections.sim.hw_sim import HWSim, DummySensor, SensorType, Ignitor, IgnitorType
 
-_MAIN_IGN_TEST = 4
-_MAIN_IGN_READ = 14
-_MAIN_IGN_FIRE = 16
-_DROGUE_IGN_TEST = 17
-_DROGUE_IGN_READ = 34
-_DROGUE_IGN_FIRE = 35
 
 class TantalusProfile(RocketProfile):
 
@@ -46,9 +40,14 @@ class TantalusProfile(RocketProfile):
     def construct_hw_sim(self):
         # Assemble HW here
 
-        hw_sim_ignitors = [
-            (_MAIN_IGN_TEST, _MAIN_IGN_READ, _MAIN_IGN_FIRE),
-            (_DROGUE_IGN_TEST, _DROGUE_IGN_READ, _DROGUE_IGN_FIRE),
+        hw_sim_sensors = [
+            DummySensor(SensorType.BAROMETER, (1000, 25)),
+            DummySensor(SensorType.GPS, (12.6, 13.2, 175))
         ]
 
-        return HWSim(hw_sim_ignitors)
+        hw_sim_ignitors = [
+            Ignitor(IgnitorType.MAIN, 4, 14, 16),
+            Ignitor(IgnitorType.DROGUE, 17, 34, 35),
+        ]
+
+        return HWSim(hw_sim_sensors, hw_sim_ignitors)

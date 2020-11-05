@@ -1,6 +1,7 @@
 import os
 import subprocess as sp
 import threading
+import struct
 from enum import Enum
 
 from .hw_sim import HWSim
@@ -9,18 +10,19 @@ from .stream_filter import StreamFilter
 from .xbee_module_sim import XBeeModuleSim
 from util.detail import LOGGER
 
-
 class SimRxId(Enum):
     CONFIG = 0x01
     BUZZER = 0x07
     DIGITAL_PIN_WRITE = 0x50
     RADIO = 0x52
     ANALOG_READ = 0x61
+    SENSOR_READ = 0x73
 
 
 class SimTxId(Enum):
     RADIO = 0x52
     ANALOG_READ = 0x61
+    SENSOR_READ = 0x73
 
 
 LOG_HISTORY_SIZE = 500
@@ -136,12 +138,22 @@ class SimConnection(Connection):
         result = self._hw_sim.analog_read(pin).to_bytes(2, "big")
         self._send_sim_packet(SimTxId.ANALOG_READ.value, result)
 
+    def _handleSensorRead(self):
+        length = self._getLength()
+        assert length == 1
+        sensor = self.stdout.read(length)[0]
+        sensor_data = self._hw_sim.sensor_read(sensor)
+        endianness = ">" if self.bigEndianFloats else "<"
+        result = bytearray(struct.pack(f"{endianness}{len(sensor_data)}f", *sensor_data))
+        self._send_sim_packet(SimTxId.SENSOR_READ.value, result)
+
     packetHandlers = {
         # DO NOT HANDLE "CONFIG" - it should be received only once at the start
         SimRxId.BUZZER.value: _handleBuzzer,
         SimRxId.DIGITAL_PIN_WRITE.value: _handleDigitalPinWrite,
         SimRxId.RADIO.value: _handleRadio,
         SimRxId.ANALOG_READ.value: _handleAnalogRead,
+        SimRxId.SENSOR_READ.value: _handleSensorRead,
     }
 
     def _run(self):

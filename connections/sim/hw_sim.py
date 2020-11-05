@@ -1,6 +1,47 @@
 from typing import Iterable, Tuple
 from itertools import repeat
+from enum import Enum
 
+class SensorIDs(Enum):
+    """
+    Sensor IDs - Sensor ID specifications
+    format (sensor id, number of data floats)
+    """
+    GPS = 0x00, 3
+    IMU = 0x01, 4
+    ACCELEROMETER = 0x02, 3
+    BAROMETER = 0x03, 2
+    TEMPERATURE = 0x04, 1
+    THERMOCOUPLE = 0x05, 1
+
+class SensorSim:
+    """
+    Simulates all sensors on rocket.
+    """
+
+    def __init__(self, sensor: SensorIDs, initial_values: tuple) -> None:
+        self.sensor_id = sensor.value[0]
+        self.num_floats = sensor.value[1]
+        if len(initial_values) != self.num_floats:
+            raise Exception("Given values do not correspond to required number of floats.")
+        self._sensor_values = initial_values
+
+    def read(self) -> tuple:
+        """
+        :brief: return data for sensor
+        :return: the sensor data
+        """
+        return self._sensor_values
+
+    def write(self, new_values: tuple):
+        """
+        :brief: write values for specific sensor
+        :param new_values: new sensor data. Much match the number of
+        floats required.
+        """
+        if len(new_values) != self.num_floats:
+            raise Exception("Given values do not correspond to required number of floats.")
+        self._sensor_values = new_values
 
 class IgnitorSim:
     """
@@ -50,6 +91,13 @@ class HWSim:
     def __init__(
         self, ignitors: Iterable[Tuple[int, int, int]] = tuple(), broken=False
     ):
+
+        self.sensors = {
+            SensorIDs.BAROMETER.value[0]: SensorSim(SensorIDs.BAROMETER, (1000, 25)),
+            SensorIDs.GPS.value[0]: SensorSim(SensorIDs.GPS, (12.6, 13.2, 175))
+        }
+
+        
         """
         Implementation note: Default value for ignitors needs to be an immutable iterable.
         :param ignitors: Iterable of 3-tuples containing test, read, and fire pin numbers.
@@ -86,4 +134,11 @@ class HWSim:
         if pin in self.ignitor_reads:
             return self.ignitor_reads[pin].read()
         return 0
+
+    def sensor_read(self, sensor_id: int) -> tuple:
+        """
+        :param sensor_id: the sensor ID to read from
+        :return: the sensor data
+        """
+        return self.sensors[sensor_id].read()
 

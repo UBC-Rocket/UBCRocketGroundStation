@@ -9,11 +9,11 @@ import mapbox
 import numpy as np
 from matplotlib import pyplot as plt
 
-from util.detail import LOCAL, LOGGER
+from util.detail import LOCAL, BUNDLED_DATA, LOGGER
 
 TILE_SIZE = 512
 
-MARKER_PATH = os.path.join(LOCAL, "qt_files", "marker.png")
+MARKER_PATH = os.path.join(BUNDLED_DATA, "qt_files", "marker.png")
 
 MAPBOX_CACHE = os.path.join(LOCAL, "mapbox_cache")
 if not os.path.exists(MAPBOX_CACHE):
@@ -175,7 +175,7 @@ class MapTile:
         if os.path.isfile(impath):
             return plt.imread(impath, "jpeg")
         else:
-            return np.zeros((TILE_SIZE, TILE_SIZE, 3))
+            return np.zeros((TILE_SIZE, TILE_SIZE, 3), dtype=np.uint8) # np generates float by default, pillow doesnt support that
 
     def imageExists(self) -> bool:
         """

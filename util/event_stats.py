@@ -1,5 +1,6 @@
 import inspect
 from threading import Lock, Condition
+from util.detail import IS_PYINSTALLER
 
 # Event stats are tracked together so that we can take snapshots at a point in time of all of them
 # This can be useful for debugging and profiling
@@ -90,7 +91,13 @@ def _get_calling_module():
     :rtype: str
     """
     frm = inspect.stack()[2] # 2 because we are not interested in two frames up (the previous frame wants to know who called it)
-    module = inspect.getmodule(frm[0]).__name__
+
+    if not IS_PYINSTALLER:
+        module = inspect.getmodule(frm.frame).__name__
+    else:
+        # getmodule doesnt like pyinstaller, use file name instead
+        module = frm.filename
+
     return module
 
 

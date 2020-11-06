@@ -12,7 +12,13 @@ FLARE_PATH = os.path.join(Path(LOCAL).parent, 'FLARE', 'avionics', 'build')
 
 LOCAL_PATH = os.path.join(LOCAL, 'FW')
 
-LOCAL_NAME = 'program' + '.exe' if sys.platform == 'win32' else ''
+FILE_EXTENSION = {
+    'linux': '',
+    'win32': '.exe',
+    'darwin': ''
+}
+
+LOCAL_NAME = 'program' + FILE_EXTENSION[sys.platform]
 
 
 class SimConnectionFactory(ConnectionFactory):
@@ -32,19 +38,16 @@ class SimConnectionFactory(ConnectionFactory):
 
         # Check FW (child) dir and FLARE (neighbour) dir for rocket build files
         # If multiple build files found throw exception
-        if os.path.exists(FLARE_PATH):
-            neighbourBuildFiles = [s for s in os.listdir(FLARE_PATH) if rocket.rocket_name.lower() in s.lower()]
-            neighbourBuildFileExists = bool(neighbourBuildFiles)
-        else:
-            neighbourBuildFileExists = False
+        neighbourBuildFile = rocket.sim_executable_name + FILE_EXTENSION[sys.platform]
+        neighbourBuildFileExists = os.path.exists(os.path.join(FLARE_PATH, neighbourBuildFile))
 
-        childBuildFileExists = LOCAL_NAME in os.listdir(LOCAL_PATH)
+        childBuildFileExists = os.path.exists(os.path.join(LOCAL_PATH, LOCAL_NAME))
 
         if childBuildFileExists and neighbourBuildFileExists:
             raise FirmwareNotFound(
-                f"Multiple build files found: {neighbourBuildFiles[0]} and {LOCAL_NAME}")
+                f"Multiple build files found: {neighbourBuildFile} and {LOCAL_NAME}")
         elif neighbourBuildFileExists:
-            executableName = neighbourBuildFiles[0]
+            executableName = neighbourBuildFile
             path = FLARE_PATH
         elif childBuildFileExists:
             executableName = LOCAL_NAME

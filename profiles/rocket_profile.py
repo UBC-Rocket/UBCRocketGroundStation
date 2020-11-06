@@ -17,6 +17,11 @@ class RocketProfile(ABC):
     def labels(self):
         pass
 
+    @property
+    @abstractmethod
+    def sim_executable_name(self):
+        pass
+
     '''
     Factory pattern for objects that should only be constructed if needed
     '''

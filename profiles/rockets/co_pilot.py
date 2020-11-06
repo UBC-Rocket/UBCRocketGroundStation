@@ -9,7 +9,7 @@ class CoPilotProfile(RocketProfile):
 
     @property
     def rocket_name(self):
-        return "CoPilot"
+        return "Co-Pilot"
 
     @property
     def buttons(self):
@@ -33,6 +33,10 @@ class CoPilotProfile(RocketProfile):
             Label("ChamberPressure", update_chamber_pressure, "Chamber Pressure"),
             Label("ChamberTemp", update_chamber_temp, "Chamber Temperature"),
         ]
+
+    @property
+    def sim_executable_name(self):
+        return None
 
     def construct_hw_sim(self):
         # Assemble HW here

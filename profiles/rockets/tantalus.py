@@ -37,6 +37,10 @@ class TantalusProfile(RocketProfile):
             Label("TestSeparation", update_test_separation, "Test Separation"),
         ]
 
+    @property
+    def sim_executable_name(self):
+        return "TantalusStage1"
+
     def construct_hw_sim(self):
         # Assemble HW here
 

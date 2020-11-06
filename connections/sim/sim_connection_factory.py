@@ -8,7 +8,6 @@ from ..connection_factory import ConnectionFactory
 from .sim_connection import SimConnection
 from pathlib import Path
 
-
 FLARE_PATH = os.path.join(Path(LOCAL).parent, 'FLARE', 'avionics', 'build')
 
 LOCAL_PATH = os.path.join(LOCAL, 'FW')
@@ -42,7 +41,7 @@ class SimConnectionFactory(ConnectionFactory):
         childBuildFileExists = LOCAL_NAME in os.listdir(LOCAL_PATH)
 
         if childBuildFileExists and neighbourBuildFileExists:
-            raise Exception(
+            raise FirmwareNotFound(
                 f"Multiple build files found: {neighbourBuildFiles[0]} and {LOCAL_NAME}")
         elif neighbourBuildFileExists:
             executableName = neighbourBuildFiles[0]
@@ -51,7 +50,7 @@ class SimConnectionFactory(ConnectionFactory):
             executableName = LOCAL_NAME
             path = LOCAL_PATH
         else:
-            raise Exception(f"No build files found for rocket named {rocket.rocket_name}")
+            raise FirmwareNotFound(f"No build files found for rocket named {rocket.rocket_name}")
 
         hw_sim = rocket.construct_hw_sim()
 
@@ -61,3 +60,7 @@ class SimConnectionFactory(ConnectionFactory):
         return SimConnection(
             path, executableName, hw_sim
         )
+
+
+class FirmwareNotFound(Exception):
+    pass

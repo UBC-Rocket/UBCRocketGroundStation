@@ -2,7 +2,10 @@ from typing import Iterable
 from enum import Enum, auto
 from abc import ABC, abstractmethod
 from util.detail import LOGGER
+from util.event_stats import Event
+from threading import RLock
 
+SENSOR_READ_EVENT = Event('sensor_read')
 
 class SensorType(Enum):
     GPS = auto()
@@ -139,44 +142,52 @@ class HWSim:
         :param ignitors: Iterable of all the ignitors that the HW contains
         """
 
-        self.sensors = {s.get_type(): s for s in sensors}
+        # To protect all HW as SIM is in a different thread from tests, etc.
+        self.lock = RLock()
 
-        self.ignitors = {i.type: i for i in ignitors}
-        self.ignitor_tests = {i.test_pin: i for i in ignitors}
-        self.ignitor_reads = {i.read_pin: i for i in ignitors}
-        self.ignitor_fires = {i.fire_pin: i for i in ignitors}
+        self._sensors = {s.get_type(): s for s in sensors}
+
+        self._ignitors = {i.type: i for i in ignitors}
+        self._ignitor_tests = {i.test_pin: i for i in ignitors}
+        self._ignitor_reads = {i.read_pin: i for i in ignitors}
+        self._ignitor_fires = {i.fire_pin: i for i in ignitors}
 
     def digital_write(self, pin, val):
         """
         :param pin: Should be a test pin.
         :param val: True to set high, False to set low
         """
-        LOGGER.debug(f"Digital write to pin={pin} with value value={val}")
-        if pin in self.ignitor_tests:
-            self.ignitor_tests[pin].write(val)
-        elif pin in self.ignitor_fires and val:
-            self.ignitor_fires[pin].fire()
+        with self.lock:
+            LOGGER.debug(f"Digital write to pin={pin} with value value={val}")
+            if pin in self._ignitor_tests:
+                self._ignitor_tests[pin].write(val)
+            elif pin in self._ignitor_fires and val:
+                self._ignitor_fires[pin].fire()
 
     def analog_read(self, pin):
         """
         :param pin: Should be a read pin. Don't rely on behaviour if the pin isn't a readable pin.
         """
-        val = 0
-        if pin in self.ignitor_reads:
-            val = self.ignitor_reads[pin].read()
+        with self.lock:
+            val = 0
+            if pin in self._ignitor_reads:
+                val = self._ignitor_reads[pin].read()
 
-        LOGGER.debug(f"Analog read from pin={pin} returned value={val}")
-        return val
+            LOGGER.debug(f"Analog read from pin={pin} returned value={val}")
+            return val
 
     def sensor_read(self, sensor_type: SensorType) -> tuple:
         """
         :param sensor_type: the sensor to read from
         :return: the sensor data
         """
-        val = self.sensors[sensor_type].read()
+        with self.lock:
+            val = self._sensors[sensor_type].read()
 
-        if len(val) != REQUIRED_SENSOR_FLOATS[sensor_type]:
-            raise Exception("Returned values do not correspond to required number of floats.")
+            if len(val) != REQUIRED_SENSOR_FLOATS[sensor_type]:
+                raise Exception("Returned values do not correspond to required number of floats.")
 
-        #LOGGER.debug(f"Reading from sensor={sensor_type.name} returned value={val}")
-        return val
+            #LOGGER.debug(f"Reading from sensor={sensor_type.name} returned value={val}")
+            SENSOR_READ_EVENT.increment()
+
+            return val

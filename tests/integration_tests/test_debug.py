@@ -4,6 +4,7 @@ from profiles.rockets.co_pilot import CoPilotProfile
 from connections.debug import radio_packets
 from main_window.rocket_data import BUNDLE_ADDED_EVENT
 from main_window.subpacket_ids import SubpacketEnum
+from main_window.radio_controller import BULK_SENSOR_EVENT
 from main_window.radio_controller import (
     IS_SIM,
     ROCKET_TYPE,
@@ -24,7 +25,6 @@ def test_arm_signal(qtbot):
     main_window.sendCommand("arm")
 
     num = ARMED_EVENT.wait(snapshot)
-
     assert num == 1
 
 
@@ -43,7 +43,11 @@ def test_bulk_sensor_packet(qtbot):
     ):  # Needed otherwise signals wont process because UI is in same thread
         connection.send_to_rocket(packet)
 
+    num = BULK_SENSOR_EVENT.wait(snapshot)
+    assert num == 1
+
     num = BUNDLE_ADDED_EVENT.wait(snapshot)
+    assert num == 1
 
     def get_val(val):
         return main_window.rocket_data.lastvalue(val.value)
@@ -62,11 +66,11 @@ def test_bulk_sensor_packet(qtbot):
     )
     last_values = tuple(map(get_val, vals_to_get))
 
-    assert num == 1
     assert sensor_inputs[1:] == last_values
 
     num = LABLES_UPDATED_EVENT.wait(snapshot)
     assert num == 1
+
     assert float(main_window.AltitudeLabel.text()) == 2.0
     assert main_window.GPSLabel.text() == "9.0, 10.0"
     assert float(main_window.StateLabel.text()) == 11.0
@@ -83,8 +87,8 @@ def test_message_packet(qtbot, caplog):
     connection.send_to_rocket(packet)
 
     num = BUNDLE_ADDED_EVENT.wait(snapshot)
-
     assert num == 1
+
     assert main_window.rocket_data.lastvalue(SubpacketEnum.MESSAGE.value) == "test_message"
     assert "test_message" in caplog.text
 
@@ -100,8 +104,8 @@ def test_config_packet(qtbot):
     connection.send_to_rocket(packet)
 
     num = BUNDLE_ADDED_EVENT.wait(snapshot)
-
     assert num == 1
+
     assert main_window.rocket_data.lastvalue(IS_SIM) == True
     assert main_window.rocket_data.lastvalue(ROCKET_TYPE) == 2
 
@@ -119,8 +123,8 @@ def test_status_ping_packet(qtbot):
     connection.send_to_rocket(packet)
 
     num = BUNDLE_ADDED_EVENT.wait(snapshot)
-
     assert num == 1
+
     assert (
         main_window.rocket_data.lastvalue(SubpacketEnum.STATUS_PING.value)
         == NONCRITICAL_FAILURE

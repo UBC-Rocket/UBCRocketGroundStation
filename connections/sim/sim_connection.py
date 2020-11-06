@@ -182,6 +182,7 @@ class SimConnection(Connection):
                 SimConnection.packetHandlers[id](self)
             except IndexError as ex:
                 if self.rocket.poll() is not None:  # Process was killed
+                    LOGGER.error("SIM process was killed.")
                     return
 
     def _getLength(self):

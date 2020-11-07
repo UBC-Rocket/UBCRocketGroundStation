@@ -31,6 +31,12 @@ class UnescapedDelimiterError(Exception):
     """
 
 
+class ChecksumMismatchError(Exception):
+    """
+    Raised when the calculated checksum does not match the sent checksum
+    """
+
+
 class XBeeModuleSim:
     def send_to_rocket(self, data):
         """
@@ -122,18 +128,39 @@ class XBeeModuleSim:
         :param data: Iterable
         :param frame_len: length as defined in XBee protocol
         """
+        calculated_checksum = FrameType.TX_REQUEST.value  # Checksum includes frame type
+
         frame_id = next(data)
+        calculated_checksum += frame_id
+
         for _ in range(8):  # 64 bit destination address - discard
-            next(data)
+            calculated_checksum += next(data)
+
         # Reserved 2 bytes. But in one case it's labelled as network address?
         network_addr_msb = next(data)
+        calculated_checksum += network_addr_msb
+
         network_addr_lsb = next(data)
-        next(data)  # Broadcast radius - discard
+        calculated_checksum += network_addr_lsb
+
+        broadcast_radius = next(data)  # Broadcast radius - not used
+        calculated_checksum += broadcast_radius
+
         transmit_options = next(data)
+        calculated_checksum += transmit_options
+
         payload = bytearray()
         for _ in range(frame_len - 14):
-            payload.append(next(data))
-        next(data)  # discard checksum
+            b = next(data)
+            payload.append(b)
+            calculated_checksum += b
+
+        received_checksum = next(data)
+        calculated_checksum = 0xFF - (calculated_checksum & 0xFF)  # As per XBee's spec
+
+        if received_checksum != calculated_checksum:
+            raise ChecksumMismatchError()
+
         self.ground_callback(payload)
 
         # Send acknowledge
@@ -198,7 +225,7 @@ class XBeeModuleSim:
 
         checksum = 0xFF - ((frame_type + sum(payload)) & 0xFF)
         unescaped = (
-            bytearray((len_msb, len_lsb, frame_type)) + payload + bytearray((checksum,))
+                bytearray((len_msb, len_lsb, frame_type)) + payload + bytearray((checksum,))
         )
 
         return bytes((START_DELIMITER,)) + self._escape(unescaped)

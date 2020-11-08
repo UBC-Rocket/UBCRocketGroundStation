@@ -128,6 +128,10 @@ class SimConnection(Connection):
 
     def _handleRadio(self):
         length = self._getLength()
+
+        if length == 0:
+            LOGGER.warning("Empty SIM radio packet received")
+
         data = self.stdout.read(length)
         self._xbee.recieved_from_rocket(data)
 

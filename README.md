@@ -1,5 +1,7 @@
-# UBCRocketGroundStation
-Absolutely flawless ground station code
+# UBCRocketGroundStation 
+[![Build Status](https://travis-ci.com/UBC-Rocket/UBCRocketGroundStation.svg?branch=master)](https://travis-ci.com/UBC-Rocket/UBCRocketGroundStation)
+
+Absolutely flawless ground station code.
 
 Python 3.7.X is required.
 

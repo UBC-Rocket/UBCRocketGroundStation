@@ -23,20 +23,30 @@ def test_gps_read(qtbot):
 
     hw = connection._hw_sim
 
+    # Set sensor values
     with hw.lock:
-        hw._sensors[SensorType.GPS].set_value((1, 2, 3))
+        hw._sensors[SensorType.GPS].set_value((11, 12, 13))
 
-    snapshot = get_event_stats_snapshot()
+    # Wait a few update cycles to flush any old packets out
+    for i in range(2):
+        snapshot = get_event_stats_snapshot()
+        assert SENSOR_READ_EVENT.wait(snapshot) >= 1
+        assert BULK_SENSOR_EVENT.wait(snapshot) >= 1
+        assert BUNDLE_ADDED_EVENT.wait(snapshot) >= 1
 
-    num = SENSOR_READ_EVENT.wait(snapshot)
-    assert num >= 1
+    assert main_window.rocket_data.lastvalue(SubpacketEnum.LATITUDE.value) == 11
+    assert main_window.rocket_data.lastvalue(SubpacketEnum.LONGITUDE.value) == 12
 
-    num = BULK_SENSOR_EVENT.wait(snapshot)
-    assert num >= 1
+    # Set new sensor values
+    with hw.lock:
+        hw._sensors[SensorType.GPS].set_value((21, 22, 23))
 
-    num = BUNDLE_ADDED_EVENT.wait(snapshot)
-    assert num >= 1
+    # Wait a few update cycles to flush any old packets out
+    for i in range(2):
+        snapshot = get_event_stats_snapshot()
+        assert SENSOR_READ_EVENT.wait(snapshot) >= 1
+        assert BULK_SENSOR_EVENT.wait(snapshot) >= 1
+        assert BUNDLE_ADDED_EVENT.wait(snapshot) >= 1
 
-    # TODO : FW bug reporting bad values, change assert once fixed to check actual value
-    assert main_window.rocket_data.lastvalue(SubpacketEnum.LATITUDE.value) is not None
-    assert main_window.rocket_data.lastvalue(SubpacketEnum.LONGITUDE.value) is not None
+    assert main_window.rocket_data.lastvalue(SubpacketEnum.LATITUDE.value) == 21
+    assert main_window.rocket_data.lastvalue(SubpacketEnum.LONGITUDE.value) == 22

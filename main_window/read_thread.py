@@ -1,5 +1,6 @@
 import queue
 from typing import Dict
+from threading import RLock
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
@@ -30,10 +31,11 @@ class ReadThread(QtCore.QThread):
 
         self.dataQueue = queue.Queue()
 
-        self.errored = False
-
         self.connection.registerCallback(self._newData)  # Must be done last to prevent race condition if IController
         # returns new data before ReadThread constructor is done
+
+        self._shutdown_lock = RLock()
+        self._is_shutting_down = False
 
     def _newData(self, data):
         """IConnection calls back to this function, this is where we get all our new data
@@ -50,6 +52,13 @@ class ReadThread(QtCore.QThread):
             data = self.dataQueue.get(block=True, timeout=None)  # Block until something new
             self.dataQueue.task_done()
 
+            if data is None:  # Either received None or woken up for shutdown
+                with self._shutdown_lock:
+                    if self._is_shutting_down:
+                        break
+                    else:
+                        continue
+
             # Convert from immutable bytearray to List[int]
             byte_list = list(data)  # list of ints ranging from 0 - 255. Equivalent to doing [x for x in data]
 
@@ -64,6 +73,14 @@ class ReadThread(QtCore.QThread):
                     # notify UI that new data is available to be displayed
                     self.sig_received.emit()
                 except Exception as e:
-                    LOGGER.exception("Error decoding new data!") # Automatically grabs and prints exception info
+                    LOGGER.exception("Error decoding new data!")  # Automatically grabs and prints exception info
 
                 del byte_list[0:length]
+
+        LOGGER.warning("Read thread shut down")
+
+    def shutdown(self):
+        with self._shutdown_lock:
+            self._is_shutting_down = True
+        self.dataQueue.put(None)  # Wake up thread
+        self.wait()  # join thread

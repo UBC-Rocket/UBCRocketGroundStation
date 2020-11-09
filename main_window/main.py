@@ -1,6 +1,7 @@
 import math
 import os
 from typing import Callable
+import threading
 
 import PyQt5
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
@@ -176,7 +177,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         :param event:
         :type event:
         """
-        self.connection.shutDown()
+        self.shutdown()
         LOGGER.info("Saving...")
         self.rocket_data.save(os.path.join(LOGS_DIR, "finalsave_" + SESSION_ID + ".csv"))
         LOGGER.info("Saved!")
@@ -279,3 +280,12 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         :type event:
         """
         self.MappingThread.setDesiredMapSize(event.width, event.height)
+
+    def shutdown(self):
+        LOGGER.debug(f"MainApp shutting down")
+        self.ReadThread.shutdown()
+        self.SendThread.shutdown()
+        self.MappingThread.shutdown()
+        self.rocket_data.shutdown()
+        self.connection.shutdown()
+        LOGGER.debug(f"All threads shut down, remaining threads: {threading.enumerate()}")

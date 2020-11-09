@@ -2,7 +2,7 @@ import os
 import sys
 from typing import Union
 
-from util.detail import LOCAL
+from util.detail import LOCAL, LOGGER
 
 from ..connection_factory import ConnectionFactory
 from .sim_connection import SimConnection
@@ -59,6 +59,8 @@ class SimConnectionFactory(ConnectionFactory):
 
         if not hw_sim:
             raise Exception(f"No HW Sim defined for rocket named {rocket.rocket_name}")
+
+        LOGGER.info(f"Using FW executable: {os.path.join(path, executableName)}")
 
         return SimConnection(
             path, executableName, hw_sim

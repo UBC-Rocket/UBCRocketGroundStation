@@ -1,6 +1,5 @@
 import pytest
 from connections.sim.sim_connection_factory import SimConnectionFactory, FirmwareNotFound
-from connections.sim.sim_connection import SimConnection
 from connections.sim.hw_sim import SensorType, SENSOR_READ_EVENT
 from main_window.main import MainApp
 from profiles.rockets.tantalus import TantalusProfile
@@ -11,15 +10,18 @@ from main_window.radio_controller import BULK_SENSOR_EVENT
 from util.event_stats import get_event_stats_snapshot
 
 
-def try_get_connection(rocket_profile) -> SimConnection:
+@pytest.fixture(scope="function")
+def main_app() -> MainApp:
     try:
-        return SimConnectionFactory().construct(rocket=rocket_profile)
+        connection = SimConnectionFactory().construct(rocket=TantalusProfile())
     except FirmwareNotFound as ex:
         pytest.skip("Firmware not found")
+    app = MainApp(connection, TantalusProfile())
+    yield app  # Provides app, following code is run on cleanup
+    app.shutdown()
 
-def test_gps_read(qtbot):
-    connection = try_get_connection(TantalusProfile())
-    main_window = MainApp(connection, TantalusProfile())
+def test_gps_read(qtbot, main_app):
+    connection = main_app.connection
 
     hw = connection._hw_sim
 
@@ -34,8 +36,8 @@ def test_gps_read(qtbot):
         assert BULK_SENSOR_EVENT.wait(snapshot) >= 1
         assert BUNDLE_ADDED_EVENT.wait(snapshot) >= 1
 
-    assert main_window.rocket_data.lastvalue(SubpacketEnum.LATITUDE.value) == 11
-    assert main_window.rocket_data.lastvalue(SubpacketEnum.LONGITUDE.value) == 12
+    assert main_app.rocket_data.lastvalue(SubpacketEnum.LATITUDE.value) == 11
+    assert main_app.rocket_data.lastvalue(SubpacketEnum.LONGITUDE.value) == 12
 
     # Set new sensor values
     with hw.lock:
@@ -48,5 +50,23 @@ def test_gps_read(qtbot):
         assert BULK_SENSOR_EVENT.wait(snapshot) >= 1
         assert BUNDLE_ADDED_EVENT.wait(snapshot) >= 1
 
-    assert main_window.rocket_data.lastvalue(SubpacketEnum.LATITUDE.value) == 21
-    assert main_window.rocket_data.lastvalue(SubpacketEnum.LONGITUDE.value) == 22
+    assert main_app.rocket_data.lastvalue(SubpacketEnum.LATITUDE.value) == 21
+    assert main_app.rocket_data.lastvalue(SubpacketEnum.LONGITUDE.value) == 22
+
+
+def test_clean_shutdown(qtbot, main_app):
+    assert main_app.ReadThread.isRunning()
+    assert main_app.SendThread.isRunning()
+    assert main_app.MappingThread.isRunning()
+    assert main_app.rocket_data.autosaveThread.is_alive()
+    assert main_app.connection.thread.is_alive()
+    assert main_app.connection._xbee._rocket_rx_thread.is_alive()
+
+    main_app.shutdown()
+
+    assert main_app.ReadThread.isFinished()
+    assert main_app.SendThread.isFinished()
+    assert main_app.MappingThread.isFinished()
+    assert not main_app.rocket_data.autosaveThread.is_alive()
+    assert not main_app.connection.thread.is_alive()
+    assert not main_app.connection._xbee._rocket_rx_thread.is_alive()

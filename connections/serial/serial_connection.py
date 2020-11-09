@@ -27,7 +27,7 @@ class SerialConnection(Connection):
         # self.device.send_data(remote_device, bytes)
         self.device.send_data_broadcast(bytes)
 
-    def shutDown(self):
+    def shutdown(self):
         pass
 
     def isIntBigEndian(self):

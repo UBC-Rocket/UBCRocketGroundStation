@@ -1,6 +1,5 @@
 import os
 import threading
-import time
 from typing import Dict, Union
 
 import numpy as np
@@ -43,25 +42,27 @@ BUNDLE_ADDED_EVENT = Event('bundle_added')
 # orderednames.sort()
 
 typemap = {  # TODO Review legacy data format
-    's':"state",
-    't':"int"
+    's': "state",
+    't': "int"
 }
 
 statemap = {  # TODO Review legacy data format. Not deleted due to need to confer with frontend
- 0:"STANDBY",
- 1:"ARMED",
- 2:"ASCENT",
- 3:"MACH_LOCK",
- 4:"PRESSURE_DELAY",
- 5:"INITIAL_DESCENT",
- 6:"FINAL_DESCENT",
- 7:"LANDED",
- 8:"WINTER_CONTINGENCY"
+    0: "STANDBY",
+    1: "ARMED",
+    2: "ASCENT",
+    3: "MACH_LOCK",
+    4: "PRESSURE_DELAY",
+    5: "INITIAL_DESCENT",
+    6: "FINAL_DESCENT",
+    7: "LANDED",
+    8: "WINTER_CONTINGENCY"
 }
+
+AUTOSAVE_INTERVAL_S = 10
 
 # Supposedly a dictionary of all of the time points mapped to a dictionary of sensor id to value.
 # self.timeset:    dictionary designed to hold time - dictionary {sensor id - value} pairs.
-        # essentially  self.data: Dict[int, Dict[str, Union[int, float]]] = {}
+# essentially  self.data: Dict[int, Dict[str, Union[int, float]]] = {}
 
 class RocketData:
     def __init__(self) -> None:
@@ -74,23 +75,45 @@ class RocketData:
         self.lasttime = 0  # TODO REVIEW/CHANGE THIS, once all subpackets have their own timestamp.
         self.highest_altitude = 0
         self.sessionName = os.path.join(LOGS_DIR, "autosave_" + SESSION_ID + ".csv")
-        self.autosaveThread = threading.Thread(target=self.timer, daemon=True, name="AutosaveThread")
-        self.autosaveThread.start()
 
         #  Create Dict of lists, with ids as keys
         self.callbacks = {k: [] for k in subpacket_ids.get_list_of_IDs()}
+
+        self.as_cv = threading.Condition()  # Condition variable for autosave (as)
+        self._as_is_shutting_down = False  # Lock in cv is used to protect this
+
+        self.autosaveThread = threading.Thread(target=self.timer, daemon=True, name="AutosaveThread")
+        self.autosaveThread.start()
 
     def timer(self):
         """
 
         """
         while True:
+
+            with self.as_cv:
+                self.as_cv.wait_for(lambda: self._as_is_shutting_down, timeout=AUTOSAVE_INTERVAL_S)
+
+                if self._as_is_shutting_down:
+                    break
+
             try:
                 self.save(self.sessionName)
                 LOGGER.debug("Auto-Save successful.")
             except Exception as e:
-                LOGGER.exception("Exception in autosave thread") # Automatically grabs and prints exception info
-            time.sleep(10)
+                LOGGER.exception("Exception in autosave thread")  # Automatically grabs and prints exception info
+
+        LOGGER.warning("Auto save thread shut down")
+
+    def shutdown(self):
+        with self.as_cv:
+            self._as_is_shutting_down = True
+
+        while self.autosaveThread.is_alive():
+            with self.as_cv:
+                self.as_cv.notify()  # Wake up thread
+
+        self.autosaveThread.join()  # join thread
 
     # adding a bundle of data points and trigger callbacks according to id
     # Current implementation: adds to time given, otherwise will add to the last time received?
@@ -120,7 +143,6 @@ class RocketData:
             self._notifyCallbacksOfId(data_id)
 
         BUNDLE_ADDED_EVENT.increment()
-
 
     # TODO REMOVE this function once data types refactored
     # # In the previous version this is supposed to save very specifically formatted incoming data into RocketData

@@ -19,7 +19,7 @@ class Connection(metaclass=abc.ABCMeta):
 
     # Called to upon shutdown. Clean-up tasks done here.
     @abc.abstractmethod
-    def shutDown(self) -> None:
+    def shutdown(self) -> None:
         pass
 
     # Returns whether ints should be decoded as big endian

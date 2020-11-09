@@ -1,7 +1,6 @@
-from collections import deque
 from enum import IntEnum
 from queue import SimpleQueue
-from threading import Lock, Thread
+from threading import Thread, RLock
 
 from util.detail import LOGGER
 from util.event_stats import Event
@@ -34,6 +33,12 @@ class UnescapedDelimiterError(Exception):
 class ChecksumMismatchError(Exception):
     """
     Raised when the calculated checksum does not match the sent checksum
+    """
+
+
+class ShuttingDown(Exception):
+    """
+    Raised to shut down from generator
     """
 
 
@@ -83,6 +88,9 @@ class XBeeModuleSim:
         # Is called whenever data recieved from the rocket needs to be sent to the rest of the ground station code.
         # The callback should be thread safe.
 
+        self._shutdown_lock = RLock()
+        self._is_shutting_down = False
+
         # Queues are IO bound.
         self._rocket_rx_thread = Thread(
             target=self._run_rocket_rx, name="xbee_sim_rocket_rx", daemon=True
@@ -98,6 +106,12 @@ class XBeeModuleSim:
         """
         while True:
             arr = q.get()
+
+            if arr is None:  # Probably a shutdown signal
+                with self._shutdown_lock:
+                    if self._is_shutting_down:
+                        raise ShuttingDown()
+
             for i in arr:
                 yield i
 
@@ -106,17 +120,27 @@ class XBeeModuleSim:
         :brief: Process the incoming rocket data queue.
         This is the top level function, and handles any unescaped start delimiters.
         """
-        start = next(self._rocket_rx_queue)
-        assert start == START_DELIMITER
+
         while True:
             try:
+                start = next(self._rocket_rx_queue)
+                assert start == START_DELIMITER
                 self._parse_API_frame()
             except UnescapedDelimiterError:
                 LOGGER.warning("Caught UnescapedDelimiterError exception")
                 continue  # drop it and try again
-            else:
-                start = next(self._rocket_rx_queue)
-                assert start == START_DELIMITER
+            except ShuttingDown:
+                break
+
+        LOGGER.warning("Xbee sim thread shut down")
+
+    def shutdown(self):
+        with self._shutdown_lock:
+            self._is_shutting_down = True
+
+        self._rocket_rx_queue_packed.put(None)  # Wake up thread
+
+        self._rocket_rx_thread.join()
 
     # Each frame parser gets iterator to data and the length (as given by the XBee frame standard).
     # Note that since the length as given by the XBee standard includes the frame type, but the frame

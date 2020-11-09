@@ -29,6 +29,7 @@ class TestXBeeModuleSim:
         """ teardown any state that was previously setup with a setup_method
         call.
         """
+        self.xbee.shutdown()
 
     def test_rocket_rx(self):
         tx_example = bytearray(

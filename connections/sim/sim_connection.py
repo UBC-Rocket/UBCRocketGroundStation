@@ -57,14 +57,17 @@ class SimConnection(Connection):
         # Gets endianess of ints and floats
         self._getEndianness()
 
-        # Thread to make communication non-blocking
-        self.thread = threading.Thread(target=self._run, name="SIM", daemon=True)
-        self.thread.start()
-
         self._xbee = XBeeModuleSim()
         self._xbee.rocket_callback = self._send_radio_sim
 
         self._hw_sim = hw_sim
+
+        self._shutdown_lock = threading.RLock()
+        self._is_shutting_down = False
+
+        # Thread to make communication non-blocking
+        self.thread = threading.Thread(target=self._run, name="SIM", daemon=True)
+        self.thread.start()
 
     def _rocket_handshake(self):
         assert self.stdout.read(3) == b"SYN"
@@ -100,8 +103,16 @@ class SimConnection(Connection):
         assert self.bigEndianFloats is not None
         return self.bigEndianFloats
 
-    def shutDown(self):
-        self.rocket.kill()  # Otherwise it will prevent process from closing
+    def shutdown(self):
+        with self._shutdown_lock:
+            self._is_shutting_down = True
+
+        self._xbee.shutdown()
+        self._hw_sim.shutdown()
+
+        self.rocket.kill()
+
+        self.thread.join()  # join thread
 
     # AKA handle "Config" packet
     def _getEndianness(self):
@@ -171,8 +182,9 @@ class SimConnection(Connection):
     }
 
     def _run(self):
-        while True:
-            try:
+        try:
+            while True:
+
                 id = self.stdout.read(1)[0]  # Returns 0 if process was killed
 
                 if id not in SimConnection.packetHandlers.keys():
@@ -184,10 +196,13 @@ class SimConnection(Connection):
 
                 # Call packet handler
                 SimConnection.packetHandlers[id](self)
-            except IndexError as ex:
-                if self.rocket.poll() is not None:  # Process was killed
-                    LOGGER.error("SIM process was killed.")
-                    return
+
+        except Exception as ex:
+            with self._shutdown_lock:
+                if not self._is_shutting_down:
+                    LOGGER.exception("Error in SIM connection.")
+
+        LOGGER.warning("SIM connection thread shut down")
 
     def _getLength(self):
         [msb, lsb] = self.stdout.read(2)

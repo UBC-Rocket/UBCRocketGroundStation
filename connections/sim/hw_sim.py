@@ -191,3 +191,9 @@ class HWSim:
             SENSOR_READ_EVENT.increment()
 
             return val
+
+    def shutdown(self):
+        '''
+        Shut down any threads and clean-up
+        '''
+        pass

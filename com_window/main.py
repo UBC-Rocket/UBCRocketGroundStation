@@ -7,9 +7,9 @@ from PyQt5 import QtCore, QtWidgets, uic
 from connections.debug.debug_connection_factory import DebugConnectionFactory
 from connections.serial.serial_connection_factory import SerialConnectionFactory
 from connections.sim.sim_connection_factory import SimConnectionFactory
-from util.detail import BUNDLED_DATA
-from profiles.rockets.co_pilot import co_pilot
-from profiles.rockets.tantalus import tantalus
+from util.detail import BUNDLED_DATA, LOGGER
+from profiles.rockets.co_pilot import CoPilotProfile
+from profiles.rockets.tantalus import TantalusProfile
 
 if hasattr(QtCore.Qt, "AA_EnableHighDpiScaling"):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
@@ -22,7 +22,7 @@ qtCreatorFile = os.path.join(BUNDLED_DATA, "qt_files", "com_window.ui")
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 
-class comWindow(QtWidgets.QMainWindow, Ui_MainWindow):
+class ComWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self) -> None:
         """
 
@@ -36,17 +36,17 @@ class comWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "SIM": SimConnectionFactory(),
         }
         self.RocketProfiles = {
-            "Tantalus": tantalus,
-            "Co Pilot": co_pilot,
+            "Tantalus": TantalusProfile(),
+            "Co-Pilot": CoPilotProfile(),
         }
 
         self.chosen_connection = None
         self.chosen_rocket = None
 
         self.setupUi(self)
-        self.MySetup()
+        self.setup()
 
-    def MySetup(self) -> None:
+    def setup(self) -> None:
         """
 
         """
@@ -63,13 +63,16 @@ class comWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
 
         """
-        factory = self.ConnectionFactories[self.typeBox.currentText()]
-        self.chosen_rocket = self.RocketProfiles[self.rocketBox.currentText()]
-        self.chosen_connection = factory.construct(
-            comPort=self.comBox.currentText(),
-            baudRate=int(self.baudBox.currentText()),
-            rocket=self.chosen_rocket,
-        )
+        rocket = self.rocketBox.currentText()
+        connection = self.typeBox.currentText()
+        baud_rate = int(self.baudBox.currentText())
+        com_port = self.comBox.currentText()
+
+        LOGGER.debug(f"User has selected rocket={rocket}, connection={connection}, com_port={com_port}, baud_rate={baud_rate}")
+
+        self.chosen_rocket = self.RocketProfiles[rocket]
+        factory = self.ConnectionFactories[connection]
+        self.chosen_connection = factory.construct(comPort=com_port, baudRate=baud_rate, rocket=self.chosen_rocket)
         self.close()
 
     def connectionChanged(self) -> None:

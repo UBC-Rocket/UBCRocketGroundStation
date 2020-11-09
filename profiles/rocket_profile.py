@@ -1,23 +1,33 @@
-from typing import Dict, List
-
-from .label import TYPE_CHECKING, Label
-from connections.sim.hw_sim import HWSim
-
-if TYPE_CHECKING:
-    from main_window.main import MainApp
+from abc import ABC, abstractmethod
 
 
-class RocketProfile:
-    def __init__(
-            self, rocket_name:str, buttons: Dict[str, str], labels: List[Label], hw_sim_dat: HWSim = None
-    ):
-        self.rocket_name = rocket_name
-        self.buttons = buttons
-        self.labels = labels
-        self.hw_sim_dat = hw_sim_dat
+class RocketProfile(ABC):
+    @property
+    @abstractmethod
+    def rocket_name(self):
+        pass
 
-    def update_labels(self, main_window: "MainApp") -> None:
-        for label in self.labels:
-            getattr(main_window, label.name + "Label").setText(
-                label.update(main_window)
-            )
+    @property
+    @abstractmethod
+    def buttons(self):
+        pass
+
+    @property
+    @abstractmethod
+    def labels(self):
+        pass
+
+    @property
+    @abstractmethod
+    def sim_executable_name(self):
+        pass
+
+    '''
+    Factory pattern for objects that should only be constructed if needed
+    '''
+    @abstractmethod
+    def construct_hw_sim(self):
+        # Here we can define HW Sim and all its sensors etc. without them being constructed if we aren't running SIM.
+        # This is useful as HW Sim may be multi-threaded or do something upon construction that we dont want to
+        # happen during regular flight.
+        pass

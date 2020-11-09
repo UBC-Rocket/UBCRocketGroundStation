@@ -2,15 +2,23 @@ import os
 import sys
 from typing import Union
 
-from util.detail import LOCAL
+from util.detail import LOCAL, LOGGER
 
 from ..connection_factory import ConnectionFactory
 from .sim_connection import SimConnection
-from .hw_sim import HWSim
 from pathlib import Path
 
+FLARE_PATH = os.path.join(Path(LOCAL).parent, 'FLARE', 'avionics', 'build')
 
-FILE_EXTENSION = {"win32": ".exe"}
+LOCAL_PATH = os.path.join(LOCAL, 'FW')
+
+FILE_EXTENSION = {
+    'linux': '',
+    'win32': '.exe',
+    'darwin': ''
+}
+
+LOCAL_NAME = 'program' + FILE_EXTENSION[sys.platform]
 
 
 class SimConnectionFactory(ConnectionFactory):
@@ -30,28 +38,34 @@ class SimConnectionFactory(ConnectionFactory):
 
         # Check FW (child) dir and FLARE (neighbour) dir for rocket build files
         # If multiple build files found throw exception
-        flarePath = os.path.join(Path(LOCAL).parent, 'FLARE', 'avionics', 'build')
-        localPath = os.path.join(LOCAL, 'FW')
-        neighbourBuildFiles = [s for s in os.listdir(flarePath) if rocket.rocket_name.lower() in s.lower()]
-        neighbourBuildFileExists = bool(neighbourBuildFiles)
+        neighbourBuildFile = rocket.sim_executable_name + FILE_EXTENSION[sys.platform]
+        neighbourBuildFileExists = os.path.exists(os.path.join(FLARE_PATH, neighbourBuildFile))
 
-        childBuildFileExists = "program" in os.listdir(localPath)
+        childBuildFileExists = os.path.exists(os.path.join(LOCAL_PATH, LOCAL_NAME))
 
         if childBuildFileExists and neighbourBuildFileExists:
-            raise Exception(
-                f"Multiple build files found: {neighbourBuildFiles[0]} and program")
+            raise FirmwareNotFound(
+                f"Multiple build files found: {neighbourBuildFile} and {LOCAL_NAME}")
         elif neighbourBuildFileExists:
-            executableName = neighbourBuildFiles[0]
-            path = flarePath
+            executableName = neighbourBuildFile
+            path = FLARE_PATH
         elif childBuildFileExists:
-            executableName = "program"
-            path = localPath
+            executableName = LOCAL_NAME
+            path = LOCAL_PATH
         else:
-            raise Exception(f"No build files found for rocket named {rocket.rocket_name}")
+            raise FirmwareNotFound(f"No build files found for rocket named {rocket.rocket_name}")
 
-        if sys.platform in FILE_EXTENSION.keys():
-            executableName += FILE_EXTENSION[sys.platform]
+        hw_sim = rocket.construct_hw_sim()
+
+        if not hw_sim:
+            raise Exception(f"No HW Sim defined for rocket named {rocket.rocket_name}")
+
+        LOGGER.info(f"Using FW executable: {os.path.join(path, executableName)}")
 
         return SimConnection(
-            path, executableName, HWSim(rocket.hw_sim_dat)
+            path, executableName, hw_sim
         )
+
+
+class FirmwareNotFound(Exception):
+    pass

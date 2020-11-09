@@ -1,4 +1,4 @@
-from connections.sim.hw_sim import HWSim, IgnitorSim
+from connections.sim.hw_sim import HWSim, Ignitor, IgnitorType, DummySensor, SensorType
 
 
 def ignitor_test(hw, test, read):
@@ -10,55 +10,78 @@ def ignitor_test(hw, test, read):
 
 
 class TestHWSim:
-    def test_readwrite(self):
-        hw = HWSim([(1, 2, 3), (5, 9, 10)])
+    def test_ignitor_readwrite(self):
+        hw = HWSim([], [Ignitor(IgnitorType.MAIN, 1, 2, 3), Ignitor(IgnitorType.DROGUE, 5, 9, 10)])
 
-        assert hw.analog_read(2) == IgnitorSim.OFF
-        assert hw.analog_read(9) == IgnitorSim.OFF
+        assert hw.analog_read(2) == Ignitor.OFF
+        assert hw.analog_read(9) == Ignitor.OFF
 
         hw.digital_write(1, True)
-        assert hw.analog_read(2) == IgnitorSim.CONNECTED
-        assert hw.analog_read(9) == IgnitorSim.OFF
+        assert hw.analog_read(2) == Ignitor.CONNECTED
+        assert hw.analog_read(9) == Ignitor.OFF
         hw.digital_write(1, False)
 
-        assert hw.analog_read(2) == IgnitorSim.OFF
-        assert hw.analog_read(9) == IgnitorSim.OFF
+        assert hw.analog_read(2) == Ignitor.OFF
+        assert hw.analog_read(9) == Ignitor.OFF
 
         hw.digital_write(5, True)
         hw.digital_write(7, True)
-        assert hw.analog_read(2) == IgnitorSim.OFF
-        assert hw.analog_read(9) == IgnitorSim.CONNECTED
+        assert hw.analog_read(2) == Ignitor.OFF
+        assert hw.analog_read(9) == Ignitor.CONNECTED
 
-    def test_fire(self):
-        hw = HWSim([(6, 3, 1)])
+    def test_ignitor_fire(self):
+        hw = HWSim([], [Ignitor(IgnitorType.MAIN, 6, 3, 1)])
 
         hw.digital_write(1, False)  # Writing false does not fire
-        assert hw.analog_read(3) == IgnitorSim.OFF
+        assert hw.analog_read(3) == Ignitor.OFF
         hw.digital_write(6, True)
-        assert hw.analog_read(3) == IgnitorSim.CONNECTED
+        assert hw.analog_read(3) == Ignitor.CONNECTED
         hw.digital_write(6, False)
 
         hw.digital_write(1, True)  # Fire the pin
-        assert hw.analog_read(3) == IgnitorSim.OFF
+        assert hw.analog_read(3) == Ignitor.OFF
         hw.digital_write(6, True)
-        assert hw.analog_read(3) == IgnitorSim.DISCONNECTED
+        assert hw.analog_read(3) == Ignitor.DISCONNECTED
         hw.digital_write(6, False)
 
         hw.digital_write(1, False)  # Firing is one-way
-        assert hw.analog_read(3) == IgnitorSim.OFF
+        assert hw.analog_read(3) == Ignitor.OFF
         hw.digital_write(6, True)
-        assert hw.analog_read(3) == IgnitorSim.DISCONNECTED
+        assert hw.analog_read(3) == Ignitor.DISCONNECTED
         hw.digital_write(6, False)
 
-    def test_broken(self):
-        hw = HWSim([(1, 2, 3), (4, 5, 6)], True)
-        assert ignitor_test(hw, 1, 2) == IgnitorSim.DISCONNECTED
-        assert ignitor_test(hw, 4, 5) == IgnitorSim.DISCONNECTED
+    def test_ignitor_broken(self):
+        hw = HWSim([], [Ignitor(IgnitorType.MAIN, 1, 2, 3, broken=True), Ignitor(IgnitorType.DROGUE, 4, 5, 6, broken=True)])
+        assert ignitor_test(hw, 1, 2) == Ignitor.DISCONNECTED
+        assert ignitor_test(hw, 4, 5) == Ignitor.DISCONNECTED
 
-        hw = HWSim([(1, 2, 3), (4, 5, 6)], [True, False])
-        assert ignitor_test(hw, 1, 2) == IgnitorSim.DISCONNECTED
-        assert ignitor_test(hw, 4, 5) == IgnitorSim.CONNECTED
+        hw = HWSim([], [Ignitor(IgnitorType.MAIN, 1, 2, 3, broken=True), Ignitor(IgnitorType.DROGUE, 4, 5, 6, broken=False)])
+        assert ignitor_test(hw, 1, 2) == Ignitor.DISCONNECTED
+        assert ignitor_test(hw, 4, 5) == Ignitor.CONNECTED
 
         hw.digital_write(6, True)
-        assert ignitor_test(hw, 4, 5) == IgnitorSim.DISCONNECTED
+        assert ignitor_test(hw, 4, 5) == Ignitor.DISCONNECTED
+
+    def test_sensor_read(self):
+        GPS_DATA = (1, 2, 3)
+        BARO_DATA = (4, 5)
+
+        GPS = DummySensor(SensorType.GPS, GPS_DATA)
+        BARO = DummySensor(SensorType.BAROMETER, BARO_DATA)
+
+        hw = HWSim([GPS, BARO], [])
+
+        assert hw.sensor_read(SensorType.GPS) == GPS_DATA
+        assert hw.sensor_read(SensorType.BAROMETER) == BARO_DATA
+
+        GPS_DATA = (11, 12, 13)
+        BARO_DATA = (14, 15)
+
+        GPS.set_value(GPS_DATA)
+        BARO.set_value(BARO_DATA)
+
+        assert hw.sensor_read(SensorType.GPS) == GPS_DATA
+        assert hw.sensor_read(SensorType.BAROMETER) == BARO_DATA
+
+
 

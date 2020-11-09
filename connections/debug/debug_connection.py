@@ -10,6 +10,7 @@ from util.event_stats import Event
 
 ARMED_EVENT = Event('armed')
 
+PACKET_INTERVAL_S = 2
 
 class DebugConnection(Connection):
 
@@ -20,8 +21,12 @@ class DebugConnection(Connection):
         self.lastSend = time.time()  # float seconds
         self.callback = None
         self.lock = threading.RLock()  # Protects callback variable and any other "state" variables
+
+        self.cv = threading.Condition(self.lock)
+        self._is_shutting_down = False
+
+        self.connectionThread = threading.Thread(target=self._run, daemon=True, name="DebugConnectionThread")
         if generate_radio_packets:
-            self.connectionThread = threading.Thread(target=self._run, daemon=True, name="DebugConnectionThread")
             self.connectionThread.start()
 
     # Thread loop that creates fake data at constant interval and returns it via callback
@@ -30,7 +35,13 @@ class DebugConnection(Connection):
 
         """
         while True:
-            with self.lock:
+            with self.cv:
+
+                self.cv.wait_for(lambda: self._is_shutting_down, timeout=PACKET_INTERVAL_S)
+
+                if self._is_shutting_down:
+                    break
+
                 if not self.callback:
                     continue
 
@@ -40,7 +51,8 @@ class DebugConnection(Connection):
                 full_arr.extend(self.config_mock_set_values())
                 full_arr.extend(self.message_values())
                 self.send_to_rocket(full_arr)
-            time.sleep(2)
+
+        LOGGER.warning("Debug connection thread shut down")
 
     def send_to_rocket(self, data):
         with self.lock:
@@ -119,8 +131,18 @@ class DebugConnection(Connection):
 
             LOGGER.info(f"{data} sent to DebugConnection")
 
-    def shutDown(self) -> None:
-        pass
+    def shutdown(self) -> None:
+        if not self.connectionThread.is_alive():
+            return
+
+        with self.cv:
+            self._is_shutting_down = True
+
+        while self.connectionThread.is_alive():
+            with self.cv:
+                self.cv.notify()  # Wake up thread
+
+        self.connectionThread.join()  # join thread
 
     def isIntBigEndian(self) -> bool:
         return True

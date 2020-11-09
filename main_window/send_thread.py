@@ -1,4 +1,5 @@
 import queue
+from threading import RLock
 
 from digi.xbee.exception import TimeoutException, XBeeException
 from PyQt5 import QtCore
@@ -40,7 +41,8 @@ class SendThread(QtCore.QThread):
 
         self.commandQueue = queue.Queue()
 
-        self.errored = False
+        self._shutdown_lock = RLock()
+        self._is_shutting_down = False
 
     # TODO Review this data size
     def queueMessage(self, word):
@@ -60,6 +62,13 @@ class SendThread(QtCore.QThread):
             try:
                 word = self.commandQueue.get(block=True, timeout=None)  # Block until something new
                 self.commandQueue.task_done()
+
+                if word is None:  # Either received None or woken up for shutdown
+                    with self._shutdown_lock:
+                        if self._is_shutting_down:
+                            break
+                        else:
+                            continue
 
                 # Checks to see if one of pre-configed cmds. If it is, then it just sends the char associated with cmd
                 bytes = None
@@ -82,3 +91,11 @@ class SendThread(QtCore.QThread):
             except Exception as ex:
                 self.sig_print.emit("Unexpected error while sending!")
                 LOGGER.exception("Exception in send thread") # Automatically grabs and prints exception info
+
+        LOGGER.warning("Send thread shut down")
+
+    def shutdown(self):
+        with self._shutdown_lock:
+            self._is_shutting_down = True
+        self.commandQueue.put(None)  # Wake up thread
+        self.wait()  # join thread

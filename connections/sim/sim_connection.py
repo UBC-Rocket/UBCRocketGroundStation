@@ -4,11 +4,12 @@ import threading
 import struct
 from enum import Enum
 
-from .hw_sim import HWSim
+from .hw_sim import SensorType
 from ..connection import Connection
 from .stream_filter import StreamFilter
 from .xbee_module_sim import XBeeModuleSim
 from util.detail import LOGGER
+
 
 class SimRxId(Enum):
     CONFIG = 0x01
@@ -26,6 +27,15 @@ class SimTxId(Enum):
 
 
 LOG_HISTORY_SIZE = 500
+
+ID_TO_SENSOR = {
+    0x00: SensorType.GPS,
+    0x01: SensorType.IMU,
+    0x02: SensorType.ACCELEROMETER,
+    0x03: SensorType.BAROMETER,
+    0x04: SensorType.TEMPERATURE,
+    0x05: SensorType.THERMOCOUPLE
+}
 
 
 class SimConnection(Connection):
@@ -47,14 +57,17 @@ class SimConnection(Connection):
         # Gets endianess of ints and floats
         self._getEndianness()
 
-        # Thread to make communication non-blocking
-        self.thread = threading.Thread(target=self._run, name="SIM", daemon=True)
-        self.thread.start()
-
         self._xbee = XBeeModuleSim()
         self._xbee.rocket_callback = self._send_radio_sim
 
         self._hw_sim = hw_sim
+
+        self._shutdown_lock = threading.RLock()
+        self._is_shutting_down = False
+
+        # Thread to make communication non-blocking
+        self.thread = threading.Thread(target=self._run, name="SIM", daemon=True)
+        self.thread.start()
 
     def _rocket_handshake(self):
         assert self.stdout.read(3) == b"SYN"
@@ -90,8 +103,16 @@ class SimConnection(Connection):
         assert self.bigEndianFloats is not None
         return self.bigEndianFloats
 
-    def shutDown(self):
-        self.rocket.kill()  # Otherwise it will prevent process from closing
+    def shutdown(self):
+        with self._shutdown_lock:
+            self._is_shutting_down = True
+
+        self._xbee.shutdown()
+        self._hw_sim.shutdown()
+
+        self.rocket.kill()
+
+        self.thread.join()  # join thread
 
     # AKA handle "Config" packet
     def _getEndianness(self):
@@ -145,10 +166,10 @@ class SimConnection(Connection):
     def _handleSensorRead(self):
         length = self._getLength()
         assert length == 1
-        sensor = self.stdout.read(length)[0]
-        sensor_data = self._hw_sim.sensor_read(sensor)
+        sensor_id = self.stdout.read(length)[0]
+        sensor_data = self._hw_sim.sensor_read(ID_TO_SENSOR[sensor_id])
         endianness = ">" if self.bigEndianFloats else "<"
-        result = bytearray(struct.pack(f"{endianness}{len(sensor_data)}f", *sensor_data))
+        result = struct.pack(f"{endianness}{len(sensor_data)}f", *sensor_data)
         self._send_sim_packet(SimTxId.SENSOR_READ.value, result)
 
     packetHandlers = {
@@ -161,8 +182,9 @@ class SimConnection(Connection):
     }
 
     def _run(self):
-        while True:
-            try:
+        try:
+            while True:
+
                 id = self.stdout.read(1)[0]  # Returns 0 if process was killed
 
                 if id not in SimConnection.packetHandlers.keys():
@@ -174,9 +196,13 @@ class SimConnection(Connection):
 
                 # Call packet handler
                 SimConnection.packetHandlers[id](self)
-            except IndexError as ex:
-                if self.rocket.poll() is not None:  # Process was killed
-                    return
+
+        except Exception as ex:
+            with self._shutdown_lock:
+                if not self._is_shutting_down:
+                    LOGGER.exception("Error in SIM connection.")
+
+        LOGGER.warning("SIM connection thread shut down")
 
     def _getLength(self):
         [msb, lsb] = self.stdout.read(2)

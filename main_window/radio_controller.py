@@ -6,7 +6,10 @@ from typing import Any, Callable, Dict, List
 
 from . import subpacket_ids
 from util.detail import LOGGER, Count
+from util.event_stats import Event
 from .subpacket_ids import SubpacketEnum
+
+BULK_SENSOR_EVENT = Event('bulk_sensor')
 
 # Essentially a mini-class, to structure the header data. Doesn't merit its own class due to limited use,
 # can be expanded if necessary elsewhere.
@@ -269,7 +272,7 @@ class RadioController:
     #     return data
 
     def bulk_sensor(self, byte_list: List, **kwargs):
-        r"""
+        """
 
         :param byte_list:
         :type byte_list:
@@ -291,6 +294,8 @@ class RadioController:
         data[SubpacketEnum.LATITUDE.value] = self.fourtofloat(bytes_IO.read(4))  # TODO Should lat+lon be doubles??
         data[SubpacketEnum.LONGITUDE.value] = self.fourtofloat(bytes_IO.read(4))
         data[SubpacketEnum.STATE.value] = int.from_bytes(bytes_IO.read(1), "big")
+
+        BULK_SENSOR_EVENT.increment()
         return data
 
 

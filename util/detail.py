@@ -49,6 +49,8 @@ _stdout_handler.setFormatter(_logger_format)
 LOGGER.addHandler(_file_handler)
 LOGGER.addHandler(_stdout_handler)
 
+LOGGER.info(f"Starting session ID: {SESSION_ID}")
+
 # Helper class. python way of doing ++ (unlimited incrementing)
 class Count:
     def __init__(self, start=0, interval=1):

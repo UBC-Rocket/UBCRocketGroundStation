@@ -25,6 +25,16 @@ install:
 - echo "$MAPBOX_API_KEY" > apikey.txt
 - python3.7 build.py --only setup
 
+# Clone and build FW for SIM based integration tests
+- cd ..
+- git clone https://github.com/UBC-Rocket/FLARE.git
+- mkdir FLARE/avionics/build
+- cd FLARE/avionics/build
+- cat ../../../UBCRocketGroundStation/required_flare.txt | xargs git checkout
+- cmake ..
+- cmake --build .
+- cd ../../../UBCRocketGroundStation
+
 script:
 # Unit tests & integration tests
 - source venv/bin/activate

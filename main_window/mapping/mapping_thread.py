@@ -15,6 +15,7 @@ from util.detail import LOGGER
 # Scaling is linear so a scale factor of 1 means no scaling (aka 1*x=x)
 SCALE_FACTOR_NO_SCALE = 1
 
+
 class MappingThread(QtCore.QThread):
     sig_received = pyqtSignal()
     sig_print = pyqtSignal(str)
@@ -37,7 +38,8 @@ class MappingThread(QtCore.QThread):
         self.map = m
         self.data = data
 
-        self._desiredMapSize = None  # Tuple(int,int)
+        self._desiredMapSize: tuple(int, int) = None  # Lock in cv is used to protect this
+        self._is_shutting_down = False  # Lock in cv is used to protect this
 
         # Condition variable to watch for notification of new lat and lon
         self.cv = threading.Condition()  # Uses RLock inside when none is provided
@@ -148,6 +150,8 @@ class MappingThread(QtCore.QThread):
         while True:
             with self.cv:
                 self.cv.wait()  # CV lock is released while waiting
+                if self._is_shutting_down:
+                    break
 
             try:
                 # acquire location to use below here, to keep the values consistent in synchronous but adjacent calls
@@ -178,8 +182,19 @@ class MappingThread(QtCore.QThread):
                 last_update_time = current_time
 
             except Exception:
-                LOGGER.exception("Error in map thread loop") # Automatically grabs and prints exception info
+                LOGGER.exception("Error in map thread loop")  # Automatically grabs and prints exception info
 
+        LOGGER.warning("Mapping thread shut down")
+
+    def shutdown(self):
+        with self.cv:
+            self._is_shutting_down = True
+
+        while self.isRunning():
+            with self.cv:
+                self.cv.notify()  # Wake up thread
+
+        self.wait()  # join thread
 
 
 def processMap(requestQueue, resultQueue):
@@ -214,13 +229,15 @@ def processMap(requestQueue, resultQueue):
             else:
                 scaleFactor = SCALE_FACTOR_NO_SCALE
 
-            scaleFactor = min(scaleFactor, SCALE_FACTOR_NO_SCALE)  # You shall not scale the map larger. Waste of memory.
+            scaleFactor = min(scaleFactor,
+                              SCALE_FACTOR_NO_SCALE)  # You shall not scale the map larger. Waste of memory.
 
             # Downsizing the map here to the ideal size for the plot reduces the amount of work required in the main
             # thread and thus reduces stuttering
-            resizedMapImage = np.array(Image.fromarray(largeMapImage).resize((int(scaleFactor * largeMapImage.shape[0]), int(scaleFactor * largeMapImage.shape[1]))))
+            resizedMapImage = np.array(Image.fromarray(largeMapImage).resize(
+                (int(scaleFactor * largeMapImage.shape[0]), int(scaleFactor * largeMapImage.shape[1]))))
 
             resultQueue.put((resizedMapImage, location.xMin, location.xMax, location.yMin, location.yMax))
         except Exception as ex:
-            LOGGER.exception("Exception in processMap process") # Automatically grabs and prints exception info
+            LOGGER.exception("Exception in processMap process")  # Automatically grabs and prints exception info
             resultQueue.put(None)

@@ -21,8 +21,8 @@ class TantalusProfile(RocketProfile):
     @property
     def buttons(self):
         return {
-            "Arm": "arm",
-            "Status": "status"
+            "Arm": "ARM",
+            "Ping": "PING"
         }
 
     @property

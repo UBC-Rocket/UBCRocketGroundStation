@@ -26,6 +26,17 @@ def bulk_sensor(time: int, barometer_altitude: float, acceleration_x: float, acc
     bulk_sensor_arr.extend(state.to_bytes(length=1, byteorder='big'))  # State
     return bulk_sensor_arr
 
+def single_sensor(time: int, sensor_id: int, value: float) -> bytearray:
+    """
+
+    :return: data_arr
+    :rtype: bytearray
+    """
+    data_arr: bytearray = bytearray()
+    data_arr.append(sensor_id)  # id
+    data_arr.extend((int(time)).to_bytes(length=4, byteorder='big'))  # time
+    data_arr.extend(struct.pack(">f", value))  # barometer altitude
+    return data_arr
 
 class StatusType(Enum):
     NOMINAL = 0b00

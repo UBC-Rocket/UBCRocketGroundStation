@@ -65,7 +65,7 @@ class TestEventStats:
         end = time()
 
         assert ret == 0
-        assert 0.1 < end - start < 1
+        assert 0.1 < end - start < 0.4
 
     def test_call_from_other_module(self):
         event = Event('other_event')

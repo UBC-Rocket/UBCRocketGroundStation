@@ -10,6 +10,7 @@ from util.event_stats import Event
 from .subpacket_ids import SubpacketEnum
 
 BULK_SENSOR_EVENT = Event('bulk_sensor')
+SINGLE_SENSOR_EVENT = Event('single_sensor')
 
 # Essentially a mini-class, to structure the header data. Doesn't merit its own class due to limited use,
 # can be expanded if necessary elsewhere.
@@ -247,7 +248,9 @@ class RadioController:
         #     data[subpacket_id] = byte_list[0]
         # else:
         #     data[subpacket_id] = self.fourtofloat(byte_list[0])
-        data[subpacket_id] = self.fourtofloat(byte_list[0])
+        data[subpacket_id] = self.fourtofloat(byte_list[0:4])
+
+        SINGLE_SENSOR_EVENT.increment()
         return data
 
     def gps(self, byte_list, **kwargs):

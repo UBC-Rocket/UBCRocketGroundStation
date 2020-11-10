@@ -9,6 +9,7 @@ from util.detail import LOGGER
 from util.event_stats import Event
 
 ARMED_EVENT = Event('armed')
+DISARMED_EVENT = Event('disarmed')
 
 PACKET_INTERVAL_S = 2
 
@@ -126,8 +127,10 @@ class DebugConnection(Connection):
         :type data:
         """
         with self.lock:  # Currently not needed, but good to have for future
-            if data == b'r':
+            if data == bytes([0x41]):
                 ARMED_EVENT.increment()
+            elif data == bytes([0x44]):
+                DISARMED_EVENT.increment()
 
             LOGGER.info(f"{data} sent to DebugConnection")
 

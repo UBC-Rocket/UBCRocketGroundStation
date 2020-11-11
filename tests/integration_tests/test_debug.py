@@ -1,6 +1,6 @@
 import pytest
 from connections.debug.debug_connection import DebugConnection, ARMED_EVENT, DISARMED_EVENT
-from main_window.main import MainApp, LABLES_UPDATED_EVENT
+from main_window.competition.comp_app import CompApp, LABLES_UPDATED_EVENT
 from profiles.rockets.co_pilot import CoPilotProfile
 from connections.debug import radio_packets
 from main_window.rocket_data import BUNDLE_ADDED_EVENT
@@ -19,18 +19,18 @@ from util.event_stats import get_event_stats_snapshot
 @pytest.fixture(scope="function")
 def main_app():
     connection = DebugConnection(generate_radio_packets=False)
-    app = MainApp(connection, CoPilotProfile())
+    app = CompApp(connection, CoPilotProfile())
     yield app  # Provides app, following code is run on cleanup
     app.shutdown()
 
 def test_arm_signal(qtbot, main_app):
     snapshot = get_event_stats_snapshot()
 
-    main_app.sendCommand("arm")
+    main_app.send_command("arm")
 
     assert ARMED_EVENT.wait(snapshot) == 1
 
-    main_app.sendCommand("disarm")
+    main_app.send_command("disarm")
 
     assert DISARMED_EVENT.wait(snapshot) == 1
 
@@ -174,7 +174,7 @@ def test_status_ping_packet(qtbot, main_app):
 
 def test_clean_shutdown(qtbot):
     connection = DebugConnection(generate_radio_packets=True)
-    main_app = MainApp(connection, CoPilotProfile())
+    main_app = CompApp(connection, CoPilotProfile())
 
     assert main_app.ReadThread.isRunning()
     assert main_app.SendThread.isRunning()

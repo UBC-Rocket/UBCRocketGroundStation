@@ -16,9 +16,9 @@ from profiles.rocket_profile import RocketProfile
 
 from .mapping import map_data, mapbox_utils
 from .mapping.mapping_thread import MappingThread
-from .read_thread import ReadThread
-from .rocket_data import RocketData
-from .send_thread import SendThread
+from main_window.read_thread import ReadThread
+from main_window.rocket_data import RocketData
+from main_window.send_thread import SendThread
 
 if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)

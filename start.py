@@ -5,7 +5,7 @@ import matplotlib
 matplotlib.use('QT5Agg') # Ensures that the Qt5 backend is used, otherwise there might be some issues on some OSs (Mac)
 from com_window.main import ComWindow
 from PyQt5 import QtWidgets
-from main_window.main import MainApp
+from main_window.competition.main import MainApp
 from connections.debug.debug_connection_factory import DebugConnectionFactory
 from profiles.rockets.tantalus import TantalusProfile
 from util.self_test import SelfTest

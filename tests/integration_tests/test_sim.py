@@ -2,7 +2,7 @@ import pytest
 from pytest import approx
 from connections.sim.sim_connection_factory import SimConnectionFactory, FirmwareNotFound
 from connections.sim.hw_sim import SensorType, SENSOR_READ_EVENT
-from main_window.main import MainApp
+from main_window.competition.main import MainApp
 from profiles.rockets.tantalus import TantalusProfile
 from main_window.rocket_data import BUNDLE_ADDED_EVENT
 from main_window.subpacket_ids import SubpacketEnum

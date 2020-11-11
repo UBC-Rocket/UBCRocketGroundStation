@@ -4,7 +4,7 @@ from time import sleep
 
 from util.event_stats import get_event_stats_snapshot
 from util.detail import LOGGER
-from main_window.main import LABLES_UPDATED_EVENT, MAP_UPDATED_EVENT
+from main_window.competition.main import LABLES_UPDATED_EVENT, MAP_UPDATED_EVENT
 
 class SelfTest:
     """

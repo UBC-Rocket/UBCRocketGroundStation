@@ -62,6 +62,11 @@ class MainApp(QtWidgets.QMainWindow):
         self.shutdown()
 
     def shutdown(self):
+        """
+        This is called when the app is being requested to shut down
+        :return:
+        :rtype:
+        """
         LOGGER.debug(f"MainApp shutting down")
         self.ReadThread.shutdown()
         self.SendThread.shutdown()

@@ -5,10 +5,17 @@ from .debug_connection import DebugConnection
 
 
 class DebugConnectionFactory(ConnectionFactory):
-    def requiresComPort(self) -> bool:
+
+    @property
+    def connection_name(self) -> str:
+        return "Debug"
+
+    @property
+    def requires_com_port(self) -> bool:
         return False
 
-    def requiresBaudRate(self) -> bool:
+    @property
+    def requires_baud_rate(self) -> bool:
         return False
 
     def construct(

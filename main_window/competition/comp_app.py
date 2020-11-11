@@ -15,7 +15,7 @@ from .mapping import map_data, mapbox_utils
 from .mapping.mapping_thread import MappingThread
 from main_window.main_app import MainApp
 
-qtCreatorFile = os.path.join(BUNDLED_DATA, "qt_files", "main.ui")
+qtCreatorFile = os.path.join(BUNDLED_DATA, "qt_files", "comp_app.ui")
 
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 

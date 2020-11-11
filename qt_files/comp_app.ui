@@ -114,7 +114,7 @@
   <customwidget>
    <class>MplWidget</class>
    <extends>QWidget</extends>
-   <header>qt_files.mplwidget.h</header>
+   <header>main_window.mplwidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

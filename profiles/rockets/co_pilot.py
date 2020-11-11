@@ -3,6 +3,7 @@ from ..label import (Label, update_acceleration, update_altitude,
                      update_max_altitude, update_pressure, update_state,
                      update_tank_pressure)
 from ..rocket_profile import RocketProfile
+from main_window.competition.comp_app import CompApp
 
 
 class CoPilotProfile(RocketProfile):
@@ -41,3 +42,6 @@ class CoPilotProfile(RocketProfile):
     def construct_hw_sim(self):
         # Assemble HW here
         return None
+
+    def construct_app(self, connection):
+        return CompApp(connection, self)

@@ -22,10 +22,17 @@ LOCAL_NAME = 'program' + FILE_EXTENSION[sys.platform]
 
 
 class SimConnectionFactory(ConnectionFactory):
-    def requiresComPort(self) -> bool:
+
+    @property
+    def connection_name(self) -> str:
+        return "SIM"
+
+    @property
+    def requires_com_port(self) -> bool:
         return False
 
-    def requiresBaudRate(self) -> bool:
+    @property
+    def requires_baud_rate(self) -> bool:
         return False
 
     def construct(
@@ -35,6 +42,9 @@ class SimConnectionFactory(ConnectionFactory):
             rocket=None,
     ):
         assert rocket is not None
+
+        if rocket.sim_executable_name is None:
+            raise Exception("No sim executable name defined for this rocket profile")
 
         # Check FW (child) dir and FLARE (neighbour) dir for rocket build files
         # If multiple build files found throw exception

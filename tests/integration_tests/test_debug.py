@@ -19,7 +19,7 @@ from util.event_stats import get_event_stats_snapshot
 @pytest.fixture(scope="function")
 def main_app():
     connection = DebugConnection(generate_radio_packets=False)
-    app = CompApp(connection, CoPilotProfile())
+    app = CoPilotProfile().construct_app(connection)
     yield app  # Provides app, following code is run on cleanup
     app.shutdown()
 
@@ -174,7 +174,7 @@ def test_status_ping_packet(qtbot, main_app):
 
 def test_clean_shutdown(qtbot):
     connection = DebugConnection(generate_radio_packets=True)
-    main_app = CompApp(connection, CoPilotProfile())
+    main_app = CoPilotProfile().construct_app(connection)
 
     assert main_app.ReadThread.isRunning()
     assert main_app.SendThread.isRunning()

@@ -17,7 +17,7 @@ def main_app() -> CompApp:
         connection = SimConnectionFactory().construct(rocket=TantalusProfile())
     except FirmwareNotFound as ex:
         pytest.skip("Firmware not found")
-    app = CompApp(connection, TantalusProfile())
+    app = TantalusProfile().construct_app(connection)
     yield app  # Provides app, following code is run on cleanup
     app.shutdown()
 

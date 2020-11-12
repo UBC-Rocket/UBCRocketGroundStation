@@ -1,11 +1,11 @@
 import pytest
-from connections.debug.debug_connection import DebugConnection, ARMED_EVENT
+from connections.debug.debug_connection import DebugConnection, ARMED_EVENT, DISARMED_EVENT
 from main_window.main import MainApp, LABLES_UPDATED_EVENT
 from profiles.rockets.co_pilot import CoPilotProfile
 from connections.debug import radio_packets
 from main_window.rocket_data import BUNDLE_ADDED_EVENT
 from main_window.subpacket_ids import SubpacketEnum
-from main_window.radio_controller import BULK_SENSOR_EVENT
+from main_window.radio_controller import BULK_SENSOR_EVENT, SINGLE_SENSOR_EVENT
 from main_window.radio_controller import (
     IS_SIM,
     ROCKET_TYPE,
@@ -28,8 +28,12 @@ def test_arm_signal(qtbot, main_app):
 
     main_app.sendCommand("arm")
 
-    num = ARMED_EVENT.wait(snapshot)
-    assert num == 1
+    assert ARMED_EVENT.wait(snapshot) == 1
+
+    main_app.sendCommand("disarm")
+
+    assert DISARMED_EVENT.wait(snapshot) == 1
+
 
 
 def test_bulk_sensor_packet(qtbot, main_app):
@@ -46,11 +50,9 @@ def test_bulk_sensor_packet(qtbot, main_app):
     ):  # Needed otherwise signals wont process because UI is in same thread
         connection.send_to_rocket(packet)
 
-    num = BULK_SENSOR_EVENT.wait(snapshot)
-    assert num == 1
+    assert BULK_SENSOR_EVENT.wait(snapshot) == 1
 
-    num = BUNDLE_ADDED_EVENT.wait(snapshot)
-    assert num == 1
+    assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 
     def get_val(val):
         return main_app.rocket_data.lastvalue(val.value)
@@ -71,13 +73,51 @@ def test_bulk_sensor_packet(qtbot, main_app):
 
     assert sensor_inputs[1:] == last_values
 
-    num = LABLES_UPDATED_EVENT.wait(snapshot)
-    assert num == 1
+    assert LABLES_UPDATED_EVENT.wait(snapshot) == 1
 
     assert float(main_app.AltitudeLabel.text()) == 2.0
     assert main_app.GPSLabel.text() == "9.0, 10.0"
     assert float(main_app.StateLabel.text()) == 11.0
 
+def test_single_sensor_packet(qtbot, main_app):
+    connection = main_app.connection
+
+    vals = [
+        (SubpacketEnum.ACCELERATION_Y, 1),
+        (SubpacketEnum.ACCELERATION_X, 2),
+        (SubpacketEnum.ACCELERATION_Z, 3),
+        (SubpacketEnum.PRESSURE, 4),
+        (SubpacketEnum.BAROMETER_TEMPERATURE, 5),
+        (SubpacketEnum.TEMPERATURE, 6),
+        (SubpacketEnum.LATITUDE, 7),
+        (SubpacketEnum.LONGITUDE, 8),
+        (SubpacketEnum.GPS_ALTITUDE, 9),
+        (SubpacketEnum.CALCULATED_ALTITUDE, 10),
+        (SubpacketEnum.GROUND_ALTITUDE, 12),
+
+        (SubpacketEnum.ACCELERATION_Y, 13),
+        (SubpacketEnum.ACCELERATION_X, 14),
+        (SubpacketEnum.ACCELERATION_Z, 15),
+        (SubpacketEnum.PRESSURE, 16),
+        (SubpacketEnum.BAROMETER_TEMPERATURE, 17),
+        (SubpacketEnum.TEMPERATURE, 18),
+        (SubpacketEnum.LATITUDE, 19),
+        (SubpacketEnum.LONGITUDE, 20),
+        (SubpacketEnum.GPS_ALTITUDE, 21),
+        (SubpacketEnum.CALCULATED_ALTITUDE, 22),
+        (SubpacketEnum.GROUND_ALTITUDE, 24),
+    ]
+
+    for sensor_id, val in vals:
+        packet = radio_packets.single_sensor(0, sensor_id.value, val)
+
+        snapshot = get_event_stats_snapshot()
+
+        connection.send_to_rocket(packet)
+
+        assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
+
+        assert main_app.rocket_data.lastvalue(sensor_id.value) == val
 
 def test_message_packet(qtbot, main_app, caplog):
     connection = main_app.connection
@@ -88,8 +128,7 @@ def test_message_packet(qtbot, main_app, caplog):
 
     connection.send_to_rocket(packet)
 
-    num = BUNDLE_ADDED_EVENT.wait(snapshot)
-    assert num == 1
+    assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 
     assert main_app.rocket_data.lastvalue(SubpacketEnum.MESSAGE.value) == "test_message"
     assert "test_message" in caplog.text
@@ -104,8 +143,7 @@ def test_config_packet(qtbot, main_app):
 
     connection.send_to_rocket(packet)
 
-    num = BUNDLE_ADDED_EVENT.wait(snapshot)
-    assert num == 1
+    assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 
     assert main_app.rocket_data.lastvalue(IS_SIM) == True
     assert main_app.rocket_data.lastvalue(ROCKET_TYPE) == 2
@@ -122,8 +160,7 @@ def test_status_ping_packet(qtbot, main_app):
 
     connection.send_to_rocket(packet)
 
-    num = BUNDLE_ADDED_EVENT.wait(snapshot)
-    assert num == 1
+    assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 
     assert (
             main_app.rocket_data.lastvalue(SubpacketEnum.STATUS_PING.value)

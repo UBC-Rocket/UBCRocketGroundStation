@@ -39,17 +39,17 @@ class TestXBeeModuleSim:
 
         snapshot = get_event_stats_snapshot()
         self.xbee.recieved_from_rocket(tx_example)
-        num = FRAME_PARSED_EVENT.wait(snapshot)
 
-        assert num == 1
+        assert FRAME_PARSED_EVENT.wait(snapshot) == 1
+
         assert self.msgs_to_ground == [b"TxData0A"]
 
     def test_ground_rx(self):
         snapshot = get_event_stats_snapshot()
         self.xbee.send_to_rocket(b"HelloRocket")  # 11 bytes
-        num = SENT_TO_ROCKET_EVENT.wait(snapshot)
 
-        assert num == 1
+        assert SENT_TO_ROCKET_EVENT.wait(snapshot) == 1
+
         assert len(self.msgs_to_rocket[0]) == 27
         assert self.msgs_to_rocket[0][15:-1] == b"HelloRocket"
 
@@ -62,7 +62,7 @@ class TestXBeeModuleSim:
         snapshot = get_event_stats_snapshot()
         self.xbee.recieved_from_rocket(tx_1)
         self.xbee.recieved_from_rocket(tx_2)
-        num = FRAME_PARSED_EVENT.wait(snapshot)
 
-        assert num == 1
+        assert FRAME_PARSED_EVENT.wait(snapshot) == 1
+
         assert self.msgs_to_ground == [b"TxData0A"]

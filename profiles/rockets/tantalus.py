@@ -21,8 +21,8 @@ class TantalusProfile(RocketProfile):
     @property
     def buttons(self):
         return {
-            "Arm": "arm",
-            "Status": "status"
+            "Arm": "ARM",
+            "Ping": "PING"
         }
 
     @property
@@ -46,7 +46,10 @@ class TantalusProfile(RocketProfile):
 
         hw_sim_sensors = [
             DummySensor(SensorType.BAROMETER, (1000, 25)),
-            DummySensor(SensorType.GPS, (12.6, 13.2, 175))
+            DummySensor(SensorType.GPS, (12.6, 13.2, 175)),
+            DummySensor(SensorType.ACCELEROMETER, (1, 0, 0)),
+            DummySensor(SensorType.IMU, (1, 0, 0, 0)),
+            DummySensor(SensorType.TEMPERATURE, (20,)),
         ]
 
         hw_sim_ignitors = [

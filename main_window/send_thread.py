@@ -1,29 +1,37 @@
 import queue
+from enum import Enum
 from threading import RLock
 
-from digi.xbee.exception import TimeoutException, XBeeException
+from digi.xbee.exception import TimeoutException
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
 
 from util.detail import LOGGER
 
 # TODO change this section with new Radio protocol comm refactoring
-COM_ID = {
-    # TODO ASK Are we going to continue to send single characters according to user commands? If yes, then why not
-    #  provide drop down/multiple select??? AND This should not be here anyway, it relates to communication protocol
-    #  -> RadioController
-    "arm": 'r',
-    "cameras on": 'C',
-    "cameras off": 'O',
-    "halo": 'H',
-    "satcom": 's',
-    "reset": 'R',
-    "status": 'S',
-    "main": 'm',
-    "drogue": 'd',
-    "ping": 'p'
-}
-
+# TODO ASK Are we going to continue to send single characters according to user commands? If yes, then why not
+#  provide drop down/multiple select??? AND This should not be here anyway, it relates to communication protocol
+#  -> RadioController
+class CommandType(Enum):
+    ARM = 0x41
+    DISARM = 0x44
+    PING = 0x50
+    BULK = 0x30
+    ACCELX = 0x10
+    ACCELY = 0x11
+    ACCELZ = 0x12
+    BAROPRES = 0x13
+    BAROTEMP = 0x14
+    TEMP = 0x15
+    LAT = 0x19
+    LON = 0x1A
+    GPSALT = 0x1B
+    ALT = 0x1C
+    STATE = 0x1D
+    VOLT = 0x1E
+    GROUND = 0x1F
+    GPS = 0x04
+    ORIENT = 0x06
 
 class SendThread(QtCore.QThread):
     sig_print = pyqtSignal(str)
@@ -70,15 +78,14 @@ class SendThread(QtCore.QThread):
                         else:
                             continue
 
-                # Checks to see if one of pre-configed cmds. If it is, then it just sends the char associated with cmd
-                bytes = None
-                if word in COM_ID:
-                    bytes = COM_ID[word].encode('ascii')
+                try:
+                    command = CommandType[word.upper()]
+                    data = bytes([command.value])
+                except KeyError:
+                    self.sig_print.emit("Error: Unknown Command")
+                    continue
 
-                else:
-                    bytes = word.encode('ascii')
-
-                self.connection.send(bytes)
+                self.connection.send(data)
 
                 self.sig_print.emit("Sent!")
 

@@ -14,10 +14,10 @@ class CoPilotProfile(RocketProfile):
     @property
     def buttons(self):
         return {
-            "Arm": "arm",
+            "Arm": "ARM",
             "Halo": "halo",
             "Data": "data",
-            "Status": "status"
+            "Ping": "PING"
         }
 
     @property

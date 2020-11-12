@@ -45,7 +45,7 @@ class Event:
 
             _stats_cv.notify_all()
 
-    def wait(self, snapshot, timeout=60):
+    def wait(self, snapshot, timeout=60, num_expected=1):
         """Waits for the event counter to change compared to snapshot, indicating that it has occurred.
 
         Difference in event counter is returned so that tests can assert on number of occurrences.
@@ -54,6 +54,8 @@ class Event:
         :type snapshot: dict
         :param timeout: Seconds after which to return
         :type timeout: float
+        :param num_expected: Diff expected. Waits until num_expected event occurrences before returning (or timeout)
+        :type timeout: int
         :return: difference in event counter
         :rtype: int
         """
@@ -66,7 +68,7 @@ class Event:
             if current_value() < initial_value:
                 raise ValueError("Invalid snapshot. Event counter greater than current value.")
 
-            _stats_cv.wait_for(lambda: current_value() > initial_value, timeout=timeout)
+            _stats_cv.wait_for(lambda: current_value() - initial_value >= num_expected, timeout=timeout)
 
             return current_value() - initial_value
 

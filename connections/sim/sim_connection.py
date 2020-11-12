@@ -72,7 +72,7 @@ class SimConnection(Connection):
     def _rocket_handshake(self):
         assert self.stdout.read(3) == b"SYN"
         # Uncomment for FW debuggers, for a chance to attach debugger
-        # input("Recieved rocket SYN; press enter to respond with ACK and continue\n")
+        # input(f"Received rocket SYN; press enter to respond with ACK and continue. PID={self.rocket.pid}\n")
         self.rocket.stdin.write(b"ACK")
         self.rocket.stdin.flush()
 

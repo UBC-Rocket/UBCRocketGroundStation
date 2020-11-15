@@ -8,7 +8,7 @@ from PyQt5.QtCore import pyqtSignal
 import numpy as np
 from PIL import Image
 
-from ..subpacket_ids import SubpacketEnum
+from main_window.subpacket_ids import SubpacketEnum
 from . import map_data, mapbox_utils
 from util.detail import LOGGER
 

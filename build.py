@@ -12,13 +12,11 @@ EXECUTABLE_NAME = 'UBCRGS'
 ENTRY_POINT = 'start.py'
 
 DATA_FILES = [
-    'qt_files/main.ui',
-    'qt_files/marker.png',
-    'qt_files/com_window.ui'
+    'qt_files/*',
 ]
 
 HIDDEN_IMPORTS = [
-    'qt_files.mplwidget'
+    'main_window.mplwidget',
 ]
 
 '''

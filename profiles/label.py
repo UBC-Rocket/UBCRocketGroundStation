@@ -16,14 +16,14 @@ class Label:
     """
 
     def __init__(
-        self,
-        name: str,
-        update_func: Callable[[RocketData], str],
-        display_name: Optional[str] = None,
+            self,
+            name: str,
+            update_func: Callable[[RocketData], str],
+            display_name: Optional[str] = None,
     ):
         self.name = name
         self.display_name = display_name if display_name is not None else name
-        self.update = update_func
+        self.update = update_func  # Must support lastvalue returning None
 
 
 def update_altitude(rocket_data: RocketData) -> str:
@@ -50,7 +50,7 @@ def update_pressure(rocket_data: RocketData) -> str:
 
 def update_acceleration(rocket_data: RocketData) -> str:
     def nonezero(x: Union[float, None]) -> float:
-        return 0 if x is None else x
+        return 0 if x is None else x  # To support lastvalue returning None
 
     accel = math.sqrt(
         nonezero(rocket_data.lastvalue(SubpacketEnum.ACCELERATION_X.value)) ** 2

@@ -1,9 +1,9 @@
-import abc
+from abc import ABC, abstractmethod
 from typing import Callable
 
 
-class Connection(metaclass=abc.ABCMeta):
-    @abc.abstractmethod
+class Connection(ABC):
+    @abstractmethod
     def registerCallback(self, fn: Callable[[bytearray], None]) -> None:
         """Register callback to which we will send new data.
 
@@ -13,22 +13,22 @@ class Connection(metaclass=abc.ABCMeta):
         pass
 
     # Send data to connection
-    @abc.abstractmethod
+    @abstractmethod
     def send(self, data) -> None:  # must be thead safe
         pass
 
     # Called to upon shutdown. Clean-up tasks done here.
-    @abc.abstractmethod
+    @abstractmethod
     def shutdown(self) -> None:
         pass
 
     # Returns whether ints should be decoded as big endian
-    @abc.abstractmethod
+    @abstractmethod
     def isIntBigEndian(self) -> None:  # must be thead safe
         pass
 
     # Returns whether floats should be decoded as big endian
-    @abc.abstractmethod
+    @abstractmethod
     def isFloatBigEndian(self) -> None:
         pass
 

@@ -20,6 +20,9 @@ Header = collections.namedtuple('Header', ['subpacket_id', 'timestamp', 'header_
 # TODO Extract
 ROCKET_TYPE = 'ROCKET_TYPE'
 IS_SIM = 'IS_SIM'
+VERSION_ID = 'VERSION_ID'
+VERSION_ID_LEN = 1
+MESSAGE = 'MESSAGE'
 # TODO extract and cleanup https://trello.com/c/uFHtaN51/
 NOMINAL = 'NOMINAL'
 NONCRITICAL_FAILURE = 'NONCRITICAL_FAILURE'
@@ -40,12 +43,16 @@ OTHER_STATUS_TYPES = [DROGUE_IGNITER_CONTINUITY, MAIN_IGNITER_CONTINUITY, FILE_O
 PACKET_ID_TO_CONST_LENGTH: Dict[int, int] = {
     SubpacketEnum.STATUS_PING.value: 5,
     SubpacketEnum.EVENT.value: 1,
+    SubpacketEnum.CONFIG.value: 3,
     SubpacketEnum.GPS.value: 24,
-    # SubpacketEnum.ACKNOWLEDGEMENT.value: 0000, # TODO
+    # SubpacketEnum.ACKNOWLEDGEMENT.value: 0000, # TODO Waiting on spec
     SubpacketEnum.BULK_SENSOR.value: 37,
 }
 for i in subpacket_ids.get_list_of_sensor_IDs():
     PACKET_ID_TO_CONST_LENGTH[i] = 4
+
+HEADER_SIZE_WITH_LEN = 6
+HEADER_SIZE_NO_LEN = 5
 
 # Check if packet of given type has constant length
 def isPacketLengthConst(subpacket_id):
@@ -53,8 +60,7 @@ def isPacketLengthConst(subpacket_id):
 
 
 # This class takes care of converting subpacket data coming in, according to the specifications.
-# The term/parameter name byte list refer to a list of byte data, each byte being represented as ints.
-class RadioController:
+class PacketParser:
 
     def __init__(self, bigEndianInts, bigEndianFloats):
         """
@@ -67,74 +73,70 @@ class RadioController:
         self.bigEndianInts = bigEndianInts
         self.bigEndianFloats = bigEndianFloats
 
-    # Return dict of parsed subpacket data and length of subpacket
-    def extract(self, byte_list: List):
+    def extract(self, byte_stream: BytesIO):
         """
-
-        :param byte_list:
-        :type byte_list:
+        Return dict of parsed subpacket data and length of subpacket
+        :param byte_stream:
+        :type byte_stream:
         :return:
         :rtype:
         """
         # header extraction
-        header = self.header(byte_list)
+        header = self.header(byte_stream)
+
         # data extraction
-        data_unit = byte_list[header.header_length : header.total_length]
         try:
-            parsed_data: Dict[Any, Any] = self.parse_data(header.subpacket_id, data_unit, header.data_length)
+            parsed_data: Dict[Any, Any] = self.parse_data(header.subpacket_id, byte_stream, header.data_length)
         except Exception as e:
             LOGGER.exception("Error parsing data") # Automatically grabs and prints exception info
             raise e
-        # Add timestamp from header
+
         parsed_data[SubpacketEnum.TIME.value] = header.timestamp
-        return parsed_data, header.total_length
+        return parsed_data
 
-    # general data parser interface. Routes to the right parse, based on subpacket_id
-    def parse_data(self, subpacket_id, byte_list, length) -> Dict[Any, Any]:
+    def parse_data(self, subpacket_id, byte_stream: BytesIO, length) -> Dict[Any, Any]:
         """
-
+         general data parser interface. Routes to the right parse, based on subpacket_id
         :param subpacket_id:
         :type subpacket_id:
-        :param byte_list:
-        :type byte_list:
+        :param byte_stream:
+        :type byte_stream:
         :param length:
         :type length:
         :return:
         :rtype:
         """
-        return self.packetTypeToParser[subpacket_id](self, byte_list, length=length, subpacket_id=subpacket_id)
+        return self.packetTypeToParser[subpacket_id](self, byte_stream, length=length, subpacket_id=subpacket_id)
 
-    # Header extractor helper.
-    # ASSUMES that length values represent data lengths, including headers
-    def header(self, byte_list: List) -> Header:
+    def header(self, byte_stream: BytesIO) -> Header:
         """
-
-        :param byte_list:
-        :type byte_list:
+        Header extractor helper.
+        ASSUMES that length values represent data length excluding header
+        :param byte_stream:
+        :type byte_stream:
         :return:
         :rtype:
         """
-        currByte = Count(0, 1)  # index for which byte is to be processed next. Collected in return as header size
-
         # Get ID
-        subpacket_id: int = byte_list[currByte.currAndInc(1)]
+        subpacket_id: int = byte_stream.read(1)[0]
+
         # check that id is valid:
         if not subpacket_ids.isSubpacketID(subpacket_id):
+            print("The current id isn't valid:", subpacket_id)
             # TODO Error log here?
+            temp = byte_stream.getvalue()
             raise ValueError
 
         # Get timestamp
-        timestamp: int = self.fourtoint(byte_list[currByte.curr() : currByte.next(4)])
-
-        # Set header length, up to this point.
-        header_length = currByte.curr()
+        timestamp: int = self.fourtoint(byte_stream.read(4))
 
         # Get length
         if isPacketLengthConst(subpacket_id):
             data_length: int = PACKET_ID_TO_CONST_LENGTH[subpacket_id]
+            header_length = HEADER_SIZE_NO_LEN
         else:
-            data_length: int = byte_list[currByte.currAndInc(1)]
-            header_length = currByte.curr()  # Update header length due to presence of length byte
+            data_length: int = byte_stream.read(1)[0]
+            header_length = HEADER_SIZE_WITH_LEN
 
         total_length = data_length + header_length
 
@@ -142,12 +144,12 @@ class RadioController:
 
     ### General sensor data parsers
 
-    # Convert bit field into a series of statuses
-    def statusPing(self, byte_list, **kwargs):
+    # Convert bit field into a series of statuses # TODO  refactor in progress
+    def statusPing(self, byte_stream: BytesIO, **kwargs):
         """
 
-        :param byte_list:
-        :type byte_list:
+        :param byte_stream:
+        :type byte_stream:
         :key ---: unused
         :return:
         :rtype:
@@ -158,85 +160,93 @@ class RadioController:
         data: Dict = {}
         curr_byte = Count(0, 1)
 
-        # Overall status from 6th and 7th bits
-        overallStatus = self.bitfrombyte(byte_list[curr_byte.curr()], 1) | self.bitfrombyte(byte_list[curr_byte.currAndInc(1)], 0)
-        if overallStatus == 0b00000000:
-            data[SubpacketEnum.STATUS_PING.value] = NOMINAL
-        elif overallStatus == 0b00000001:
-            data[SubpacketEnum.STATUS_PING.value] = NONCRITICAL_FAILURE
-        elif overallStatus == 0b00000011:
-            data[SubpacketEnum.STATUS_PING.value] = CRITICAL_FAILURE
+        # # Overall status from 6th and 7th bits
+        # overallStatus = self.bitfrombyte(byte_list[curr_byte.curr()], 1) | self.bitfrombyte(byte_list[curr_byte.currAndInc(1)], 0)
+        # if overallStatus == 0b00000000:
+        #     data[SubpacketEnum.STATUS_PING.value] = NOMINAL
+        # elif overallStatus == 0b00000001:
+        #     data[SubpacketEnum.STATUS_PING.value] = NONCRITICAL_FAILURE
+        # elif overallStatus == 0b00000011:
+        #     data[SubpacketEnum.STATUS_PING.value] = CRITICAL_FAILURE
+        #
+        # # Sensor status
+        # num_assigned_bits = min(sensor_bit_field_length, len(SENSOR_TYPES))  # only go as far as is assigned
+        # for i in range(0, num_assigned_bits):
+        #     byte_index = curr_byte.curr() + math.floor(i / 8)
+        #     relative_bit_index = 7 - (i % 8)  # get the bits left to right
+        #     data[SENSOR_TYPES[i]] = self.bitfrombyte(byte_list[byte_index], relative_bit_index)
+        # curr_byte.next(math.floor(sensor_bit_field_length / 8))  # move to next section of bytes
+        #
+        # # Other misc statuses
+        # num_assigned_bits = min(other_bit_field_length, len(OTHER_STATUS_TYPES))  # only go as far as is assigned
+        # for i in range(0, num_assigned_bits):
+        #     byte_index = curr_byte.curr() + math.floor(i / 8)
+        #     relative_bit_index = 7 - (i % 8)
+        #     data[OTHER_STATUS_TYPES[i]] = self.bitfrombyte(byte_list[byte_index], relative_bit_index)
+        # curr_byte.next(math.floor(other_bit_field_length / 8))
 
-        # Sensor status
-        num_assigned_bits = min(sensor_bit_field_length, len(SENSOR_TYPES))  # only go as far as is assigned
-        for i in range(0, num_assigned_bits):
-            byte_index = curr_byte.curr() + math.floor(i / 8)
-            relative_bit_index = 7 - (i % 8)  # get the bits left to right
-            data[SENSOR_TYPES[i]] = self.bitfrombyte(byte_list[byte_index], relative_bit_index)
-        curr_byte.next(math.floor(sensor_bit_field_length / 8))  # move to next section of bytes
-
-        # Other misc statuses
-        num_assigned_bits = min(other_bit_field_length, len(OTHER_STATUS_TYPES))  # only go as far as is assigned
-        for i in range(0, num_assigned_bits):
-            byte_index = curr_byte.curr() + math.floor(i / 8)
-            relative_bit_index = 7 - (i % 8)
-            data[OTHER_STATUS_TYPES[i]] = self.bitfrombyte(byte_list[byte_index], relative_bit_index)
-        curr_byte.next(math.floor(other_bit_field_length / 8))
+        # TODO temp until refactor done
+        byte_stream.read(PACKET_ID_TO_CONST_LENGTH[subpacket_ids.SubpacketEnum.STATUS_PING.value])
         return data
 
-    def message(self, byte_list, **kwargs):
+    def message(self, byte_stream: BytesIO, **kwargs):
         """
-
-        :param byte_list:
-        :type byte_list:
-        :key ---: unused
+        Save and log an extracted message.
+        :param byte_stream:
+        :type byte_stream:
+        :key length: Message size in bytes
         :return:
         :rtype:
         """
         data: Dict = {}
+        length = kwargs['length']
 
-        # Two step: int[] -> bytearray -> string. Probably a more efficient way
-        byte_data = bytearray(byte_list)
+        # Two step: immutable int[] -> string
+        byte_data = byte_stream.read(length)
         data[SubpacketEnum.MESSAGE.value] = byte_data.decode('ascii')
-        # Do something with data TODO Temporary until: saved to RocketData, logged, or displayed
+
+        # Do something with data
         LOGGER.info("Incoming message: " + str(data[SubpacketEnum.MESSAGE.value]))
         return data
 
-    def event(self, byte_list, **kwargs):
+    def event(self, byte_stream: BytesIO, **kwargs):
         """
 
-        :param byte_list:
-        :type byte_list:
+        :param byte_stream:
+        :type byte_stream:
         :key ---: unused
         :return:
         :rtype:
         """
         data: Dict = {}
         # TODO Enumerate the list of events mapped to strings somewhere? Then convert to human readable string here.
-        data[SubpacketEnum.EVENT.value] = byte_list[0]
+        data[SubpacketEnum.EVENT.value] = byte_stream.read(1)[0]
         return data
 
-    # TODO. This is a stub until there is a spec.
-    def config(self, byte_list, **kwargs):
+    # TODO Waiting on spec. Eg. Needs spec for VERSION_ID and length. Needs spec for if/how rocket type is used
+    def config(self, byte_stream: BytesIO, **kwargs):
         """
 
-        :param byte_list:
-        :type byte_list:
+        :param byte_stream:
+        :type byte_stream:
         :key ---: unused
         :return:
         :rtype:
         """
 
         data = {}
-        data[IS_SIM] = byte_list[0]
-        data[ROCKET_TYPE] = byte_list[1] # TODO Extract
+        data[IS_SIM] = byte_stream.read(1)[0]
+        data[ROCKET_TYPE] = byte_stream.read(1)[0]
+        version_id = byte_stream.read(VERSION_ID_LEN)
+        data[VERSION_ID] = version_id.decode('ascii')
+        print("Packet actually parsed", data)
         return data
 
-    def single_sensor(self, byte_list, **kwargs):
+    def single_sensor(self, byte_stream: BytesIO, **kwargs):
         """
 
-        :param byte_list:
-        :type byte_list:
+        :param byte_stream:
+        :type byte_stream:
         :key subpacket_id: The type of sensor, but mapped to subpacket id TODO Review w/ https://trello.com/c/uFHtaN51
         :return:
         :rtype:
@@ -248,62 +258,59 @@ class RadioController:
         #     data[subpacket_id] = byte_list[0]
         # else:
         #     data[subpacket_id] = self.fourtofloat(byte_list[0])
-        data[subpacket_id] = self.fourtofloat(byte_list[0:4])
+        data[subpacket_id] = self.fourtofloat(byte_stream.read(4))
 
         SINGLE_SENSOR_EVENT.increment()
         return data
 
-    def gps(self, byte_list, **kwargs):
+    def gps(self, byte_stream: BytesIO, **kwargs):
         """
 
-        :param byte_list:
-        :type byte_list:
+        :param byte_stream:
+        :type byte_stream:
         :key ---: unused
         :return:
         :rtype:
         """
         data = {}
-        curr_byte = Count(0, 1)
-        data[SubpacketEnum.LATITUDE.value] = self.eighttodouble(byte_list[curr_byte.curr():curr_byte.next(8)])
-        data[SubpacketEnum.LONGITUDE.value] = self.eighttodouble(byte_list[curr_byte.curr():curr_byte.next(8)])
-        data[SubpacketEnum.GPS_ALTITUDE.value] = self.eighttodouble(byte_list[curr_byte.curr():curr_byte.next(8)])
+        data[SubpacketEnum.LATITUDE.value] = self.eighttodouble(byte_stream.read(8))
+        data[SubpacketEnum.LONGITUDE.value] = self.eighttodouble(byte_stream.read(8))
+        data[SubpacketEnum.GPS_ALTITUDE.value] = self.eighttodouble(byte_stream.read(8))
         return data
 
     # TODO
-    # def acknowledgement(self, byte_list, **kwargs):
+    # def acknowledgement(self, byte_stream, **kwargs):
     #     data = {}  # STUB
     #     return data
 
-    def bulk_sensor(self, byte_list: List, **kwargs):
+    def bulk_sensor(self, byte_stream: BytesIO, **kwargs):
         """
 
-        :param byte_list:
-        :type byte_list:
+        :param byte_stream:
+        :type byte_stream:
         :key ---: unused
         :return:
         :rtype:
         """
         data: Dict[int, Any] = {}
-        # TODO Review experimental form, perhaps consider doing for all https://trello.com/c/5IkOjNDm/161-clean-up-bytes-types
-        bytes_IO = BytesIO(bytes(byte_list))
 
-        data[SubpacketEnum.CALCULATED_ALTITUDE.value] = self.fourtofloat(bytes_IO.read(4))  # TODO Double check it is calculated barometer altitude with firmware
-        data[SubpacketEnum.ACCELERATION_X.value] = self.fourtofloat(bytes_IO.read(4))
-        data[SubpacketEnum.ACCELERATION_Y.value] = self.fourtofloat(bytes_IO.read(4))
-        data[SubpacketEnum.ACCELERATION_Z.value] = self.fourtofloat(bytes_IO.read(4))
-        data[SubpacketEnum.ORIENTATION_1.value] = self.fourtofloat(bytes_IO.read(4))
-        data[SubpacketEnum.ORIENTATION_2.value] = self.fourtofloat(bytes_IO.read(4))
-        data[SubpacketEnum.ORIENTATION_3.value] = self.fourtofloat(bytes_IO.read(4))
-        data[SubpacketEnum.LATITUDE.value] = self.fourtofloat(bytes_IO.read(4))  # TODO Should lat+lon be doubles??
-        data[SubpacketEnum.LONGITUDE.value] = self.fourtofloat(bytes_IO.read(4))
-        data[SubpacketEnum.STATE.value] = int.from_bytes(bytes_IO.read(1), "big")
+        data[SubpacketEnum.CALCULATED_ALTITUDE.value] = self.fourtofloat(byte_stream.read(4))  # TODO Double check it is calculated barometer altitude with firmware
+        data[SubpacketEnum.ACCELERATION_X.value] = self.fourtofloat(byte_stream.read(4))
+        data[SubpacketEnum.ACCELERATION_Y.value] = self.fourtofloat(byte_stream.read(4))
+        data[SubpacketEnum.ACCELERATION_Z.value] = self.fourtofloat(byte_stream.read(4))
+        data[SubpacketEnum.ORIENTATION_1.value] = self.fourtofloat(byte_stream.read(4))
+        data[SubpacketEnum.ORIENTATION_2.value] = self.fourtofloat(byte_stream.read(4))
+        data[SubpacketEnum.ORIENTATION_3.value] = self.fourtofloat(byte_stream.read(4))
+        data[SubpacketEnum.LATITUDE.value] = self.fourtofloat(byte_stream.read(4))
+        data[SubpacketEnum.LONGITUDE.value] = self.fourtofloat(byte_stream.read(4))
+        data[SubpacketEnum.STATE.value] = int.from_bytes(byte_stream.read(1), "big")
 
         BULK_SENSOR_EVENT.increment()
         return data
 
 
     # Dictionary of subpacket id mapped to function to parse that data
-    packetTypeToParser: Dict[int, Callable[[list, int], Dict[Any, Any]]] = {  # TODO review this type hint
+    packetTypeToParser: Dict[int, Callable[[BytesIO, Any], Dict[Any, Any]]] = {
         SubpacketEnum.STATUS_PING.value: statusPing,
         SubpacketEnum.MESSAGE.value: message,
         SubpacketEnum.EVENT.value: event,

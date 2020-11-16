@@ -86,7 +86,7 @@ def message(time: int, message: str) -> bytearray:
     return data_arr
 
 
-def config(time: int, is_sim: bool, rocket_type: int) -> bytearray:
+def config(time: int, is_sim: bool, rocket_type: int, version_id: chr) -> bytearray:
     """
 
     :return: data_arr
@@ -95,7 +95,8 @@ def config(time: int, is_sim: bool, rocket_type: int) -> bytearray:
     data_arr: bytearray = bytearray()
     data_arr.append(SubpacketEnum.CONFIG.value)  # id
     data_arr.extend((int(time)).to_bytes(length=4, byteorder='big'))  # time
-    data_arr.extend((int(2)).to_bytes(length=1, byteorder='big'))  # length of the config
+    # data_arr.extend((int(2)).to_bytes(length=1, byteorder='big'))  # length of the config | Current spec is const len
     data_arr.extend((int(1 if is_sim else 0)).to_bytes(length=1, byteorder='big'))  # is sim
     data_arr.extend((int(rocket_type)).to_bytes(length=1, byteorder='big'))  # rocket type
+    data_arr.extend([ord(ch) for ch in version_id])  # version id
     return data_arr

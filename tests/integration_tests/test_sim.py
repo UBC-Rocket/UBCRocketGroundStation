@@ -6,7 +6,7 @@ from main_window.main import MainApp
 from profiles.rockets.tantalus import TantalusProfile
 from main_window.rocket_data import BUNDLE_ADDED_EVENT
 from main_window.subpacket_ids import SubpacketEnum
-from main_window.radio_controller import BULK_SENSOR_EVENT, SINGLE_SENSOR_EVENT
+from main_window.packet_parser import BULK_SENSOR_EVENT, SINGLE_SENSOR_EVENT
 
 from util.event_stats import get_event_stats_snapshot
 

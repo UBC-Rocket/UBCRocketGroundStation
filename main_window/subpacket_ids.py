@@ -20,7 +20,7 @@ class SubpacketEnum(Enum):
     PRESSURE = 0x13
     BAROMETER_TEMPERATURE = 0x14
     TEMPERATURE = 0x15
-    YAW = 0x16
+    YAW = 0x16 # TODO Review based on spec changes
     ROLL = 0x17
     PITCH = 0x18
     LATITUDE = 0x19
@@ -31,7 +31,7 @@ class SubpacketEnum(Enum):
     VOLTAGE = 0x1E
     GROUND_ALTITUDE = 0x1F
     TIME = 0x20
-    ORIENTATION_1 = 0x21
+    ORIENTATION_1 = 0x21 # TODO Review based on spec changes
     ORIENTATION_2 = 0x22
     ORIENTATION_3 = 0x23
     # TODO 4th orientation value calculated since it is a quaternion?

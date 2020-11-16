@@ -5,10 +5,12 @@ from profiles.rockets.co_pilot import CoPilotProfile
 from connections.debug import radio_packets
 from main_window.rocket_data import BUNDLE_ADDED_EVENT
 from main_window.subpacket_ids import SubpacketEnum
-from main_window.radio_controller import BULK_SENSOR_EVENT, SINGLE_SENSOR_EVENT
-from main_window.radio_controller import (
+from main_window.packet_parser import BULK_SENSOR_EVENT, SINGLE_SENSOR_EVENT
+from main_window.packet_parser import (
     IS_SIM,
     ROCKET_TYPE,
+    VERSION_ID,
+    VERSION_ID_LEN,
     NONCRITICAL_FAILURE,
     SENSOR_TYPES,
     OTHER_STATUS_TYPES,
@@ -137,7 +139,11 @@ def test_message_packet(qtbot, main_app, caplog):
 def test_config_packet(qtbot, main_app):
     connection = main_app.connection
 
-    packet = radio_packets.config(0, True, 2)
+    version_id = 'a'
+    assert len(version_id) == VERSION_ID_LEN # make sure test val is acceptable
+
+    packet = radio_packets.config(0, True, 2, version_id)
+    print("data created in test", packet)
 
     snapshot = get_event_stats_snapshot()
 
@@ -147,6 +153,7 @@ def test_config_packet(qtbot, main_app):
 
     assert main_app.rocket_data.lastvalue(IS_SIM) == True
     assert main_app.rocket_data.lastvalue(ROCKET_TYPE) == 2
+    assert main_app.rocket_data.lastvalue(VERSION_ID) == version_id
 
 
 def test_status_ping_packet(qtbot, main_app):

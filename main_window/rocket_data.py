@@ -60,14 +60,10 @@ statemap = {  # TODO Review legacy data format. Not deleted due to need to confe
 
 AUTOSAVE_INTERVAL_S = 10
 
-# Supposedly a dictionary of all of the time points mapped to a dictionary of sensor id to value.
-# self.timeset:    dictionary designed to hold time - dictionary {sensor id - value} pairs.
-# essentially  self.data: Dict[int, Dict[str, Union[int, float]]] = {}
-
 class RocketData:
     def __init__(self) -> None:
         """
-
+        Timeset is dictionary of all of the time points mapped to a dictionary of id -> value.
         """
 
         self.lock = threading.RLock()  # acquire lock ASAP since self.lock needs to be defined when autosave starts
@@ -143,23 +139,6 @@ class RocketData:
             self._notifyCallbacksOfId(data_id)
 
         BUNDLE_ADDED_EVENT.increment()
-
-    # TODO REMOVE this function once data types refactored
-    # # In the previous version this is supposed to save very specifically formatted incoming data into RocketData
-    # def addpoint(self, bytes):
-    #     with self.lock:
-    #         if bytes[0] == nametochar["Time"][0]:
-    #             self.lasttime = fivtoval(bytes)
-    #         else:
-    #             if self.lasttime not in self.timeset:
-    #                 self.timeset[self.lasttime] = {}
-    #
-    #             (self.timeset[self.lasttime])[chr(bytes[0])] = fivtoval(bytes)
-    #
-    #         if bytes[0] == nametochar["Calculated Altitude"][0]:
-    #             alt = fivtoval(bytes)
-    #             if alt > self.highest_altitude:
-    #                 self.highest_altitude = alt
 
     # Gets the most recent value specified by the sensor_id given
     def lastvalue(self, sensor_id):

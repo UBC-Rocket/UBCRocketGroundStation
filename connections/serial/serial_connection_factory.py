@@ -5,10 +5,17 @@ from .serial_connection import SerialConnection
 
 
 class SerialConnectionFactory(ConnectionFactory):
-    def requiresComPort(self) -> bool:
+
+    @property
+    def connection_name(self) -> str:
+        return "Serial"
+
+    @property
+    def requires_com_port(self) -> bool:
         return True
 
-    def requiresBaudRate(self) -> bool:
+    @property
+    def requires_baud_rate(self) -> bool:
         return True
 
     def construct(

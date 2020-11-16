@@ -10,6 +10,7 @@ from connections.sim.sim_connection_factory import SimConnectionFactory
 from util.detail import BUNDLED_DATA, LOGGER
 from profiles.rockets.co_pilot import CoPilotProfile
 from profiles.rockets.tantalus import TantalusProfile
+from profiles.rockets.whistler_blackcomb import WbProfile
 
 if hasattr(QtCore.Qt, "AA_EnableHighDpiScaling"):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
@@ -30,15 +31,17 @@ class ComWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         QtWidgets.QMainWindow.__init__(self)
         Ui_MainWindow.__init__(self)
 
-        self.ConnectionFactories = {
-            "Serial": SerialConnectionFactory(),
-            "Debug": DebugConnectionFactory(),
-            "SIM": SimConnectionFactory(),
-        }
-        self.RocketProfiles = {
-            "Tantalus": TantalusProfile(),
-            "Co-Pilot": CoPilotProfile(),
-        }
+        self.ConnectionFactories = {c.connection_name:c for c in [
+            SerialConnectionFactory(),
+            DebugConnectionFactory(),
+            SimConnectionFactory(),
+        ]}
+
+        self.RocketProfiles = {p.rocket_name:p for p in [
+            TantalusProfile(),
+            CoPilotProfile(),
+            WbProfile(),
+        ]}
 
         self.chosen_connection = None
         self.chosen_rocket = None
@@ -82,5 +85,5 @@ class ComWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         text = self.typeBox.currentText()
         factory = self.ConnectionFactories[text]
 
-        self.comBox.setEnabled(factory.requiresComPort())
-        self.baudBox.setEnabled(factory.requiresBaudRate())
+        self.comBox.setEnabled(factory.requires_com_port)
+        self.baudBox.setEnabled(factory.requires_baud_rate)

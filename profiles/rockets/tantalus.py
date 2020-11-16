@@ -10,6 +10,7 @@ from ..label import (
 )
 from ..rocket_profile import RocketProfile
 from connections.sim.hw_sim import HWSim, DummySensor, SensorType, Ignitor, IgnitorType
+from main_window.competition.comp_app import CompApp
 
 
 class TantalusProfile(RocketProfile):
@@ -58,3 +59,6 @@ class TantalusProfile(RocketProfile):
         ]
 
         return HWSim(hw_sim_sensors, hw_sim_ignitors)
+
+    def construct_app(self, connection):
+        return CompApp(connection, self)

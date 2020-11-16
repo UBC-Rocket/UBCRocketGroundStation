@@ -2,7 +2,7 @@ import pytest
 from pytest import approx
 from connections.sim.sim_connection_factory import SimConnectionFactory, FirmwareNotFound
 from connections.sim.hw_sim import SensorType, SENSOR_READ_EVENT
-from main_window.main import MainApp
+from main_window.competition.comp_app import CompApp
 from profiles.rockets.tantalus import TantalusProfile
 from main_window.rocket_data import BUNDLE_ADDED_EVENT
 from main_window.subpacket_ids import SubpacketEnum
@@ -12,12 +12,12 @@ from util.event_stats import get_event_stats_snapshot
 
 
 @pytest.fixture(scope="function")
-def main_app() -> MainApp:
+def main_app() -> CompApp:
     try:
         connection = SimConnectionFactory().construct(rocket=TantalusProfile())
     except FirmwareNotFound as ex:
         pytest.skip("Firmware not found")
-    app = MainApp(connection, TantalusProfile())
+    app = TantalusProfile().construct_app(connection)
     yield app  # Provides app, following code is run on cleanup
     app.shutdown()
 
@@ -40,12 +40,12 @@ def test_arming(qtbot, main_app):
     wait_new_bundle()
     assert main_app.rocket_data.lastvalue(SubpacketEnum.STATE.value) == 0
 
-    main_app.sendCommand("arm")
+    main_app.send_command("arm")
     wait_new_bundle()
 
     assert main_app.rocket_data.lastvalue(SubpacketEnum.STATE.value) == 1
 
-    main_app.sendCommand("disarm")
+    main_app.send_command("disarm")
     wait_new_bundle()
 
     assert main_app.rocket_data.lastvalue(SubpacketEnum.STATE.value) == 0
@@ -65,7 +65,7 @@ def test_gps_read(qtbot, main_app):
         set_dummy_sensor_values(hw, SensorType.GPS, *vals)
         wait_new_bundle()
         snapshot = get_event_stats_snapshot()
-        main_app.sendCommand("gpsalt")
+        main_app.send_command("gpsalt")
         assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
 
         assert main_app.rocket_data.lastvalue(SubpacketEnum.LATITUDE.value) == vals[0]
@@ -107,8 +107,8 @@ def test_baro_altitude(qtbot, main_app):
         wait_new_bundle()
 
         snapshot = get_event_stats_snapshot()
-        main_app.sendCommand("baropres")
-        main_app.sendCommand("barotemp")
+        main_app.send_command("baropres")
+        main_app.send_command("barotemp")
         assert SINGLE_SENSOR_EVENT.wait(snapshot, num_expected=2) == 2
 
         assert main_app.rocket_data.lastvalue(SubpacketEnum.PRESSURE.value) == vals[0]
@@ -171,7 +171,7 @@ def test_temperature_read(qtbot, main_app):
         set_dummy_sensor_values(hw, SensorType.TEMPERATURE, *vals)
         wait_new_bundle()  # Just to wait a few cycles for the FW to read from HW sim
         snapshot = get_event_stats_snapshot()
-        main_app.sendCommand("TEMP")
+        main_app.send_command("TEMP")
         assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
 
         assert main_app.rocket_data.lastvalue(SubpacketEnum.TEMPERATURE.value) == vals[0]

@@ -3,13 +3,21 @@ from typing import Union
 
 
 class ConnectionFactory(metaclass=abc.ABCMeta):
-    @abc.abstractmethod
-    def requiresComPort(self) -> bool:
-        return False
 
+    @property
     @abc.abstractmethod
-    def requiresBaudRate(self) -> bool:
-        return False
+    def connection_name(self) -> str:
+        pass
+
+    @property
+    @abc.abstractmethod
+    def requires_com_port(self) -> bool:
+        pass
+
+    @property
+    @abc.abstractmethod
+    def requires_baud_rate(self) -> bool:
+        pass
 
     @abc.abstractmethod
     def construct(

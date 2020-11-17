@@ -95,7 +95,6 @@ def config(time: int, is_sim: bool, rocket_type: int) -> bytearray:
     data_arr: bytearray = bytearray()
     data_arr.append(SubpacketEnum.CONFIG.value)  # id
     data_arr.extend((int(time)).to_bytes(length=4, byteorder='big'))  # time
-    data_arr.extend((int(2)).to_bytes(length=1, byteorder='big'))  # length of the config
     data_arr.extend((int(1 if is_sim else 0)).to_bytes(length=1, byteorder='big'))  # is sim
     data_arr.extend((int(rocket_type)).to_bytes(length=1, byteorder='big'))  # rocket type
     return data_arr

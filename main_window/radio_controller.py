@@ -43,6 +43,7 @@ PACKET_ID_TO_CONST_LENGTH: Dict[int, int] = {
     SubpacketEnum.GPS.value: 24,
     # SubpacketEnum.ACKNOWLEDGEMENT.value: 0000, # TODO
     SubpacketEnum.BULK_SENSOR.value: 37,
+    SubpacketEnum.CONFIG.value: 2,
 }
 for i in subpacket_ids.get_list_of_sensor_IDs():
     PACKET_ID_TO_CONST_LENGTH[i] = 4

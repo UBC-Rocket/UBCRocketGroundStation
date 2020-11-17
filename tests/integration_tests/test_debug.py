@@ -1,17 +1,20 @@
 import pytest
 from connections.debug.debug_connection import DebugConnection, ARMED_EVENT, DISARMED_EVENT
-from main_window.competition.comp_app import CompApp, LABLES_UPDATED_EVENT
+from main_window.competition.comp_app import LABLES_UPDATED_EVENT
 from profiles.rockets.co_pilot import CoPilotProfile
 from connections.debug import radio_packets
 from main_window.rocket_data import BUNDLE_ADDED_EVENT
 from main_window.subpacket_ids import SubpacketEnum
-from main_window.radio_controller import BULK_SENSOR_EVENT, SINGLE_SENSOR_EVENT
 from main_window.radio_controller import (
     IS_SIM,
     ROCKET_TYPE,
     NONCRITICAL_FAILURE,
     SENSOR_TYPES,
     OTHER_STATUS_TYPES,
+    BULK_SENSOR_EVENT,
+    SINGLE_SENSOR_EVENT,
+    CONFIG_EVENT,
+    ClientType,
 )
 
 from util.event_stats import get_event_stats_snapshot
@@ -143,10 +146,11 @@ def test_config_packet(qtbot, main_app):
 
     connection.receive(packet)
 
+    assert CONFIG_EVENT.wait(snapshot) == 1
     assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 
     assert main_app.rocket_data.lastvalue(IS_SIM) == True
-    assert main_app.rocket_data.lastvalue(ROCKET_TYPE) == 2
+    assert main_app.rocket_data.lastvalue(ROCKET_TYPE) == ClientType.CO_PILOT
 
 
 def test_status_ping_packet(qtbot, main_app):

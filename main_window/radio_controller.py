@@ -1,6 +1,7 @@
 import collections
 import math
 import struct
+from enum import Enum
 from io import BytesIO
 from typing import Any, Callable, Dict, List
 
@@ -11,6 +12,7 @@ from .subpacket_ids import SubpacketEnum
 
 BULK_SENSOR_EVENT = Event('bulk_sensor')
 SINGLE_SENSOR_EVENT = Event('single_sensor')
+CONFIG_EVENT = Event('config')
 
 # Essentially a mini-class, to structure the header data. Doesn't merit its own class due to limited use,
 # can be expanded if necessary elsewhere.
@@ -35,6 +37,11 @@ DROGUE_IGNITER_CONTINUITY = 'DROGUE_IGNITER_CONTINUITY'
 MAIN_IGNITER_CONTINUITY = 'MAIN_IGNITER_CONTINUITY'
 FILE_OPEN_SUCCESS = 'FILE_OPEN_SUCCESS'
 OTHER_STATUS_TYPES = [DROGUE_IGNITER_CONTINUITY, MAIN_IGNITER_CONTINUITY, FILE_OPEN_SUCCESS]
+
+class ClientType(Enum):
+    TANTALUS_STAGE_1 = 0x00
+    TANTALUS_STAGE_2 = 0x01
+    CO_PILOT = 0x02
 
 # Map subpacket id to DATA length (excluding header) in bytes. Only includes types with CONSTANT lengths.
 PACKET_ID_TO_CONST_LENGTH: Dict[int, int] = {
@@ -230,7 +237,9 @@ class RadioController:
 
         data = {}
         data[IS_SIM] = byte_list[0]
-        data[ROCKET_TYPE] = byte_list[1] # TODO Extract
+        data[ROCKET_TYPE] = ClientType(byte_list[1])
+
+        CONFIG_EVENT.increment()
         return data
 
     def single_sensor(self, byte_list, **kwargs):

@@ -6,7 +6,14 @@ from main_window.competition.comp_app import CompApp
 from profiles.rockets.tantalus import TantalusProfile
 from main_window.rocket_data import BUNDLE_ADDED_EVENT
 from main_window.subpacket_ids import SubpacketEnum
-from main_window.radio_controller import BULK_SENSOR_EVENT, SINGLE_SENSOR_EVENT
+from main_window.radio_controller import (
+    IS_SIM,
+    ROCKET_TYPE,
+    BULK_SENSOR_EVENT,
+    SINGLE_SENSOR_EVENT,
+    CONFIG_EVENT,
+    ClientType,
+)
 
 from util.event_stats import get_event_stats_snapshot
 
@@ -49,6 +56,20 @@ def test_arming(qtbot, main_app):
     wait_new_bundle()
 
     assert main_app.rocket_data.lastvalue(SubpacketEnum.STATE.value) == 0
+
+def test_config_hello(qtbot, main_app):
+    wait_new_bundle()
+    # Should have already received at least one config packet from the startup hello
+    assert main_app.rocket_data.lastvalue(IS_SIM) == True
+    assert main_app.rocket_data.lastvalue(ROCKET_TYPE) == ClientType.TANTALUS_STAGE_1
+
+    snapshot = get_event_stats_snapshot()
+    main_app.send_command("config")
+    wait_new_bundle()
+    assert CONFIG_EVENT.wait(snapshot) == 1
+
+    assert main_app.rocket_data.lastvalue(IS_SIM) == True
+    assert main_app.rocket_data.lastvalue(ROCKET_TYPE) == ClientType.TANTALUS_STAGE_1
 
 
 def test_gps_read(qtbot, main_app):

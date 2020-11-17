@@ -14,6 +14,7 @@ from util.detail import LOGGER
 #  -> RadioController
 class CommandType(Enum):
     ARM = 0x41
+    CONFIG = 0x43
     DISARM = 0x44
     PING = 0x50
     BULK = 0x30
@@ -66,6 +67,15 @@ class SendThread(QtCore.QThread):
         """
 
         """
+
+        # TODO : Once we have multiple connections, we will loop over and send a config request to each
+        # Starting up, request hello/handshake/identification
+        try:
+            self.connection.send(bytes([CommandType.CONFIG.value]))
+        except Exception as ex:
+            self.sig_print.emit("Unexpected error while sending config requests!")
+            LOGGER.exception("Exception in send thread while sending config requests")
+
         while True:
             try:
                 word = self.commandQueue.get(block=True, timeout=None)  # Block until something new

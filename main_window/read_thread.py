@@ -75,8 +75,9 @@ class ReadThread(QtCore.QThread):
                     # notify UI that new data is available to be displayed
                     self.sig_received.emit()
                 except Exception as e:
-                    LOGGER.error("Error decoding new data!")
-                    # Just discard rest of data
+                    LOGGER.exception("Error decoding new packet! %s", e)
+                    # Just discard rest of data TODO Review policy on handling remaining data or problem packets. Consider data errors too
+                    byte_stream.seek(0, SEEK_END)
 
         LOGGER.warning("Read thread shut down")
 

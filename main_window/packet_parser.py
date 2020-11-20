@@ -79,23 +79,23 @@ class PacketParser:
 
         :param byte_stream:
         :type byte_stream:
-        :return:
-        :rtype:
+        :return: parsed_data
+        :rtype: Dict[Any, Any]
         """
         # header extraction
-        header = self.header(byte_stream)
+        header: Header = self.header(byte_stream)
 
         # data extraction
         parsed_data: Dict[Any, Any] = {}
         try:
-            parsed_data = self.parse_data(header.subpacket_id, byte_stream, header.data_length)
+            parsed_data = self.parse_data(byte_stream, header.subpacket_id, header.data_length)
         except Exception as e:
-            LOGGER.exception("Error parsing data") # Automatically grabs and prints exception info
+            LOGGER.exception("Error parsing data")  # Automatically grabs and prints exception info
 
         parsed_data[SubpacketEnum.TIME.value] = header.timestamp
         return parsed_data
 
-    def parse_data(self, subpacket_id, byte_stream: BytesIO, length) -> Dict[Any, Any]:
+    def parse_data(self, byte_stream: BytesIO, subpacket_id: int, length: int) -> Dict[Any, Any]:
         """
          General data parser interface. Routes to the right parser, based on subpacket_id.
 
@@ -108,7 +108,7 @@ class PacketParser:
         :return:
         :rtype:
         """
-        return self.packetTypeToParser[subpacket_id](self, byte_stream, length=length, subpacket_id=subpacket_id)
+        return self.packetTypeToParser[subpacket_id](self, byte_stream, subpacket_id=subpacket_id, length=length)
 
     def header(self, byte_stream: BytesIO) -> Header:
         """
@@ -125,7 +125,8 @@ class PacketParser:
 
         # check that id is valid:
         if not subpacket_ids.isSubpacketID(subpacket_id):
-            LOGGER.exception("Subpacket id %d not valid.", subpacket_id)
+            LOGGER.error("Subpacket id %d not valid.", subpacket_id)
+            raise ValueError("Subpacket id " + str(subpacket_id) + " not valid.")
 
         # Get timestamp
         timestamp: int = self.fourtoint(byte_stream.read(4))
@@ -144,9 +145,9 @@ class PacketParser:
 
     ### General sensor data parsers
 
-    # Convert bit field into a series of statuses # TODO  refactor in progress
     def status_ping(self, byte_stream: BytesIO, **kwargs):
         """
+        Convert bit field into a series of statuses
 
         :param byte_stream:
         :type byte_stream:
@@ -316,7 +317,7 @@ class PacketParser:
         """
         data: Dict[int, Any] = {}
 
-        data[SubpacketEnum.CALCULATED_ALTITUDE.value] = self.fourtofloat(byte_stream.read(4))  # TODO Double check it is calculated barometer altitude with firmware
+        data[SubpacketEnum.CALCULATED_ALTITUDE.value] = self.fourtofloat(byte_stream.read(4))
         data[SubpacketEnum.ACCELERATION_X.value] = self.fourtofloat(byte_stream.read(4))
         data[SubpacketEnum.ACCELERATION_Y.value] = self.fourtofloat(byte_stream.read(4))
         data[SubpacketEnum.ACCELERATION_Z.value] = self.fourtofloat(byte_stream.read(4))

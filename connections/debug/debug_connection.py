@@ -51,6 +51,7 @@ class DebugConnection(Connection):
                 full_arr.extend(self.status_ping_mock_set_values())
                 full_arr.extend(self.config_mock_set_values())
                 full_arr.extend(self.message_mock_set_values())
+                # full_arr.extend(self.bad_subpacket_id_mock()) # bad id, to see handling of itself and remaining data
                 full_arr.extend(self.gps_mock_random())
                 full_arr.extend(self.orientation_mock_random())
                 self.receive(full_arr)
@@ -140,6 +141,20 @@ class DebugConnection(Connection):
                                          random.uniform(0, 1e6),
                                          random.uniform(0, 1e6),
                                          random.uniform(0, 1e6))
+
+
+    def bad_subpacket_id_mock(self) -> bytearray:
+        """
+
+        :return:
+        :rtype: bytearray
+        """
+
+        dummy: bytearray = bytearray()
+        dummy.append(69)  # id
+        dummy.extend((int(1234)).to_bytes(length=4, byteorder='big'))  # time
+        dummy.extend(struct.pack(">f", 137137.4575))  # barometer altitud
+        return dummy
 
 
     # Register callback to which we will send new data

@@ -33,7 +33,7 @@ GPS = 'GPS'
 ACCELEROMETER = 'ACCELEROMETER'
 TEMPERATURE = 'TEMPERATURE'
 IMU = 'IMU'
-SENSOR_TYPES = [OVERALL_STATUS, BAROMETER, GPS, ACCELEROMETER, IMU, TEMPERATURE]
+SENSOR_TYPES = [BAROMETER, GPS, ACCELEROMETER, IMU, TEMPERATURE]
 DROGUE_IGNITER_CONTINUITY = 'DROGUE_IGNITER_CONTINUITY'
 MAIN_IGNITER_CONTINUITY = 'MAIN_IGNITER_CONTINUITY'
 FILE_OPEN_SUCCESS = 'FILE_OPEN_SUCCESS'
@@ -76,6 +76,7 @@ class PacketParser:
     def extract(self, byte_stream: BytesIO):
         """
         Return dict of parsed subpacket data and length of subpacket
+
         :param byte_stream:
         :type byte_stream:
         :return:
@@ -85,18 +86,19 @@ class PacketParser:
         header = self.header(byte_stream)
 
         # data extraction
+        parsed_data: Dict[Any, Any] = {}
         try:
-            parsed_data: Dict[Any, Any] = self.parse_data(header.subpacket_id, byte_stream, header.data_length)
+            parsed_data = self.parse_data(header.subpacket_id, byte_stream, header.data_length)
         except Exception as e:
             LOGGER.exception("Error parsing data") # Automatically grabs and prints exception info
-            raise e
 
         parsed_data[SubpacketEnum.TIME.value] = header.timestamp
         return parsed_data
 
     def parse_data(self, subpacket_id, byte_stream: BytesIO, length) -> Dict[Any, Any]:
         """
-         general data parser interface. Routes to the right parse, based on subpacket_id
+         General data parser interface. Routes to the right parser, based on subpacket_id.
+
         :param subpacket_id:
         :type subpacket_id:
         :param byte_stream:
@@ -112,6 +114,7 @@ class PacketParser:
         """
         Header extractor helper.
         ASSUMES that length values represent data length excluding header
+
         :param byte_stream:
         :type byte_stream:
         :return:
@@ -122,10 +125,7 @@ class PacketParser:
 
         # check that id is valid:
         if not subpacket_ids.isSubpacketID(subpacket_id):
-            print("The current id isn't valid:", subpacket_id)
-            # TODO Error log here?
-            temp = byte_stream.getvalue()
-            raise ValueError
+            LOGGER.exception("Subpacket id %d not valid.", subpacket_id)
 
         # Get timestamp
         timestamp: int = self.fourtoint(byte_stream.read(4))
@@ -145,7 +145,7 @@ class PacketParser:
     ### General sensor data parsers
 
     # Convert bit field into a series of statuses # TODO  refactor in progress
-    def statusPing(self, byte_stream: BytesIO, **kwargs):
+    def status_ping(self, byte_stream: BytesIO, **kwargs):
         """
 
         :param byte_stream:
@@ -168,6 +168,8 @@ class PacketParser:
             data[SubpacketEnum.STATUS_PING.value] = NONCRITICAL_FAILURE
         elif overall_status == 0b00000011:
             data[SubpacketEnum.STATUS_PING.value] = CRITICAL_FAILURE
+        data[OVERALL_STATUS] = curr_byte # TODO Review if safer this way
+        LOGGER.info("Overall rocket status: %s", str(data[SubpacketEnum.STATUS_PING.value]))
 
         # save since we do multiple passes over each byte
         byte_list: List[int] = [b for b in byte_stream.read(2)]
@@ -186,11 +188,16 @@ class PacketParser:
             relative_bit_index = 7 - (i % 8)
             data[OTHER_STATUS_TYPES[i]] = self.bitfrombyte(byte_list[byte_index], relative_bit_index)
 
+        LOGGER.info(" - status of sensors" + ", %s" * len(SENSOR_TYPES),
+                    *[sensor + ": " + str(data[sensor]) for sensor in SENSOR_TYPES])
+        LOGGER.info(" - status of others" + ", %s" * len(OTHER_STATUS_TYPES),
+                    *[other + ": " + str(data[other]) for other in OTHER_STATUS_TYPES])
         return data
 
     def message(self, byte_stream: BytesIO, **kwargs):
         """
         Save and log an extracted message.
+
         :param byte_stream:
         :type byte_stream:
         :key length: Message size in bytes
@@ -237,6 +244,11 @@ class PacketParser:
         data[ROCKET_TYPE] = byte_stream.read(1)[0]
         version_id = byte_stream.read(VERSION_ID_LEN)
         data[VERSION_ID] = version_id.decode('ascii')
+
+        LOGGER.info("Config: SIM? %s, Rocket type = %s, Version ID = %s",
+                    str(data[IS_SIM]),
+                    str(data[ROCKET_TYPE]),
+                    str(data[VERSION_ID]))
         return data
 
     def single_sensor(self, byte_stream: BytesIO, **kwargs):
@@ -321,7 +333,7 @@ class PacketParser:
 
     # Dictionary of subpacket id mapped to function to parse that data
     packetTypeToParser: Dict[int, Callable[[BytesIO, Any], Dict[Any, Any]]] = {
-        SubpacketEnum.STATUS_PING.value: statusPing,
+        SubpacketEnum.STATUS_PING.value: status_ping,
         SubpacketEnum.MESSAGE.value: message,
         SubpacketEnum.EVENT.value: event,
         SubpacketEnum.CONFIG.value: config,

@@ -60,7 +60,6 @@ class ReadThread(QtCore.QThread):
                         continue
 
             byte_stream: BytesIO = BytesIO(data)
-            curr_offset = 0
 
             # Get length of bytes (without using len(data) for decoupling)
             byte_stream.seek(0, SEEK_END)
@@ -72,13 +71,12 @@ class ReadThread(QtCore.QThread):
                 try:
                     parsed_data: Dict[int, any] = self.packet_parser.extract(byte_stream)
                     self.rocket_data.addBundle(parsed_data)
-                    curr_offset = byte_stream.tell()
 
                     # notify UI that new data is available to be displayed
                     self.sig_received.emit()
                 except Exception as e:
-                    LOGGER.exception("Error decoding new data!")  # Automatically grabs and prints exception info
-                    byte_stream.seek(curr_offset+1)
+                    LOGGER.error("Error decoding new data!")
+                    # Just discard rest of data
 
         LOGGER.warning("Read thread shut down")
 

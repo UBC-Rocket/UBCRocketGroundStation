@@ -187,7 +187,7 @@ def test_gps_packet(qtbot, main_app):
 
     snapshot = get_event_stats_snapshot()
 
-    connection.send_to_rocket(packet)
+    connection.receive(packet)
 
     assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 
@@ -206,7 +206,7 @@ def test_orientation_packet(qtbot, main_app):
 
     snapshot = get_event_stats_snapshot()
 
-    connection.send_to_rocket(packet)
+    connection.receive(packet)
 
     assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 

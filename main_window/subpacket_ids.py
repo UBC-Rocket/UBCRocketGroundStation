@@ -11,7 +11,7 @@ class SubpacketEnum(Enum):
     EVENT = 0x02
     CONFIG = 0x03
     GPS = 0x04
-    ACKNOWLEDGEMENT = 0x05
+    ORIENTATION = 0x06
     BULK_SENSOR = 0x30
     # Single Sensor:
     ACCELERATION_X = 0x10
@@ -20,9 +20,6 @@ class SubpacketEnum(Enum):
     PRESSURE = 0x13
     BAROMETER_TEMPERATURE = 0x14
     TEMPERATURE = 0x15
-    YAW = 0x16
-    ROLL = 0x17
-    PITCH = 0x18
     LATITUDE = 0x19
     LONGITUDE = 0x1A
     GPS_ALTITUDE = 0x1B
@@ -31,10 +28,10 @@ class SubpacketEnum(Enum):
     VOLTAGE = 0x1E
     GROUND_ALTITUDE = 0x1F
     TIME = 0x20
-    ORIENTATION_1 = 0x21
-    ORIENTATION_2 = 0x22
-    ORIENTATION_3 = 0x23
-    # TODO 4th orientation value calculated since it is a quaternion?
+    ORIENTATION_1 = 0x21 # TODO Remove once dependencies can be resolved. Relates to https://trello.com/c/uFHtaN51/ https://trello.com/c/bA3RuHUC
+    ORIENTATION_2 = 0x22 # TODO Remove
+    ORIENTATION_3 = 0x23 # TODO Remove
+    ORIENTATION_4 = 0x24 # TODO Remove
 
 
 def get_list_of_IDs():

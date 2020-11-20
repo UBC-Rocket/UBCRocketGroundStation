@@ -47,19 +47,6 @@ class WbApp(MainApp, Ui_MainWindow):
         pass
 
     ''' # Optional implementation
-    def print_to_ui(self, text) -> None:
-        """
-        This is called when a thread wants to show a message in the UI
-        :param text:
-        :type text:
-        """
-        
-        # Handle a UI print request here
-        
-        super().print_to_ui(text) # Must always call base
-    '''
-
-    ''' # Optional implementation
     def shutdown(self):
         """
         This is called when the app is being requested to shut down

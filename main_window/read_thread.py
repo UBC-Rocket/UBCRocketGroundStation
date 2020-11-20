@@ -11,7 +11,6 @@ from util.detail import LOGGER
 
 class ReadThread(QtCore.QThread):
     sig_received = pyqtSignal()
-    sig_print = pyqtSignal(str)
 
     def __init__(self, connection, rocketData, parent=None) -> None:
         """Updates GUI, therefore needs to be a QThread and use signals/slots

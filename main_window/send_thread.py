@@ -4,9 +4,9 @@ from threading import RLock
 
 from digi.xbee.exception import TimeoutException
 from PyQt5 import QtCore
-from PyQt5.QtCore import pyqtSignal
 
 from util.detail import LOGGER
+
 
 # TODO change this section with new Radio protocol comm refactoring
 # TODO ASK Are we going to continue to send single characters according to user commands? If yes, then why not
@@ -33,8 +33,8 @@ class CommandType(Enum):
     GPS = 0x04
     ORIENT = 0x06
 
+
 class SendThread(QtCore.QThread):
-    sig_print = pyqtSignal(str)
 
     def __init__(self, connection, parent=None) -> None:
         """Updates GUI, therefore needs to be a QThread and use signals/slots
@@ -82,22 +82,21 @@ class SendThread(QtCore.QThread):
                     command = CommandType[word.upper()]
                     data = bytes([command.value])
                 except KeyError:
-                    self.sig_print.emit("Error: Unknown Command")
+                    LOGGER.error("Unknown Command")
                     continue
 
                 self.connection.send(data)
 
-                self.sig_print.emit("Sent!")
+                LOGGER.info("Sent command!")
 
-            except TimeoutException:
-                self.sig_print.emit("Message timed-out!")
+            except TimeoutException:  # TODO: Connection should have converted this to a generic exception for decoupling
+                LOGGER.error("Message timed-out!")
 
             except queue.Empty:
                 pass
 
             except Exception as ex:
-                self.sig_print.emit("Unexpected error while sending!")
-                LOGGER.exception("Exception in send thread") # Automatically grabs and prints exception info
+                LOGGER.exception("Unexpected error while sending!")  # Automatically grabs and prints exception info
 
         LOGGER.warning("Send thread shut down")
 

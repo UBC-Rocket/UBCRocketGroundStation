@@ -1,13 +1,14 @@
 import math
 import os
 from typing import Callable
+import logging
 
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 from PIL import Image
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
 from connections.connection import Connection
-from util.detail import LOCAL, BUNDLED_DATA
+from util.detail import LOCAL, BUNDLED_DATA, LOGGER, qtSignalLogHandler
 from util.event_stats import Event
 from profiles.rocket_profile import RocketProfile
 
@@ -52,16 +53,24 @@ class CompApp(MainApp, Ui_MainWindow):
         self.actionSave.triggered.connect(self.save_file)
         self.actionSave.setShortcut("Ctrl+S")
 
+        # Hook-up logger to UI text output
+        # Note: Currently doesnt print logs from other processes (e.g. mapping process)
+        log_format = logging.Formatter("[%(asctime)s] (%(levelname)s) %(message)s")
+        log_handler = qtSignalLogHandler(exception_traces=False)
+        log_handler.setLevel(logging.INFO)
+        log_handler.setFormatter(log_format)
+        log_handler.qt_signal.connect(self.print_to_ui)
+        LOGGER.addHandler(log_handler)
+
         self.setup_buttons()
         self.setup_labels()
 
         # Init and connection of MappingThread
         self.MappingThread = MappingThread(self.connection, self.map, self.rocket_data)
         self.MappingThread.sig_received.connect(self.receive_map)
-        self.MappingThread.sig_print.connect(self.print_to_ui)
         self.MappingThread.start()
 
-        self.print_to_ui("Successfully started")
+        LOGGER.info("Successfully started app")
 
     def setup_buttons(self):
         """Create all of the buttons for the loaded rocket profile."""
@@ -167,9 +176,22 @@ class CompApp(MainApp, Ui_MainWindow):
         :param text:
         :type text:
         """
-        self.consoleText.setPlainText(self.consoleText.toPlainText() + text + "\n")
+        current_text = self.consoleText.toPlainText()
+
+        if len(current_text) == 0:
+            new_text = text
+
+        else:
+            lines = current_text.split('\n')
+            lines.append(text)
+
+            # Limit to 100 lines
+            lines = lines[-100:]
+
+            new_text = "\n".join(lines)
+
+        self.consoleText.setPlainText(new_text)
         self.consoleText.moveCursor(QtGui.QTextCursor.End)
-        super().print_to_ui(text)
 
     def send_command(self, command) -> None:
         """

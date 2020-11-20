@@ -21,9 +21,9 @@ Header = collections.namedtuple('Header', ['subpacket_id', 'timestamp', 'header_
 ROCKET_TYPE = 'ROCKET_TYPE'
 IS_SIM = 'IS_SIM'
 VERSION_ID = 'VERSION_ID'
-VERSION_ID_LEN = 1
+VERSION_ID_LEN = 40 # TODO Could instead use passed length parameter, if this is not necessary
 MESSAGE = 'MESSAGE'
-# TODO extract and cleanup https://trello.com/c/uFHtaN51/
+# TODO extract and cleanup https://trello.com/c/uFHtaN51/ https://trello.com/c/bA3RuHUC
 NOMINAL = 'NOMINAL'
 NONCRITICAL_FAILURE = 'NONCRITICAL_FAILURE'
 CRITICAL_FAILURE = 'CRITICAL_FAILURE'
@@ -43,9 +43,9 @@ OTHER_STATUS_TYPES = [DROGUE_IGNITER_CONTINUITY, MAIN_IGNITER_CONTINUITY, FILE_O
 PACKET_ID_TO_CONST_LENGTH: Dict[int, int] = {
     SubpacketEnum.STATUS_PING.value: 5,
     SubpacketEnum.EVENT.value: 1,
-    SubpacketEnum.CONFIG.value: 3,
-    SubpacketEnum.GPS.value: 24,
-    # SubpacketEnum.ACKNOWLEDGEMENT.value: 0000, # TODO Waiting on spec
+    SubpacketEnum.CONFIG.value: 42,
+    SubpacketEnum.GPS.value: 12,
+    SubpacketEnum.ORIENTATION.value: 16,
     SubpacketEnum.BULK_SENSOR.value: 37,
 }
 for i in subpacket_ids.get_list_of_sensor_IDs():
@@ -158,35 +158,34 @@ class PacketParser:
         other_bit_field_length = 16
 
         data: Dict = {}
-        curr_byte = Count(0, 1)
+        curr_byte: int = byte_stream.read(1)[0]
 
-        # # Overall status from 6th and 7th bits
-        # overallStatus = self.bitfrombyte(byte_list[curr_byte.curr()], 1) | self.bitfrombyte(byte_list[curr_byte.currAndInc(1)], 0)
-        # if overallStatus == 0b00000000:
-        #     data[SubpacketEnum.STATUS_PING.value] = NOMINAL
-        # elif overallStatus == 0b00000001:
-        #     data[SubpacketEnum.STATUS_PING.value] = NONCRITICAL_FAILURE
-        # elif overallStatus == 0b00000011:
-        #     data[SubpacketEnum.STATUS_PING.value] = CRITICAL_FAILURE
-        #
-        # # Sensor status
-        # num_assigned_bits = min(sensor_bit_field_length, len(SENSOR_TYPES))  # only go as far as is assigned
-        # for i in range(0, num_assigned_bits):
-        #     byte_index = curr_byte.curr() + math.floor(i / 8)
-        #     relative_bit_index = 7 - (i % 8)  # get the bits left to right
-        #     data[SENSOR_TYPES[i]] = self.bitfrombyte(byte_list[byte_index], relative_bit_index)
-        # curr_byte.next(math.floor(sensor_bit_field_length / 8))  # move to next section of bytes
-        #
-        # # Other misc statuses
-        # num_assigned_bits = min(other_bit_field_length, len(OTHER_STATUS_TYPES))  # only go as far as is assigned
-        # for i in range(0, num_assigned_bits):
-        #     byte_index = curr_byte.curr() + math.floor(i / 8)
-        #     relative_bit_index = 7 - (i % 8)
-        #     data[OTHER_STATUS_TYPES[i]] = self.bitfrombyte(byte_list[byte_index], relative_bit_index)
-        # curr_byte.next(math.floor(other_bit_field_length / 8))
+        # Overall status from 6th and 7th bits
+        overall_status = self.bitfrombyte(curr_byte, 1) | self.bitfrombyte(curr_byte, 0)
+        if overall_status == 0b00000000:
+            data[SubpacketEnum.STATUS_PING.value] = NOMINAL
+        elif overall_status == 0b00000001:
+            data[SubpacketEnum.STATUS_PING.value] = NONCRITICAL_FAILURE
+        elif overall_status == 0b00000011:
+            data[SubpacketEnum.STATUS_PING.value] = CRITICAL_FAILURE
 
-        # TODO temp until refactor done
-        byte_stream.read(PACKET_ID_TO_CONST_LENGTH[subpacket_ids.SubpacketEnum.STATUS_PING.value])
+        # save since we do multiple passes over each byte
+        byte_list: List[int] = [b for b in byte_stream.read(2)]
+        # Sensor status
+        num_assigned_bits = min(sensor_bit_field_length, len(SENSOR_TYPES))  # only go as far as is assigned
+        for i in range(0, num_assigned_bits):
+            byte_index = math.floor(i / 8) # 0 based index, of byte out of current group
+            relative_bit_index = 7 - (i % 8)  # get the bits left to right
+            data[SENSOR_TYPES[i]] = self.bitfrombyte(byte_list[byte_index], relative_bit_index)
+
+        byte_list: List[int] = [b for b in byte_stream.read(2)]
+        # Other misc statuses
+        num_assigned_bits = min(other_bit_field_length, len(OTHER_STATUS_TYPES))  # only go as far as is assigned
+        for i in range(0, num_assigned_bits):
+            byte_index = math.floor(i / 8)
+            relative_bit_index = 7 - (i % 8)
+            data[OTHER_STATUS_TYPES[i]] = self.bitfrombyte(byte_list[byte_index], relative_bit_index)
+
         return data
 
     def message(self, byte_stream: BytesIO, **kwargs):
@@ -219,11 +218,10 @@ class PacketParser:
         :rtype:
         """
         data: Dict = {}
-        # TODO Enumerate the list of events mapped to strings somewhere? Then convert to human readable string here.
+        # TODO Enumerate the list of events mapped to strings somewhere? Then convert to human readable string here. https://trello.com/c/uFHtaN51/ https://trello.com/c/bA3RuHUC
         data[SubpacketEnum.EVENT.value] = byte_stream.read(1)[0]
         return data
 
-    # TODO Waiting on spec. Eg. Needs spec for VERSION_ID and length. Needs spec for if/how rocket type is used
     def config(self, byte_stream: BytesIO, **kwargs):
         """
 
@@ -239,7 +237,6 @@ class PacketParser:
         data[ROCKET_TYPE] = byte_stream.read(1)[0]
         version_id = byte_stream.read(VERSION_ID_LEN)
         data[VERSION_ID] = version_id.decode('ascii')
-        print("Packet actually parsed", data)
         return data
 
     def single_sensor(self, byte_stream: BytesIO, **kwargs):
@@ -247,7 +244,7 @@ class PacketParser:
 
         :param byte_stream:
         :type byte_stream:
-        :key subpacket_id: The type of sensor, but mapped to subpacket id TODO Review w/ https://trello.com/c/uFHtaN51
+        :key subpacket_id: The type of sensor, but mapped to subpacket id TODO Review w/ https://trello.com/c/uFHtaN51 https://trello.com/c/bA3RuHUC
         :return:
         :rtype:
         """
@@ -273,15 +270,28 @@ class PacketParser:
         :rtype:
         """
         data = {}
-        data[SubpacketEnum.LATITUDE.value] = self.eighttodouble(byte_stream.read(8))
-        data[SubpacketEnum.LONGITUDE.value] = self.eighttodouble(byte_stream.read(8))
-        data[SubpacketEnum.GPS_ALTITUDE.value] = self.eighttodouble(byte_stream.read(8))
+        data[SubpacketEnum.LATITUDE.value] = self.fourtofloat(byte_stream.read(4))
+        data[SubpacketEnum.LONGITUDE.value] = self.fourtofloat(byte_stream.read(4))
+        data[SubpacketEnum.GPS_ALTITUDE.value] = self.fourtofloat(byte_stream.read(4))
         return data
 
-    # TODO
-    # def acknowledgement(self, byte_stream, **kwargs):
-    #     data = {}  # STUB
-    #     return data
+    def orientation(self, byte_stream: BytesIO, **kwargs):
+        """
+
+        :param byte_stream:
+        :type byte_stream:
+        :key ---: unused
+        :return:
+        :rtype:
+        """
+        data = {}
+
+        # TODO Temporary dependency on subpacket enum, til we figure out https://trello.com/c/uFHtaN51/ https://trello.com/c/bA3RuHUC
+        data[SubpacketEnum.ORIENTATION_1.value] = self.fourtofloat(byte_stream.read(4))
+        data[SubpacketEnum.ORIENTATION_2.value] = self.fourtofloat(byte_stream.read(4))
+        data[SubpacketEnum.ORIENTATION_3.value] = self.fourtofloat(byte_stream.read(4))
+        data[SubpacketEnum.ORIENTATION_4.value] = self.fourtofloat(byte_stream.read(4))
+        return data
 
     def bulk_sensor(self, byte_stream: BytesIO, **kwargs):
         """
@@ -298,9 +308,9 @@ class PacketParser:
         data[SubpacketEnum.ACCELERATION_X.value] = self.fourtofloat(byte_stream.read(4))
         data[SubpacketEnum.ACCELERATION_Y.value] = self.fourtofloat(byte_stream.read(4))
         data[SubpacketEnum.ACCELERATION_Z.value] = self.fourtofloat(byte_stream.read(4))
-        data[SubpacketEnum.ORIENTATION_1.value] = self.fourtofloat(byte_stream.read(4))
-        data[SubpacketEnum.ORIENTATION_2.value] = self.fourtofloat(byte_stream.read(4))
-        data[SubpacketEnum.ORIENTATION_3.value] = self.fourtofloat(byte_stream.read(4))
+        data[SubpacketEnum.ORIENTATION_1.value] = self.fourtofloat(byte_stream.read(4)) # TODO Remove soon?
+        data[SubpacketEnum.ORIENTATION_2.value] = self.fourtofloat(byte_stream.read(4)) # TODO Remove soon?
+        data[SubpacketEnum.ORIENTATION_3.value] = self.fourtofloat(byte_stream.read(4)) # TODO Remove soon?
         data[SubpacketEnum.LATITUDE.value] = self.fourtofloat(byte_stream.read(4))
         data[SubpacketEnum.LONGITUDE.value] = self.fourtofloat(byte_stream.read(4))
         data[SubpacketEnum.STATE.value] = int.from_bytes(byte_stream.read(1), "big")
@@ -315,10 +325,10 @@ class PacketParser:
         SubpacketEnum.MESSAGE.value: message,
         SubpacketEnum.EVENT.value: event,
         SubpacketEnum.CONFIG.value: config,
-        # SubpacketEnum.SINGLE_SENSOR.value: single_sensor,  # See loop that maps function for range of ids below
         SubpacketEnum.GPS.value: gps,
-        # SubpacketEnum.ACKNOWLEDGEMENT.value: acknowledgement,
+        SubpacketEnum.ORIENTATION.value: orientation,
         SubpacketEnum.BULK_SENSOR.value: bulk_sensor,
+        # SubpacketEnum.SINGLE_SENSOR.value: single_sensor,  # See loop that maps function for range of ids below
     }
     for i in subpacket_ids.get_list_of_sensor_IDs():
         packetTypeToParser[i] = single_sensor
@@ -350,20 +360,6 @@ class PacketParser:
         data = byte_list
         b = struct.pack('4B', *data)
         c = struct.unpack('>I' if self.bigEndianInts else '<I', b)
-        return c[0]
-
-    def eighttodouble(self, byte_list):
-        """
-
-        :param bytes:
-        :type bytes:
-        :return:
-        :rtype:
-        """
-        assert len(byte_list) == 8
-        data = byte_list
-        b = struct.pack('8B', *data)
-        c = struct.unpack('>d' if self.bigEndianInts else '<d', b)
         return c[0]
 
     def bitfrombyte(self, val: int, targetIndex: int):

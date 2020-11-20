@@ -152,7 +152,7 @@ def test_imu_read(qtbot, main_app):
         set_dummy_sensor_values(hw, SensorType.IMU, *vals)
         wait_new_bundle()
 
-        assert main_app.rocket_data.lastvalue(SubpacketEnum.ORIENTATION_1.value) == vals[0]
+        assert main_app.rocket_data.lastvalue(SubpacketEnum.ORIENTATION_1.value) == vals[0] # TODO Problematic dependency on subpacket_ids
         assert main_app.rocket_data.lastvalue(SubpacketEnum.ORIENTATION_2.value) == vals[1]
         assert main_app.rocket_data.lastvalue(SubpacketEnum.ORIENTATION_3.value) == vals[2]
 

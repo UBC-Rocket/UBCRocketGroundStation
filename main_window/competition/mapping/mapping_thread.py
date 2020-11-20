@@ -18,7 +18,6 @@ SCALE_FACTOR_NO_SCALE = 1
 
 class MappingThread(QtCore.QThread):
     sig_received = pyqtSignal()
-    sig_print = pyqtSignal(str)
 
     def __init__(self, connection, m: map_data.MapData, data, parent=None) -> None:
         """Mapping work and processing that gets put into MapData, repeatedly as RocketData is updated.

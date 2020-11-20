@@ -4,7 +4,9 @@ import os
 import sys
 import time
 import logging
+from copy import copy
 
+from PyQt5.QtCore import pyqtSignal, QObject
 
 # Path to executable
 if getattr(sys, 'frozen', False):
@@ -50,6 +52,32 @@ LOGGER.addHandler(_file_handler)
 LOGGER.addHandler(_stdout_handler)
 
 LOGGER.info(f"Starting session ID: {SESSION_ID}")
+
+class qtSignalLogHandler(logging.Handler, QObject):
+    """
+    Logging handler that passes logs to a Qt signal
+
+    Required for printing logs in a UI as LOGGER is multithreaded and safely accessing the UI from other threads
+    requires the use of a signal
+    """
+
+    qt_signal = pyqtSignal(str)
+
+    def __init__(self, exception_traces=True):
+        QObject.__init__(self)
+        logging.Handler.__init__(self)
+        self.exception_traces = exception_traces
+
+    def emit(self, record):
+        if not self.exception_traces:
+            # Shallow copy so that we dont modify record for other handlers. Inspired by:
+            # https://stackoverflow.com/questions/54605699/python-logging-disable-stack-trace
+            record = copy(record)
+            record.exc_info = None
+            record.exc_text = None
+
+        log_entry = self.format(record)
+        self.qt_signal.emit(log_entry)
 
 # Helper class. python way of doing ++ (unlimited incrementing)
 class Count:

@@ -44,13 +44,11 @@ class MainApp(QtWidgets.QMainWindow):
         # Init and connection of ReadThread
         self.ReadThread = ReadThread(self.connection, self.rocket_data)
         self.ReadThread.sig_received.connect(self.receive_data)
-        self.ReadThread.sig_print.connect(self.print_to_ui)
         self.ReadThread.start()
 
         # Init and connection of SendThread
         self.SendThread = SendThread(self.connection)
         self.sig_send.connect(self.SendThread.queueMessage)
-        self.SendThread.sig_print.connect(self.print_to_ui)
         self.SendThread.start()
 
     def closeEvent(self, event) -> None:
@@ -93,11 +91,3 @@ class MainApp(QtWidgets.QMainWindow):
         :type command:
         """
         self.sig_send.emit(command)
-
-    def print_to_ui(self, text) -> None:
-        """
-        This is called when a thread wants to show a message in the UI
-        :param text:
-        :type text:
-        """
-        LOGGER.info(text)

@@ -53,15 +53,15 @@ class DebugConnection(Connection):
                 full_arr.extend(self.message_mock_set_values())
                 full_arr.extend(self.gps_mock_random())
                 full_arr.extend(self.orientation_mock_random())
-                self.send_to_rocket(full_arr)
+                self.receive(full_arr)
 
         LOGGER.warning("Debug connection thread shut down")
 
-    def send_to_rocket(self, data):
+    def receive(self, data):
         with self.lock:
 
             if not self.callback:
-                raise Exception("Can't send to rocket. No callback set.")
+                raise Exception("Can't receive data. Callback not set.")
 
             self.callback(data)
 

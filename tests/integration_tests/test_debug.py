@@ -50,7 +50,7 @@ def test_bulk_sensor_packet(qtbot, main_app):
     with qtbot.waitSignal(
             main_app.ReadThread.sig_received
     ):  # Needed otherwise signals wont process because UI is in same thread
-        connection.send_to_rocket(packet)
+        connection.receive(packet)
 
     assert BULK_SENSOR_EVENT.wait(snapshot) == 1
 
@@ -115,7 +115,7 @@ def test_single_sensor_packet(qtbot, main_app):
 
         snapshot = get_event_stats_snapshot()
 
-        connection.send_to_rocket(packet)
+        connection.receive(packet)
 
         assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
 
@@ -128,7 +128,7 @@ def test_message_packet(qtbot, main_app, caplog):
 
     snapshot = get_event_stats_snapshot()
 
-    connection.send_to_rocket(packet)
+    connection.receive(packet)
 
     assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 
@@ -146,7 +146,7 @@ def test_config_packet(qtbot, main_app):
 
     snapshot = get_event_stats_snapshot()
 
-    connection.send_to_rocket(packet)
+    connection.receive(packet)
 
     assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 
@@ -164,7 +164,7 @@ def test_status_ping_packet(qtbot, main_app):
 
     snapshot = get_event_stats_snapshot()
 
-    connection.send_to_rocket(packet)
+    connection.receive(packet)
 
     assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 

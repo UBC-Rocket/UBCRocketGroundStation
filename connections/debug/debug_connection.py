@@ -50,7 +50,10 @@ class DebugConnection(Connection):
                 full_arr.extend(self.bulk_sensor_mock_random())
                 full_arr.extend(self.status_ping_mock_set_values())
                 full_arr.extend(self.config_mock_set_values())
-                full_arr.extend(self.message_values())
+                full_arr.extend(self.message_mock_set_values())
+                # full_arr.extend(self.bad_subpacket_id_mock()) # bad id, to see handling of itself and remaining data
+                full_arr.extend(self.gps_mock_random())
+                full_arr.extend(self.orientation_mock_random())
                 self.receive(full_arr)
 
         LOGGER.warning("Debug connection thread shut down")
@@ -96,7 +99,7 @@ class DebugConnection(Connection):
                                          0b11100000,
                                          0b11111111)
 
-    def message_values(self) -> bytearray:
+    def message_mock_set_values(self) -> bytearray:
         """
 
         :return: data_arr
@@ -112,7 +115,47 @@ class DebugConnection(Connection):
         :rtype: bytearray
         """
 
-        return radio_packets.config(time.time(), True, 0)
+        return radio_packets.config(time.time(), True, 0, 'e43f15ba448653b34c043cf90593346e7ca4f9c7')
+
+    def gps_mock_random(self) -> bytearray:
+        """
+
+        :return:
+        :rtype: bytearray
+        """
+
+        return radio_packets.gps(time.time(),
+                                 random.uniform(49.260565, 49.263859),
+                                 random.uniform(-123.250990, -123.246956),
+                                 random.randint(0, 10000))
+
+    def orientation_mock_random(self) -> bytearray:
+        """
+
+        :return:
+        :rtype: bytearray
+        """
+
+        return radio_packets.orientation(time.time(),
+                                         random.uniform(0, 1e6),
+                                         random.uniform(0, 1e6),
+                                         random.uniform(0, 1e6),
+                                         random.uniform(0, 1e6))
+
+
+    def bad_subpacket_id_mock(self) -> bytearray:
+        """
+
+        :return:
+        :rtype: bytearray
+        """
+
+        dummy: bytearray = bytearray()
+        dummy.append(69)  # id
+        dummy.extend((int(1234)).to_bytes(length=4, byteorder='big'))  # time
+        dummy.extend(struct.pack(">f", 137137.4575))  # barometer altitud
+        return dummy
+
 
     # Register callback to which we will send new data
     def registerCallback(self, fn) -> None:

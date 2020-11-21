@@ -5,9 +5,11 @@ from profiles.rockets.co_pilot import CoPilotProfile
 from connections.debug import radio_packets
 from main_window.rocket_data import BUNDLE_ADDED_EVENT
 from main_window.subpacket_ids import SubpacketEnum
-from main_window.radio_controller import (
+from main_window.packet_parser import (
     IS_SIM,
     ROCKET_TYPE,
+    VERSION_ID,
+    VERSION_ID_LEN,
     NONCRITICAL_FAILURE,
     SENSOR_TYPES,
     OTHER_STATUS_TYPES,
@@ -140,7 +142,10 @@ def test_message_packet(qtbot, main_app, caplog):
 def test_config_packet(qtbot, main_app):
     connection = main_app.connection
 
-    packet = radio_packets.config(0, True, 2)
+    version_id = 'e43f15ba448653b34c043cf90593346e7ca4f9c7'
+    assert len(version_id) == VERSION_ID_LEN # make sure test val is acceptable
+
+    packet = radio_packets.config(0, True, 2, version_id)
 
     snapshot = get_event_stats_snapshot()
 
@@ -151,6 +156,7 @@ def test_config_packet(qtbot, main_app):
 
     assert main_app.rocket_data.lastvalue(IS_SIM) == True
     assert main_app.rocket_data.lastvalue(ROCKET_TYPE) == ClientType.CO_PILOT
+    assert main_app.rocket_data.lastvalue(VERSION_ID) == version_id
 
 
 def test_status_ping_packet(qtbot, main_app):
@@ -174,6 +180,45 @@ def test_status_ping_packet(qtbot, main_app):
         assert main_app.rocket_data.lastvalue(sensor) == 1
     for other in OTHER_STATUS_TYPES:
         assert main_app.rocket_data.lastvalue(other) == 1
+
+
+def test_gps_packet(qtbot, main_app):
+    connection = main_app.connection
+
+    gps_inputs = (0, 1, 2, 3)
+
+    packet = radio_packets.gps(*gps_inputs)
+
+    snapshot = get_event_stats_snapshot()
+
+    connection.receive(packet)
+
+    assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
+
+    assert main_app.rocket_data.lastvalue(SubpacketEnum.TIME.value) == 0
+    assert main_app.rocket_data.lastvalue(SubpacketEnum.LATITUDE.value) == 1
+    assert main_app.rocket_data.lastvalue(SubpacketEnum.LONGITUDE.value) == 2
+    assert main_app.rocket_data.lastvalue(SubpacketEnum.GPS_ALTITUDE.value) == 3
+
+
+def test_orientation_packet(qtbot, main_app):
+    connection = main_app.connection
+
+    orientation_inputs = (0, 1, 2, 3, 4)
+
+    packet = radio_packets.orientation(*orientation_inputs)
+
+    snapshot = get_event_stats_snapshot()
+
+    connection.receive(packet)
+
+    assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
+
+    assert main_app.rocket_data.lastvalue(SubpacketEnum.TIME.value) == 0
+    assert main_app.rocket_data.lastvalue(SubpacketEnum.ORIENTATION_1.value) == 1
+    assert main_app.rocket_data.lastvalue(SubpacketEnum.ORIENTATION_2.value) == 2
+    assert main_app.rocket_data.lastvalue(SubpacketEnum.ORIENTATION_3.value) == 3
+    assert main_app.rocket_data.lastvalue(SubpacketEnum.ORIENTATION_4.value) == 4
 
 
 def test_clean_shutdown(qtbot):

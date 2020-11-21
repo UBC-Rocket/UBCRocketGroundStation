@@ -86,7 +86,7 @@ def message(time: int, message: str) -> bytearray:
     return data_arr
 
 
-def config(time: int, is_sim: bool, rocket_type: int) -> bytearray:
+def config(time: int, is_sim: bool, rocket_type: int, version_id: str) -> bytearray:
     """
 
     :return: data_arr
@@ -97,4 +97,37 @@ def config(time: int, is_sim: bool, rocket_type: int) -> bytearray:
     data_arr.extend((int(time)).to_bytes(length=4, byteorder='big'))  # time
     data_arr.extend((int(1 if is_sim else 0)).to_bytes(length=1, byteorder='big'))  # is sim
     data_arr.extend((int(rocket_type)).to_bytes(length=1, byteorder='big'))  # rocket type
+    data_arr.extend([ord(ch) for ch in version_id])  # version id
+    return data_arr
+
+
+def gps(time: int, latitude: float, longitude: float, gps_altitude: float) -> bytearray:
+    """
+
+    :return: data_arr
+    :rtype: bytearray
+    """
+    data_arr: bytearray = bytearray()
+    data_arr.append(SubpacketEnum.GPS.value)  # id
+    data_arr.extend((int(time)).to_bytes(length=4, byteorder='big'))  # time
+    data_arr.extend(struct.pack(">f", latitude))  # Latitude
+    data_arr.extend(struct.pack(">f", longitude))  # Longitude
+    data_arr.extend(struct.pack(">f", gps_altitude))  # barometer altitude
+    return data_arr
+
+
+def orientation(time: int,  orientation_1: float, orientation_2: float,
+                orientation_3: float,orientation_4: float) -> bytearray:
+    """
+
+    :return: data_arr
+    :rtype: bytearray
+    """
+    data_arr: bytearray = bytearray()
+    data_arr.append(SubpacketEnum.ORIENTATION.value)  # id
+    data_arr.extend((int(time)).to_bytes(length=4, byteorder='big'))  # time
+    data_arr.extend(struct.pack(">f", orientation_1))  # Orientation
+    data_arr.extend(struct.pack(">f", orientation_2))  # Orientation
+    data_arr.extend(struct.pack(">f", orientation_3))  # Orientation
+    data_arr.extend(struct.pack(">f", orientation_4))  # Orientation
     return data_arr

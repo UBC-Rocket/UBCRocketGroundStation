@@ -1,33 +1,33 @@
 import queue
 from typing import Dict
 from threading import RLock
+from io import BytesIO, SEEK_END
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
 
-from .radio_controller import RadioController
+from .packet_parser import PacketParser
 from util.detail import LOGGER
 
 
 class ReadThread(QtCore.QThread):
     sig_received = pyqtSignal()
-    sig_print = pyqtSignal(str)
 
-    def __init__(self, connection, rocketData, parent=None) -> None:
+    def __init__(self, connection, rocket_data, parent=None) -> None:
         """Updates GUI, therefore needs to be a QThread and use signals/slots
 
         :param connection:
         :type connection:
-        :param rocketData:
-        :type rocketData:
+        :param rocket_data:
+        :type rocket_data:
         :param parent:
         :type parent:
         """
         QtCore.QThread.__init__(self, parent)
         self.connection = connection
-        self.rocketData = rocketData
+        self.rocket_data = rocket_data
 
-        self.radioController = RadioController(self.connection.isIntBigEndian(), self.connection.isFloatBigEndian())
+        self.packet_parser = PacketParser(self.connection.isIntBigEndian(), self.connection.isFloatBigEndian())
 
         self.dataQueue = queue.Queue()
 
@@ -59,23 +59,25 @@ class ReadThread(QtCore.QThread):
                     else:
                         continue
 
-            # Convert from immutable bytearray to List[int]
-            byte_list = list(data)  # list of ints ranging from 0 - 255. Equivalent to doing [x for x in data]
+            byte_stream: BytesIO = BytesIO(data)
 
-            # loop that quickly runs through entire data list and extracts subpackets where possible
-            while len(byte_list) > 0:
-                parsed_data: Dict[int, any] = {}  # generally any is floats and ints
-                length: int = 0
+            # Get length of bytes (without using len(data) for decoupling)
+            byte_stream.seek(0, SEEK_END)
+            end = byte_stream.tell()
+            byte_stream.seek(0)
+
+            # Iterate over stream to extract subpackets where possible
+            while byte_stream.tell() < end:
                 try:
-                    parsed_data, length = self.radioController.extract(byte_list)
-                    self.rocketData.addBundle(parsed_data)
+                    parsed_data: Dict[int, any] = self.packet_parser.extract(byte_stream)
+                    self.rocket_data.addBundle(parsed_data)
 
                     # notify UI that new data is available to be displayed
                     self.sig_received.emit()
                 except Exception as e:
-                    LOGGER.exception("Error decoding new data!")  # Automatically grabs and prints exception info
-
-                del byte_list[0:length]
+                    LOGGER.exception("Error decoding new packet! %s", e)
+                    # Just discard rest of data TODO Review policy on handling remaining data or problem packets. Consider data errors too
+                    byte_stream.seek(0, SEEK_END)
 
         LOGGER.warning("Read thread shut down")
 

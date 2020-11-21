@@ -11,13 +11,15 @@ from main_window.packet_parser import (
     ROCKET_TYPE,
     VERSION_ID,
     VERSION_ID_LEN,
+    SINGLE_SENSOR_EVENT,
+    CONFIG_EVENT,
+    DeviceType,
+)
+from main_window.competition.comp_packet_parser import (
     NONCRITICAL_FAILURE,
     SENSOR_TYPES,
     OTHER_STATUS_TYPES,
     BULK_SENSOR_EVENT,
-    SINGLE_SENSOR_EVENT,
-    CONFIG_EVENT,
-    ClientType,
 )
 
 from util.event_stats import get_event_stats_snapshot
@@ -162,7 +164,7 @@ def test_config_packet(qtbot, main_app):
     assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 
     assert main_app.rocket_data.lastvalue(IS_SIM) == True
-    assert main_app.rocket_data.lastvalue(ROCKET_TYPE) == ClientType.CO_PILOT
+    assert main_app.rocket_data.lastvalue(ROCKET_TYPE) == DeviceType.CO_PILOT
     assert main_app.rocket_data.lastvalue(VERSION_ID) == version_id
 
 

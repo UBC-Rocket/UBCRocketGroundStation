@@ -6,14 +6,13 @@ from io import BytesIO, SEEK_END
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
 
-from .packet_parser import PacketParser
 from util.detail import LOGGER
 
 
 class ReadThread(QtCore.QThread):
     sig_received = pyqtSignal()
 
-    def __init__(self, connection, rocket_data, parent=None) -> None:
+    def __init__(self, connection, rocket_data, packet_parser, parent=None) -> None:
         """Updates GUI, therefore needs to be a QThread and use signals/slots
 
         :param connection:
@@ -27,7 +26,7 @@ class ReadThread(QtCore.QThread):
         self.connection = connection
         self.rocket_data = rocket_data
 
-        self.packet_parser = PacketParser(self.connection.isIntBigEndian(), self.connection.isFloatBigEndian())
+        self.packet_parser = packet_parser
 
         self.dataQueue = queue.Queue()
 

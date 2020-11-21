@@ -41,8 +41,12 @@ class MainApp(QtWidgets.QMainWindow):
         self.rocket_profile = rocket_profile
         self.rocket_data = RocketData()
 
+        packet_parser = self.rocket_profile.construct_packet_parser(
+            self.connection.isIntBigEndian(),
+            self.connection.isFloatBigEndian())
+
         # Init and connection of ReadThread
-        self.ReadThread = ReadThread(self.connection, self.rocket_data)
+        self.ReadThread = ReadThread(self.connection, self.rocket_data, packet_parser)
         self.ReadThread.sig_received.connect(self.receive_data)
         self.ReadThread.start()
 

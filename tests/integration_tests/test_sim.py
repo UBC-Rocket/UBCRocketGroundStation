@@ -10,11 +10,12 @@ from main_window.subpacket_ids import SubpacketEnum
 from main_window.packet_parser import (
     IS_SIM,
     ROCKET_TYPE,
-    BULK_SENSOR_EVENT,
     SINGLE_SENSOR_EVENT,
     CONFIG_EVENT,
-    ClientType,
+    DeviceType,
+    VERSION_ID,
 )
+from main_window.competition.comp_packet_parser import BULK_SENSOR_EVENT
 
 from util.event_stats import get_event_stats_snapshot
 
@@ -68,7 +69,7 @@ def test_config_hello(qtbot, main_app):
     wait_new_bundle()
     # Should have already received at least one config packet from the startup hello
     assert main_app.rocket_data.lastvalue(IS_SIM) == True
-    assert main_app.rocket_data.lastvalue(ROCKET_TYPE) == ClientType.TANTALUS_STAGE_1
+    assert main_app.rocket_data.lastvalue(ROCKET_TYPE) == DeviceType.TANTALUS_STAGE_1
 
     snapshot = get_event_stats_snapshot()
     main_app.send_command("config")
@@ -76,7 +77,8 @@ def test_config_hello(qtbot, main_app):
     assert CONFIG_EVENT.wait(snapshot) == 1
 
     assert main_app.rocket_data.lastvalue(IS_SIM) == True
-    assert main_app.rocket_data.lastvalue(ROCKET_TYPE) == ClientType.TANTALUS_STAGE_1
+    assert main_app.rocket_data.lastvalue(VERSION_ID) is not None
+    assert main_app.rocket_data.lastvalue(ROCKET_TYPE) == DeviceType.TANTALUS_STAGE_1
 
 
 def test_gps_read(qtbot, main_app):

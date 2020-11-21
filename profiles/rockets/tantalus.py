@@ -11,6 +11,7 @@ from ..label import (
 from ..rocket_profile import RocketProfile
 from connections.sim.hw_sim import HWSim, DummySensor, SensorType, Ignitor, IgnitorType
 from main_window.competition.comp_app import CompApp
+from main_window.competition.comp_packet_parser import CompPacketParser
 
 
 class TantalusProfile(RocketProfile):
@@ -62,3 +63,6 @@ class TantalusProfile(RocketProfile):
 
     def construct_app(self, connection):
         return CompApp(connection, self)
+
+    def construct_packet_parser(self, big_endian_ints, big_endian_floats):
+        return CompPacketParser(big_endian_ints, big_endian_floats)

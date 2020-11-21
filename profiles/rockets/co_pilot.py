@@ -4,6 +4,7 @@ from ..label import (Label, update_acceleration, update_altitude,
                      update_tank_pressure)
 from ..rocket_profile import RocketProfile
 from main_window.competition.comp_app import CompApp
+from main_window.competition.comp_packet_parser import CompPacketParser
 
 
 class CoPilotProfile(RocketProfile):
@@ -45,3 +46,6 @@ class CoPilotProfile(RocketProfile):
 
     def construct_app(self, connection):
         return CompApp(connection, self)
+
+    def construct_packet_parser(self, big_endian_ints, big_endian_floats):
+        return CompPacketParser(big_endian_ints, big_endian_floats)

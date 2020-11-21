@@ -24,12 +24,12 @@ class Connection(ABC):
 
     # Returns whether ints should be decoded as big endian
     @abstractmethod
-    def isIntBigEndian(self) -> None:  # must be thead safe
+    def isIntBigEndian(self) -> bool:  # must be thead safe
         pass
 
     # Returns whether floats should be decoded as big endian
     @abstractmethod
-    def isFloatBigEndian(self) -> None:
+    def isFloatBigEndian(self) -> bool:
         pass
 
 

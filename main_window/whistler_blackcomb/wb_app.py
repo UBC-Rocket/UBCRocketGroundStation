@@ -29,8 +29,6 @@ class WbApp(MainApp, Ui_MainWindow):
         # Set up UI stuff using base class here. E.g.:
         # self.armingButton.clicked.connect(self.arming_button_pressed)
 
-        self.print_to_ui("Successfully started")
-
     def arming_button_pressed(self):
         self.send_command('ARM')
 

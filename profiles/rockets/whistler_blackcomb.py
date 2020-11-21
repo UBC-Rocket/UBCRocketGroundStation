@@ -1,5 +1,7 @@
 from ..rocket_profile import RocketProfile
 from main_window.whistler_blackcomb.wb_app import WbApp
+from main_window.whistler_blackcomb.wb_packet_parser import WbPacketParser
+from main_window.competition.comp_packet_parser import CompPacketParser
 
 
 class WbProfile(RocketProfile):
@@ -26,3 +28,7 @@ class WbProfile(RocketProfile):
 
     def construct_app(self, connection):
         return WbApp(connection, self)
+
+    def construct_packet_parser(self, big_endian_ints, big_endian_floats):
+        return CompPacketParser(big_endian_ints, big_endian_floats)  # TODO : Use WbPacketParser once its set up
+        #return WbPacketParser(big_endian_ints, big_endian_floats)

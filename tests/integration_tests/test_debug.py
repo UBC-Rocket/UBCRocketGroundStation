@@ -1,4 +1,5 @@
 import pytest
+import logging
 from connections.debug.debug_connection import DebugConnection, ARMED_EVENT, DISARMED_EVENT
 from main_window.competition.comp_app import LABLES_UPDATED_EVENT
 from profiles.rockets.co_pilot import CoPilotProfile
@@ -22,11 +23,17 @@ from main_window.packet_parser import (
 from util.event_stats import get_event_stats_snapshot
 
 @pytest.fixture(scope="function")
-def main_app():
+def main_app(caplog):
     connection = DebugConnection(generate_radio_packets=False)
     app = CoPilotProfile().construct_app(connection)
     yield app  # Provides app, following code is run on cleanup
     app.shutdown()
+
+    # Fail test if error message in logs since we catch most exceptions in app
+    for when in ("setup", "call"):
+        messages = [x.message for x in caplog.get_records(when) if x.levelno == logging.ERROR]
+        if messages:
+            pytest.fail(f"Errors reported in logs: {messages}")
 
 def test_arm_signal(qtbot, main_app):
     snapshot = get_event_stats_snapshot()

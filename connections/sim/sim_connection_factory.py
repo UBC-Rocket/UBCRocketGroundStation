@@ -73,7 +73,7 @@ class SimConnectionFactory(ConnectionFactory):
         LOGGER.info(f"Using FW executable: {os.path.join(path, executableName)}")
 
         return SimConnection(
-            path, executableName, hw_sim
+            path, executableName, hw_sim, 'TestHWID'
         )
 
 

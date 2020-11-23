@@ -6,17 +6,17 @@ from profiles.rockets.co_pilot import CoPilotProfile
 from connections.debug import radio_packets
 from main_window.rocket_data import BUNDLE_ADDED_EVENT
 from main_window.subpacket_ids import SubpacketEnum
+from main_window.device_manager import DeviceType, DEVICE_REGISTERED_EVENT
 from main_window.packet_parser import (
     IS_SIM,
-    ROCKET_TYPE,
+    DEVICE_TYPE,
     VERSION_ID,
     VERSION_ID_LEN,
     SINGLE_SENSOR_EVENT,
     CONFIG_EVENT,
-    DeviceType,
 )
 from main_window.competition.comp_packet_parser import (
-    NONCRITICAL_FAILURE,
+    CRITICAL_FAILURE,
     SENSOR_TYPES,
     OTHER_STATUS_TYPES,
     BULK_SENSOR_EVENT,
@@ -26,8 +26,10 @@ from util.event_stats import get_event_stats_snapshot
 
 @pytest.fixture(scope="function")
 def main_app(caplog):
-    connection = DebugConnection(generate_radio_packets=False)
+    connection = DebugConnection('TestHWID', 0x02, generate_radio_packets=False)
+    snapshot = get_event_stats_snapshot()
     app = CoPilotProfile().construct_app(connection)
+    assert DEVICE_REGISTERED_EVENT.wait(snapshot) == 1
     yield app  # Provides app, following code is run on cleanup
     app.shutdown()
 
@@ -40,11 +42,11 @@ def main_app(caplog):
 def test_arm_signal(qtbot, main_app):
     snapshot = get_event_stats_snapshot()
 
-    main_app.send_command("arm")
+    main_app.send_command("co_pilot.arm")
 
     assert ARMED_EVENT.wait(snapshot) == 1
 
-    main_app.send_command("disarm")
+    main_app.send_command("co_pilot.disarm")
 
     assert DISARMED_EVENT.wait(snapshot) == 1
 
@@ -69,7 +71,7 @@ def test_bulk_sensor_packet(qtbot, main_app):
     assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 
     def get_val(val):
-        return main_app.rocket_data.lastvalue(val.value)
+        return main_app.rocket_data.last_value_by_device(DeviceType.CO_PILOT, val.value)
 
     vals_to_get = (
         SubpacketEnum.CALCULATED_ALTITUDE,
@@ -123,7 +125,7 @@ def test_single_sensor_packet(qtbot, main_app):
     ]
 
     for sensor_id, val in vals:
-        packet = radio_packets.single_sensor(0, sensor_id.value, val)
+        packet = radio_packets.single_sensor(0xFFFFFFFF, sensor_id.value, val)
 
         snapshot = get_event_stats_snapshot()
 
@@ -131,12 +133,13 @@ def test_single_sensor_packet(qtbot, main_app):
 
         assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
 
-        assert main_app.rocket_data.lastvalue(sensor_id.value) == val
+        assert main_app.rocket_data.last_value_by_device(DeviceType.CO_PILOT, SubpacketEnum.TIME.value) == 0xFFFFFFFF
+        assert main_app.rocket_data.last_value_by_device(DeviceType.CO_PILOT, sensor_id.value) == val
 
 def test_message_packet(qtbot, main_app, caplog):
     connection = main_app.connection
 
-    packet = radio_packets.message(0, "test_message")
+    packet = radio_packets.message(0xFFFFFFFF, "test_message")
 
     snapshot = get_event_stats_snapshot()
 
@@ -144,7 +147,8 @@ def test_message_packet(qtbot, main_app, caplog):
 
     assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 
-    assert main_app.rocket_data.lastvalue(SubpacketEnum.MESSAGE.value) == "test_message"
+    assert main_app.rocket_data.last_value_by_device(DeviceType.CO_PILOT, SubpacketEnum.TIME.value) == 0xFFFFFFFF
+    assert main_app.rocket_data.last_value_by_device(DeviceType.CO_PILOT, SubpacketEnum.MESSAGE.value) == "test_message"
     assert "test_message" in caplog.text
 
 
@@ -154,7 +158,7 @@ def test_config_packet(qtbot, main_app):
     version_id = 'e43f15ba448653b34c043cf90593346e7ca4f9c7'
     assert len(version_id) == VERSION_ID_LEN # make sure test val is acceptable
 
-    packet = radio_packets.config(0, True, 2, version_id)
+    packet = radio_packets.config(0xFFFFFFFF, True, 2, version_id)
 
     snapshot = get_event_stats_snapshot()
 
@@ -163,16 +167,17 @@ def test_config_packet(qtbot, main_app):
     assert CONFIG_EVENT.wait(snapshot) == 1
     assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 
-    assert main_app.rocket_data.lastvalue(IS_SIM) == True
-    assert main_app.rocket_data.lastvalue(ROCKET_TYPE) == DeviceType.CO_PILOT
-    assert main_app.rocket_data.lastvalue(VERSION_ID) == version_id
+    assert main_app.rocket_data.last_value_by_device(DeviceType.CO_PILOT, SubpacketEnum.TIME.value) == 0xFFFFFFFF
+    assert main_app.rocket_data.last_value_by_device(DeviceType.CO_PILOT, IS_SIM) == True
+    assert main_app.rocket_data.last_value_by_device(DeviceType.CO_PILOT, DEVICE_TYPE) == DeviceType.CO_PILOT
+    assert main_app.rocket_data.last_value_by_device(DeviceType.CO_PILOT, VERSION_ID) == version_id
 
 
 def test_status_ping_packet(qtbot, main_app):
     connection = main_app.connection
 
     packet = radio_packets.status_ping(
-        0, radio_packets.StatusType.CRITICAL_FAILURE, 0xFF, 0xFF, 0xFF, 0xFF
+        0xFFFFFFFF, radio_packets.StatusType.CRITICAL_FAILURE, 0xFF, 0xFF, 0xFF, 0xFF
     )
 
     snapshot = get_event_stats_snapshot()
@@ -181,20 +186,21 @@ def test_status_ping_packet(qtbot, main_app):
 
     assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 
+    assert main_app.rocket_data.last_value_by_device(DeviceType.CO_PILOT, SubpacketEnum.TIME.value) == 0xFFFFFFFF
     assert (
-            main_app.rocket_data.lastvalue(SubpacketEnum.STATUS_PING.value)
-            == NONCRITICAL_FAILURE
+            main_app.rocket_data.last_value_by_device(DeviceType.CO_PILOT, SubpacketEnum.STATUS_PING.value)
+            == CRITICAL_FAILURE
     )
     for sensor in SENSOR_TYPES:
-        assert main_app.rocket_data.lastvalue(sensor) == 1
+        assert main_app.rocket_data.last_value_by_device(DeviceType.CO_PILOT, sensor) == 1
     for other in OTHER_STATUS_TYPES:
-        assert main_app.rocket_data.lastvalue(other) == 1
+        assert main_app.rocket_data.last_value_by_device(DeviceType.CO_PILOT, other) == 1
 
 
 def test_gps_packet(qtbot, main_app):
     connection = main_app.connection
 
-    gps_inputs = (0, 1, 2, 3)
+    gps_inputs = (0xFFFFFFFF, 1, 2, 3)
 
     packet = radio_packets.gps(*gps_inputs)
 
@@ -204,16 +210,16 @@ def test_gps_packet(qtbot, main_app):
 
     assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 
-    assert main_app.rocket_data.lastvalue(SubpacketEnum.TIME.value) == 0
-    assert main_app.rocket_data.lastvalue(SubpacketEnum.LATITUDE.value) == 1
-    assert main_app.rocket_data.lastvalue(SubpacketEnum.LONGITUDE.value) == 2
-    assert main_app.rocket_data.lastvalue(SubpacketEnum.GPS_ALTITUDE.value) == 3
+    assert main_app.rocket_data.last_value_by_device(DeviceType.CO_PILOT, SubpacketEnum.TIME.value) == 0xFFFFFFFF
+    assert main_app.rocket_data.last_value_by_device(DeviceType.CO_PILOT, SubpacketEnum.LATITUDE.value) == 1
+    assert main_app.rocket_data.last_value_by_device(DeviceType.CO_PILOT, SubpacketEnum.LONGITUDE.value) == 2
+    assert main_app.rocket_data.last_value_by_device(DeviceType.CO_PILOT, SubpacketEnum.GPS_ALTITUDE.value) == 3
 
 
 def test_orientation_packet(qtbot, main_app):
     connection = main_app.connection
 
-    orientation_inputs = (0, 1, 2, 3, 4)
+    orientation_inputs = (0xFFFFFFFF, 1, 2, 3, 4)
 
     packet = radio_packets.orientation(*orientation_inputs)
 
@@ -223,15 +229,15 @@ def test_orientation_packet(qtbot, main_app):
 
     assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 
-    assert main_app.rocket_data.lastvalue(SubpacketEnum.TIME.value) == 0
-    assert main_app.rocket_data.lastvalue(SubpacketEnum.ORIENTATION_1.value) == 1
-    assert main_app.rocket_data.lastvalue(SubpacketEnum.ORIENTATION_2.value) == 2
-    assert main_app.rocket_data.lastvalue(SubpacketEnum.ORIENTATION_3.value) == 3
-    assert main_app.rocket_data.lastvalue(SubpacketEnum.ORIENTATION_4.value) == 4
+    assert main_app.rocket_data.last_value_by_device(DeviceType.CO_PILOT, SubpacketEnum.TIME.value) == 0xFFFFFFFF
+    assert main_app.rocket_data.last_value_by_device(DeviceType.CO_PILOT, SubpacketEnum.ORIENTATION_1.value) == 1
+    assert main_app.rocket_data.last_value_by_device(DeviceType.CO_PILOT, SubpacketEnum.ORIENTATION_2.value) == 2
+    assert main_app.rocket_data.last_value_by_device(DeviceType.CO_PILOT, SubpacketEnum.ORIENTATION_3.value) == 3
+    assert main_app.rocket_data.last_value_by_device(DeviceType.CO_PILOT, SubpacketEnum.ORIENTATION_4.value) == 4
 
 
 def test_clean_shutdown(qtbot):
-    connection = DebugConnection(generate_radio_packets=True)
+    connection = DebugConnection('TestHWID', 0x02, generate_radio_packets=True)
     main_app = CoPilotProfile().construct_app(connection)
 
     assert main_app.ReadThread.isRunning()

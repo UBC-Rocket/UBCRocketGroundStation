@@ -5,7 +5,7 @@ import struct
 from enum import Enum
 
 from .hw_sim import SensorType
-from ..connection import Connection
+from ..connection import Connection, ConnectionMessage
 from .stream_filter import StreamFilter
 from .xbee_module_sim import XBeeModuleSim
 from util.detail import LOGGER
@@ -39,9 +39,10 @@ ID_TO_SENSOR = {
 
 
 class SimConnection(Connection):
-    def __init__(self, firmwareDir, executableName, hw_sim):
+    def __init__(self, firmwareDir, executableName, hw_sim, hwid):
         self.executablePath = os.path.join(firmwareDir, executableName)
         self.firmwareDir = firmwareDir
+        self.hwid = hwid
         self.callback = None
 
         self.bigEndianInts = None
@@ -76,7 +77,12 @@ class SimConnection(Connection):
         self.rocket.stdin.write(b"ACK")
         self.rocket.stdin.flush()
 
-    def send(self, data):
+    def send(self, hwid, data):
+        if hwid != self.hwid:
+            raise Exception(f"Connection does not support HWID{hwid}")
+        self.broadcast(data)
+
+    def broadcast(self, data):
         self._xbee.send_to_rocket(data)
 
     def _send_sim_packet(self, id_, data):
@@ -91,7 +97,16 @@ class SimConnection(Connection):
         self._send_sim_packet(SimTxId.RADIO.value, data)
 
     def registerCallback(self, fn):
-        self._xbee.ground_callback = fn
+        self.callback = fn
+        self._xbee.ground_callback = self._receive
+
+    def _receive(self, data):
+        if not self.callback:
+            raise Exception("Can't receive data. Callback not set.")
+
+        message = ConnectionMessage(hwid=self.hwid, connection=self, data=data)
+
+        self.callback(message)
 
     # Returns whether ints should be decoded as big endian
     def isIntBigEndian(self):  # must be thead safe

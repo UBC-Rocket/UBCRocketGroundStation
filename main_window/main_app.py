@@ -12,6 +12,7 @@ from profiles.rocket_profile import RocketProfile
 from main_window.read_thread import ReadThread
 from main_window.rocket_data import RocketData
 from main_window.send_thread import SendThread
+from main_window.device_manager import DeviceManager
 
 if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
@@ -40,18 +41,19 @@ class MainApp(QtWidgets.QMainWindow):
         self.connection = connection
         self.rocket_profile = rocket_profile
         self.rocket_data = RocketData()
+        self.device_manager = DeviceManager()
 
         packet_parser = self.rocket_profile.construct_packet_parser(
             self.connection.isIntBigEndian(),
             self.connection.isFloatBigEndian())
 
         # Init and connection of ReadThread
-        self.ReadThread = ReadThread(self.connection, self.rocket_data, packet_parser)
+        self.ReadThread = ReadThread(self.connection, self.rocket_data, packet_parser, self.device_manager)
         self.ReadThread.sig_received.connect(self.receive_data)
         self.ReadThread.start()
 
         # Init and connection of SendThread
-        self.SendThread = SendThread(self.connection)
+        self.SendThread = SendThread([self.connection], self.device_manager)
         self.sig_send.connect(self.SendThread.queueMessage)
         self.SendThread.start()
 

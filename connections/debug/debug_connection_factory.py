@@ -21,4 +21,4 @@ class DebugConnectionFactory(ConnectionFactory):
     def construct(
         self, comPort: Union[int, str, None] = None, baudRate=None, rocket=None
     ) -> DebugConnection:
-        return DebugConnection(generate_radio_packets=True)
+        return DebugConnection('TestHwid', 0x00, generate_radio_packets=True)

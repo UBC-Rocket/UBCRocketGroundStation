@@ -12,6 +12,7 @@ from ..rocket_profile import RocketProfile
 from connections.sim.hw_sim import HWSim, DummySensor, SensorType, Ignitor, IgnitorType
 from main_window.competition.comp_app import CompApp
 from main_window.competition.comp_packet_parser import CompPacketParser
+from main_window.device_manager import DeviceType
 
 
 class TantalusProfile(RocketProfile):
@@ -23,25 +24,29 @@ class TantalusProfile(RocketProfile):
     @property
     def buttons(self):
         return {
-            "Arm": "ARM",
-            "Ping": "PING"
+            "Arm Stage 1": "TANTALUS_STAGE_1.ARM",
+            "Ping Stage 1": "TANTALUS_STAGE_1.PING"
         }
 
     @property
     def labels(self):
         return [
-            Label("Altitude", update_altitude),
-            Label("MaxAltitude", update_max_altitude, "Max Altitude"),
-            Label("GPS", update_gps),
-            Label("State", update_state),
-            Label("Pressure", update_pressure),
-            Label("Acceleration", update_acceleration),
-            Label("TestSeparation", update_test_separation, "Test Separation"),
+            Label(DeviceType.TANTALUS_STAGE_1, "Altitude", update_altitude),
+            Label(DeviceType.TANTALUS_STAGE_1, "MaxAltitude", update_max_altitude, "Max Altitude"),
+            Label(DeviceType.TANTALUS_STAGE_1, "GPS", update_gps),
+            Label(DeviceType.TANTALUS_STAGE_1, "State", update_state),
+            Label(DeviceType.TANTALUS_STAGE_1, "Pressure", update_pressure),
+            Label(DeviceType.TANTALUS_STAGE_1, "Acceleration", update_acceleration),
+            Label(DeviceType.TANTALUS_STAGE_1, "TestSeparation", update_test_separation, "Test Separation"),
         ]
 
     @property
     def sim_executable_name(self):
         return "TantalusStage1"
+
+    @property
+    def mapping_device(self):
+        return DeviceType.TANTALUS_STAGE_1
 
     def construct_hw_sim(self):
         # Assemble HW here

@@ -1,11 +1,14 @@
 import queue
 from enum import Enum
 from threading import RLock
+from typing import Iterable
 
 from digi.xbee.exception import TimeoutException
 from PyQt5 import QtCore
 
 from util.detail import LOGGER
+from main_window.device_manager import DeviceManager, DeviceType
+from connections.connection import Connection
 
 
 # TODO change this section with new Radio protocol comm refactoring
@@ -34,19 +37,19 @@ class CommandType(Enum):
     GPS = 0x04
     ORIENT = 0x06
 
-
 class SendThread(QtCore.QThread):
 
-    def __init__(self, connection, parent=None) -> None:
+    def __init__(self, connections: Iterable[Connection], device_manager: DeviceManager, parent=None) -> None:
         """Updates GUI, therefore needs to be a QThread and use signals/slots
 
-        :param connection:
-        :type connection:
+        :param connections:
+        :type connections:
         :param parent:
         :type parent:
         """
         QtCore.QThread.__init__(self, parent)
-        self.connection = connection
+        self.connections = connections
+        self.device_manager = device_manager
 
         self.commandQueue = queue.Queue()
 
@@ -54,13 +57,13 @@ class SendThread(QtCore.QThread):
         self._is_shutting_down = False
 
     # TODO Review this data size
-    def queueMessage(self, word):
-        """Function that adds a message of size 'word' to queue for sending.
+    def queueMessage(self, message: str):
+        """Function that adds a message to queue for sending.
 
-        :param word:
-        :type word:
+        :param message:
+        :type message:
         """
-        self.commandQueue.put_nowait(word)
+        self.commandQueue.put_nowait(message)
 
     # Thread loop that waits for new commands to be queued and sends them when available
     def run(self):
@@ -70,32 +73,56 @@ class SendThread(QtCore.QThread):
 
         # TODO : Once we have multiple connections, we will loop over and send a config request to each
         # Starting up, request hello/handshake/identification
-        try:
-            self.connection.send(bytes([CommandType.CONFIG.value]))
-        except Exception as ex:
-            self.sig_print.emit("Unexpected error while sending config requests!")
-            LOGGER.exception("Exception in send thread while sending config requests")
+        for connection in self.connections:
+            try:
+                connection.broadcast(bytes([CommandType.CONFIG.value]))
+            except Exception as ex:
+                self.sig_print.emit("Unexpected error while sending config requests!")
+                LOGGER.exception("Exception in send thread while sending config requests")
 
         while True:
             try:
-                word = self.commandQueue.get(block=True, timeout=None)  # Block until something new
+                message = self.commandQueue.get(block=True, timeout=None)  # Block until something new
                 self.commandQueue.task_done()
 
-                if word is None:  # Either received None or woken up for shutdown
+                if message is None:  # Either received None or woken up for shutdown
                     with self._shutdown_lock:
                         if self._is_shutting_down:
                             break
                         else:
                             continue
 
-                try:
-                    command = CommandType[word.upper()]
-                    data = bytes([command.value])
-                except KeyError:
-                    LOGGER.error("Unknown Command")
+                message_parts = message.split('.')
+
+                if len(message_parts) != 2:
+                    LOGGER.error("Bad command format")
                     continue
 
-                self.connection.send(data)
+                (device_str, command_str) = message_parts
+
+                try:
+                    device = DeviceType[device_str.upper()]
+                except KeyError:
+                    LOGGER.error(f"Unknown device: {device_str}")
+                    continue
+
+                hwid = self.device_manager.get_hwid(device)
+                if hwid is None:
+                    LOGGER.error(f"Device not yet connected: {device.name}")
+                    continue
+
+                connection = self.device_manager.get_connection(hwid)
+
+                try:
+                    command = CommandType[command_str.upper()]
+                except KeyError:
+                    LOGGER.error(f"Unknown command {command_str}")
+                    continue
+
+                LOGGER.info(f"Sending command {command.name} to device {device.name} (HWID={hwid})")
+
+                data = bytes([command.value])
+                connection.send(hwid, data)
 
                 LOGGER.info("Sent command!")
 

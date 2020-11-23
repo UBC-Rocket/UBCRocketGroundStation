@@ -1,6 +1,6 @@
 import collections
 import struct
-from enum import Enum
+from .device_manager import DeviceType
 from io import BytesIO
 from typing import Any, Callable, Dict
 
@@ -8,6 +8,7 @@ from . import subpacket_ids
 from util.detail import LOGGER
 from util.event_stats import Event
 from main_window.subpacket_ids import SubpacketEnum
+from .device_manager import DeviceManager
 
 SINGLE_SENSOR_EVENT = Event('single_sensor')
 CONFIG_EVENT = Event('config')
@@ -18,19 +19,20 @@ Header = collections.namedtuple('Header', ['subpacket_id', 'timestamp'])
 
 # CONSTANTS
 # TODO Extract
-ROCKET_TYPE = 'ROCKET_TYPE'
+DEVICE_TYPE = 'ROCKET_TYPE'
 IS_SIM = 'IS_SIM'
 VERSION_ID = 'VERSION_ID'
 VERSION_ID_LEN = 40 # TODO Could instead use passed length parameter, if this is not necessary
 MESSAGE = 'MESSAGE'
 
-class DeviceType(Enum):
-    TANTALUS_STAGE_1 = 0x00
-    TANTALUS_STAGE_2 = 0x01
-    CO_PILOT = 0x02
-
 HEADER_SIZE_WITH_LEN = 6
 HEADER_SIZE_NO_LEN = 5
+
+ID_TO_DEVICE = {
+        0x00: DeviceType.TANTALUS_STAGE_1,
+        0x01: DeviceType.TANTALUS_STAGE_2,
+        0x02: DeviceType.CO_PILOT,
+}
 
 
 # This class takes care of converting subpacket data coming in, according to the specifications.
@@ -164,13 +166,13 @@ class PacketParser:
 
         data = {}
         data[IS_SIM] = bool(byte_stream.read(1)[0])
-        data[ROCKET_TYPE] = DeviceType(byte_stream.read(1)[0])
+        data[DEVICE_TYPE] = ID_TO_DEVICE[byte_stream.read(1)[0]]
         version_id = byte_stream.read(VERSION_ID_LEN)
         data[VERSION_ID] = version_id.decode('ascii')
 
         LOGGER.info("Config: SIM? %s, Rocket type = %s, Version ID = %s",
                     str(data[IS_SIM]),
-                    str(data[ROCKET_TYPE]),
+                    str(data[DEVICE_TYPE]),
                     str(data[VERSION_ID]))
 
         CONFIG_EVENT.increment()

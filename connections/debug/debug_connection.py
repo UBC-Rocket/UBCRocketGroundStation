@@ -4,7 +4,7 @@ import threading
 import time
 
 import connections.debug.radio_packets as radio_packets
-from ..connection import Connection
+from ..connection import Connection, ConnectionMessage
 from util.detail import LOGGER
 from util.event_stats import Event
 
@@ -15,11 +15,14 @@ PACKET_INTERVAL_S = 2
 
 class DebugConnection(Connection):
 
-    def __init__(self, generate_radio_packets=True) -> None:
+    def __init__(self, hwid: str, device_id: int, generate_radio_packets=True) -> None:
         """
 
         """
-        self.lastSend = time.time()  # float seconds
+        self.hwid = hwid
+        self.device_id = device_id
+        self.start_time = time.time()
+        self.lastSend = time.time()
         self.callback = None
         self.lock = threading.RLock()  # Protects callback variable and any other "state" variables
 
@@ -48,15 +51,13 @@ class DebugConnection(Connection):
 
                 full_arr: bytearray = bytearray()
                 full_arr.extend(self.bulk_sensor_mock_random())
-                full_arr.extend(self.status_ping_mock_set_values())
-                full_arr.extend(self.config_mock_set_values())
-                full_arr.extend(self.message_mock_set_values())
+                # full_arr.extend(self.message_mock_set_values())
                 # full_arr.extend(self.bad_subpacket_id_mock()) # bad id, to see handling of itself and remaining data
                 full_arr.extend(self.gps_mock_random())
                 full_arr.extend(self.orientation_mock_random())
                 self.receive(full_arr)
 
-        LOGGER.warning("Debug connection thread shut down")
+        LOGGER.warning(f"Debug connection thread shut down (HWID={self.hwid})")
 
     def receive(self, data):
         with self.lock:
@@ -64,7 +65,9 @@ class DebugConnection(Connection):
             if not self.callback:
                 raise Exception("Can't receive data. Callback not set.")
 
-            self.callback(data)
+            message = ConnectionMessage(hwid=self.hwid, connection=self, data=data)
+
+            self.callback(message)
 
     def bulk_sensor_mock_random(self) -> bytearray:
         """
@@ -73,7 +76,7 @@ class DebugConnection(Connection):
         :rtype: bytearray
         """
 
-        return radio_packets.bulk_sensor(time.time(),
+        return radio_packets.bulk_sensor(self._current_millis(),
                                          random.uniform(0, 1e6),
                                          random.uniform(0, 1e6),
                                          random.uniform(0, 1e6),
@@ -92,7 +95,7 @@ class DebugConnection(Connection):
         :rtype: bytearray
         """
 
-        return radio_packets.status_ping(time.time(),
+        return radio_packets.status_ping(self._current_millis(),
                                          radio_packets.StatusType.NON_CRITICAL_FAILURE,
                                          0b11111100,
                                          0b11111111,
@@ -106,7 +109,7 @@ class DebugConnection(Connection):
         :rtype: bytearray
         """
 
-        return radio_packets.message(time.time(), "hello")
+        return radio_packets.message(self._current_millis(), "hello")
 
     def config_mock_set_values(self) -> bytearray:
         """
@@ -115,7 +118,7 @@ class DebugConnection(Connection):
         :rtype: bytearray
         """
 
-        return radio_packets.config(time.time(), True, 0, 'e43f15ba448653b34c043cf90593346e7ca4f9c7')
+        return radio_packets.config(self._current_millis(), True, self.device_id, 'e43f15ba448653b34c043cf90593346e7ca4f9c7')
 
     def gps_mock_random(self) -> bytearray:
         """
@@ -124,7 +127,7 @@ class DebugConnection(Connection):
         :rtype: bytearray
         """
 
-        return radio_packets.gps(time.time(),
+        return radio_packets.gps(self._current_millis(),
                                  random.uniform(49.260565, 49.263859),
                                  random.uniform(-123.250990, -123.246956),
                                  random.randint(0, 10000))
@@ -136,7 +139,7 @@ class DebugConnection(Connection):
         :rtype: bytearray
         """
 
-        return radio_packets.orientation(time.time(),
+        return radio_packets.orientation(self._current_millis(),
                                          random.uniform(0, 1e6),
                                          random.uniform(0, 1e6),
                                          random.uniform(0, 1e6),
@@ -162,20 +165,30 @@ class DebugConnection(Connection):
         with self.lock:
             self.callback = fn
 
-    # Send data to connection
-    def send(self, data) -> None:
+    # Send data to a specific device on this connection
+    def send(self, hwid, data) -> None:
         """
 
+        :param hwid:
         :param data:
         :type data:
         """
-        with self.lock:  # Currently not needed, but good to have for future
+        if hwid != self.hwid:
+            raise Exception(f"Connection does not support HWID{hwid}")
+        self.broadcast(data)
+
+    # Send data to all devices on this connection
+    def broadcast(self, data) -> None:  # must be thead safe
+        LOGGER.info(f"{data} sent to HWID={self.hwid} on DebugConnection")
+        with self.lock:
             if data == bytes([0x41]):
                 ARMED_EVENT.increment()
             elif data == bytes([0x44]):
                 DISARMED_EVENT.increment()
-
-            LOGGER.info(f"{data} sent to DebugConnection")
+            elif data == bytes([0x50]):
+                self.receive(self.status_ping_mock_set_values())
+            elif data == bytes([0x43]):
+                self.receive(self.config_mock_set_values())
 
     def shutdown(self) -> None:
         if not self.connectionThread.is_alive():
@@ -195,3 +208,6 @@ class DebugConnection(Connection):
 
     def isFloatBigEndian(self) -> bool:
         return True
+
+    def _current_millis(self):
+        return int((time.time()-self.start_time)*1000)

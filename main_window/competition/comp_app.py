@@ -66,7 +66,7 @@ class CompApp(MainApp, Ui_MainWindow):
         self.setup_labels()
 
         # Init and connection of MappingThread
-        self.MappingThread = MappingThread(self.connection, self.map, self.rocket_data)
+        self.MappingThread = MappingThread(self.connection, self.map, self.rocket_data, self.rocket_profile)
         self.MappingThread.sig_received.connect(self.receive_map)
         self.MappingThread.start()
 

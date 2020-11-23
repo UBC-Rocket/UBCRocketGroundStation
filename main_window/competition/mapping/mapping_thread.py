@@ -9,6 +9,8 @@ import numpy as np
 from PIL import Image
 
 from main_window.subpacket_ids import SubpacketEnum
+from main_window.rocket_data import RocketData
+from profiles.rocket_profile import RocketProfile
 from . import map_data, mapbox_utils
 from util.detail import LOGGER
 
@@ -19,7 +21,7 @@ SCALE_FACTOR_NO_SCALE = 1
 class MappingThread(QtCore.QThread):
     sig_received = pyqtSignal()
 
-    def __init__(self, connection, m: map_data.MapData, data, parent=None) -> None:
+    def __init__(self, connection, m: map_data.MapData, rocket_data: RocketData, rocket_profile: RocketProfile, parent=None) -> None:
         """Mapping work and processing that gets put into MapData, repeatedly as RocketData is updated.
         Signals the main thread to fetch UI elements in MapDataSimilar to ReadData.
 
@@ -27,15 +29,17 @@ class MappingThread(QtCore.QThread):
         :type connection:
         :param map:
         :type map: map_data.MapData
-        :param data:
-        :type data:
+        :param rocket_data:
+        :type rocket_data:
         :param parent:
         :type parent:
         """
         QtCore.QThread.__init__(self, parent)
         self.connection = connection
         self.map = m
-        self.data = data
+        self.rocket_data = rocket_data
+
+        self.device = rocket_profile.mapping_device
 
         self._desiredMapSize: tuple(int, int) = None  # Lock in cv is used to protect this
         self._is_shutting_down = False  # Lock in cv is used to protect this
@@ -54,8 +58,8 @@ class MappingThread(QtCore.QThread):
         mapProc.start()
 
         # Must be done last to prevent race condition
-        self.data.addNewCallback(SubpacketEnum.LATITUDE.value, self.notify)
-        self.data.addNewCallback(SubpacketEnum.LONGITUDE.value, self.notify)  # TODO review, could/should be omitted
+        self.rocket_data.addNewCallback(self.device, SubpacketEnum.LATITUDE.value, self.notify)
+        self.rocket_data.addNewCallback(self.device, SubpacketEnum.LONGITUDE.value, self.notify)  # TODO review, could/should be omitted
 
     def notify(self) -> None:
         """
@@ -154,8 +158,8 @@ class MappingThread(QtCore.QThread):
 
             try:
                 # acquire location to use below here, to keep the values consistent in synchronous but adjacent calls
-                latitude = self.data.lastvalue(SubpacketEnum.LATITUDE.value)
-                longitude = self.data.lastvalue(SubpacketEnum.LONGITUDE.value)
+                latitude = self.rocket_data.last_value_by_device(self.device, SubpacketEnum.LATITUDE.value)
+                longitude = self.rocket_data.last_value_by_device(self.device, SubpacketEnum.LONGITUDE.value)
 
                 # Prevent unnecessary work while no location data is received
                 if latitude is None or longitude is None:

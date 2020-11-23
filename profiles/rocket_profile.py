@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
+from typing import Iterable, Dict
 from connections.connection import Connection
 from main_window.packet_parser import PacketParser
 from connections.sim.hw_sim import HWSim
+from main_window.device_manager import DeviceType
+from .label import Label
 
 
 class RocketProfile(ABC):
@@ -12,17 +15,22 @@ class RocketProfile(ABC):
 
     @property
     @abstractmethod
-    def buttons(self):
+    def buttons(self) -> Dict[str, str]:
         pass
 
     @property
     @abstractmethod
-    def labels(self):
+    def labels(self) -> Iterable[Label]:
         pass
 
     @property
     @abstractmethod
-    def sim_executable_name(self):
+    def sim_executable_name(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def mapping_device(self) -> DeviceType:
         pass
 
     '''

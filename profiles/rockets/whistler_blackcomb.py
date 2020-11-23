@@ -22,6 +22,10 @@ class WbProfile(RocketProfile):
     def sim_executable_name(self):
         return None
 
+    @property
+    def mapping_device(self):
+        return None
+
     def construct_hw_sim(self):
         # Assemble HW here
         return None

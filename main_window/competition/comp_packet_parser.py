@@ -54,7 +54,7 @@ class CompPacketParser(PacketParser):
         curr_byte: int = byte_stream.read(1)[0]
 
         # Overall status from 6th and 7th bits
-        overall_status = self.bitfrombyte(curr_byte, 1) | self.bitfrombyte(curr_byte, 0)
+        overall_status = curr_byte & 0b11
         if overall_status == 0b00000000:
             data[SubpacketEnum.STATUS_PING.value] = NOMINAL
         elif overall_status == 0b00000001:

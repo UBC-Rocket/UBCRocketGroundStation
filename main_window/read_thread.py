@@ -83,12 +83,7 @@ class ReadThread(QtCore.QThread):
                     if DEVICE_TYPE in parsed_data.keys():
                         self.device_manager.register_device(parsed_data[DEVICE_TYPE], hwid, connection)
 
-                    device = self.device_manager.get_device(hwid)
-                    if device is None:
-                        LOGGER.warning(f"Received data from device which is not yet registered! (HWID={hwid})")
-                        continue
-
-                    self.rocket_data.addBundle(device, parsed_data)
+                    self.rocket_data.addBundle(hwid, parsed_data)
 
                     # notify UI that new data is available to be displayed
                     self.sig_received.emit()

@@ -5,11 +5,10 @@ from collections import namedtuple
 
 import numpy as np
 
-from . import subpacket_ids
 from util.detail import LOGS_DIR, SESSION_ID, LOGGER
 from util.event_stats import Event
 from .subpacket_ids import SubpacketEnum
-from .device_manager import DeviceType
+from .device_manager import DeviceManager, DeviceType
 
 BUNDLE_ADDED_EVENT = Event('bundle_added')
 
@@ -60,15 +59,17 @@ statemap = {  # TODO Review legacy data format. Not deleted due to need to confe
     8: "WINTER_CONTINGENCY"
 }
 
-DataEntryKey = namedtuple('DataEntry', ['device', 'data_id'])
+DataEntryKey = namedtuple('DataEntry', ['hwid', 'data_id'])
+CallBackKey = namedtuple('DataEntry', ['device', 'data_id'])
 
 AUTOSAVE_INTERVAL_S = 10
 
 class RocketData:
-    def __init__(self) -> None:
+    def __init__(self, device_manager: DeviceManager) -> None:
         """
         Timeset is dictionary of all of the time points mapped to a dictionary of id -> value.
         """
+        self.device_manager = device_manager
 
         self.lock = threading.RLock()  # acquire lock ASAP since self.lock needs to be defined when autosave starts
         self.timeset: Dict[int, Dict[DataEntryKey, Union[int, float]]] = {}
@@ -119,7 +120,7 @@ class RocketData:
     # Current implementation: adds to time given, otherwise will add to the last time received?
     # NOTE how this works without a new time eg if single sensor temperature comes in 3 times in a row, the first two are overwritten
     # |_> https://trello.com/c/KE0zJ7er/170-implement-ensure-spec-where-all-subpackets-will-have-timestamps
-    def addBundle(self, device: DeviceType, incoming_data):
+    def addBundle(self, hwid: str, incoming_data):
         """
 
         :param incoming_data:
@@ -135,15 +136,17 @@ class RocketData:
 
             # write the data and call the respective callbacks
             for data_id in incoming_data.keys():
-                key = DataEntryKey(device, data_id)
+                key = DataEntryKey(hwid, data_id)
                 self.existing_entry_keys.add(key)
                 self.timeset[self.lasttime][key] = incoming_data[data_id]
 
-        # Notify after all data has been updated
-        # Also, do so outside lock to prevent mutex contention with notification listeners
-        for data_id in incoming_data.keys():
-            key = DataEntryKey(device, data_id)
-            self._notifyCallbacksOfId(key)
+        device = self.device_manager.get_device(hwid)
+        if device is not None:
+            # Notify after all data has been updated
+            # Also, do so outside lock to prevent mutex contention with notification listeners
+            for data_id in incoming_data.keys():
+                key = CallBackKey(device, data_id)
+                self._notifyCallbacksOfId(key)
 
         BUNDLE_ADDED_EVENT.increment()
 
@@ -160,7 +163,11 @@ class RocketData:
             times = list(self.timeset.keys())
             times.sort(reverse=True) # TODO : Should probably use OrderedDict to improve performance
 
-            data_entry_key = DataEntryKey(device, sensor_id)
+            hwid = self.device_manager.get_hwid(device)
+            if hwid is None:
+                return None
+
+            data_entry_key = DataEntryKey(hwid, sensor_id)
             for i in range(len(times)):
                 if data_entry_key in self.timeset[times[i]]:
                     return self.timeset[times[i]][data_entry_key]
@@ -188,7 +195,8 @@ class RocketData:
                 # Make the first row a list of sensor names
                 if iy == 0:
                     name = SubpacketEnum(keys[ix].data_id).name if type(keys[ix].data_id) is int else str(keys[ix].data_id)
-                    data[ix, iy] = name + '_' + keys[ix].device.name
+                    device = self.device_manager.get_device(keys[ix].hwid)
+                    data[ix, iy] = name + '_' + device.name if device else keys[ix].hwid
                 else:
                     if keys[ix].data_id == SubpacketEnum.TIME.value:
                         data[ix, iy] = times[iy - 1]
@@ -211,13 +219,13 @@ class RocketData:
         :param callbackFn:
         :type callbackFn:
         """
-        key = DataEntryKey(device, data_id)
+        key = CallBackKey(device, data_id)
         if key not in self.callbacks.keys():
             self.callbacks[key] = [callbackFn]
         else:
             self.callbacks[key].append(callbackFn)
 
-    def _notifyCallbacksOfId(self, key: DataEntryKey):
+    def _notifyCallbacksOfId(self, key: CallBackKey):
         """
 
         :param data_id:

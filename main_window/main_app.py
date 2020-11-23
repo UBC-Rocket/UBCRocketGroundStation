@@ -40,8 +40,8 @@ class MainApp(QtWidgets.QMainWindow):
 
         self.connection = connection
         self.rocket_profile = rocket_profile
-        self.rocket_data = RocketData()
         self.device_manager = DeviceManager()
+        self.rocket_data = RocketData(self.device_manager)
 
         packet_parser = self.rocket_profile.construct_packet_parser(
             self.connection.isIntBigEndian(),

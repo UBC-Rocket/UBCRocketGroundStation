@@ -1,5 +1,6 @@
 import os
 import threading
+from typing import Iterable
 
 import PyQt5
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -24,7 +25,7 @@ if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
 class MainApp(QtWidgets.QMainWindow):
     sig_send = pyqtSignal(str)
 
-    def __init__(self, connection: Connection, rocket_profile: RocketProfile) -> None:
+    def __init__(self, connections: Iterable[Connection], rocket_profile: RocketProfile) -> None:
         """
 
         :param connection:
@@ -35,25 +36,26 @@ class MainApp(QtWidgets.QMainWindow):
         # Prints constructor arguments, leave at top of constructor
         LOGGER.debug(f"Starting MainApp with {locals()}")
 
+        if connections is None:
+            raise Exception("Invalid connections provided")
+
         QtWidgets.QMainWindow.__init__(self)
         self.setupUi(self)
 
-        self.connection = connection
+        self.connections = connections
         self.rocket_profile = rocket_profile
         self.device_manager = DeviceManager()
         self.rocket_data = RocketData(self.device_manager)
 
-        packet_parser = self.rocket_profile.construct_packet_parser(
-            self.connection.isIntBigEndian(),
-            self.connection.isFloatBigEndian())
+        packet_parser = self.rocket_profile.construct_packet_parser()
 
         # Init and connection of ReadThread
-        self.ReadThread = ReadThread(self.connection, self.rocket_data, packet_parser, self.device_manager)
+        self.ReadThread = ReadThread(self.connections, self.rocket_data, packet_parser, self.device_manager)
         self.ReadThread.sig_received.connect(self.receive_data)
         self.ReadThread.start()
 
         # Init and connection of SendThread
-        self.SendThread = SendThread([self.connection], self.device_manager)
+        self.SendThread = SendThread(self.connections, self.device_manager)
         self.sig_send.connect(self.SendThread.queueMessage)
         self.SendThread.start()
 
@@ -75,7 +77,8 @@ class MainApp(QtWidgets.QMainWindow):
         self.ReadThread.shutdown()
         self.SendThread.shutdown()
         self.rocket_data.shutdown()
-        self.connection.shutdown()
+        for connection in self.connections:
+            connection.shutdown()
         LOGGER.debug(f"All threads shut down, remaining threads: {threading.enumerate()}")
 
         LOGGER.info("Saving...")

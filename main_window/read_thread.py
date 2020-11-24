@@ -1,5 +1,5 @@
 import queue
-from typing import Dict
+from typing import Dict, Iterable
 from threading import RLock
 from io import BytesIO, SEEK_END
 
@@ -7,7 +7,7 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
 
 from util.detail import LOGGER
-from connections.connection import ConnectionMessage
+from connections.connection import Connection, ConnectionMessage
 from .rocket_data import RocketData
 from .packet_parser import PacketParser, DEVICE_TYPE
 from .device_manager import DeviceManager
@@ -16,7 +16,7 @@ from .device_manager import DeviceManager
 class ReadThread(QtCore.QThread):
     sig_received = pyqtSignal()
 
-    def __init__(self, connection, rocket_data: RocketData, packet_parser: PacketParser, device_manager: DeviceManager, parent=None) -> None:
+    def __init__(self, connections: Iterable[Connection], rocket_data: RocketData, packet_parser: PacketParser, device_manager: DeviceManager, parent=None) -> None:
         """Updates GUI, therefore needs to be a QThread and use signals/slots
 
         :param connection:
@@ -27,7 +27,7 @@ class ReadThread(QtCore.QThread):
         :type parent:
         """
         QtCore.QThread.__init__(self, parent)
-        self.connection = connection
+        self.connections = connections
         self.rocket_data = rocket_data
 
         self.packet_parser = packet_parser
@@ -36,8 +36,10 @@ class ReadThread(QtCore.QThread):
 
         self.dataQueue = queue.Queue()
 
-        self.connection.registerCallback(self._newData)  # Must be done last to prevent race condition if IController
-        # returns new data before ReadThread constructor is done
+        for connection in self.connections:
+            connection.registerCallback(self._newData)
+            # Must be done last to prevent race condition if IController
+            # returns new data before ReadThread constructor is done
 
         self._shutdown_lock = RLock()
         self._is_shutting_down = False
@@ -78,6 +80,7 @@ class ReadThread(QtCore.QThread):
             # Iterate over stream to extract subpackets where possible
             while byte_stream.tell() < end:
                 try:
+                    self.packet_parser.set_endianness(connection.isIntBigEndian(), connection.isFloatBigEndian())
                     parsed_data: Dict[int, any] = self.packet_parser.extract(byte_stream)
 
                     if DEVICE_TYPE in parsed_data.keys():

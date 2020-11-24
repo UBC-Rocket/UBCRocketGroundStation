@@ -1,12 +1,10 @@
 import os
+from collections import namedtuple
 
 import PyQt5
 import serial.tools.list_ports
 from PyQt5 import QtCore, QtWidgets, uic
 
-from connections.debug.debug_connection_factory import DebugConnectionFactory
-from connections.serial.serial_connection_factory import SerialConnectionFactory
-from connections.sim.sim_connection_factory import SimConnectionFactory
 from util.detail import BUNDLED_DATA, LOGGER
 from profiles.rockets.co_pilot import CoPilotProfile
 from profiles.rockets.tantalus import TantalusProfile
@@ -22,6 +20,13 @@ qtCreatorFile = os.path.join(BUNDLED_DATA, "qt_files", "com_window.ui")
 
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
+ConnectionRequirements = namedtuple('ConnectionRequirements', ['com_port', 'baud_rate'])
+
+CONNECTIONS = {
+    'Serial': ConnectionRequirements(com_port=True, baud_rate=True),
+    'Debug': ConnectionRequirements(com_port=False, baud_rate=False),
+    'SIM': ConnectionRequirements(com_port=False, baud_rate=False),
+}
 
 class ComWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self) -> None:
@@ -30,12 +35,6 @@ class ComWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         QtWidgets.QMainWindow.__init__(self)
         Ui_MainWindow.__init__(self)
-
-        self.ConnectionFactories = {c.connection_name:c for c in [
-            SerialConnectionFactory(),
-            DebugConnectionFactory(),
-            SimConnectionFactory(),
-        ]}
 
         self.RocketProfiles = {p.rocket_name:p for p in [
             TantalusProfile(),
@@ -54,7 +53,7 @@ class ComWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         """
         self.typeBox.currentTextChanged.connect(self.connectionChanged)
-        self.typeBox.addItems(self.ConnectionFactories.keys())
+        self.typeBox.addItems(CONNECTIONS.keys())
 
         self.rocketBox.addItems(self.RocketProfiles.keys())
 
@@ -74,8 +73,16 @@ class ComWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         LOGGER.debug(f"User has selected rocket={rocket}, connection={connection}, com_port={com_port}, baud_rate={baud_rate}")
 
         self.chosen_rocket = self.RocketProfiles[rocket]
-        factory = self.ConnectionFactories[connection]
-        self.chosen_connection = factory.construct(comPort=com_port, baudRate=baud_rate, rocket=self.chosen_rocket)
+
+        if connection == 'Serial':
+            self.chosen_connection = self.chosen_rocket.construct_serial_connection(com_port, int(baud_rate))
+        elif connection == 'Debug':
+            self.chosen_connection = self.chosen_rocket.construct_debug_connection()
+        elif connection == 'SIM':
+            self.chosen_connection = self.chosen_rocket.construct_sim_connection()
+        else:
+            raise Exception("Unknown connection")
+
         self.close()
 
     def connectionChanged(self) -> None:
@@ -83,7 +90,7 @@ class ComWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         """
         text = self.typeBox.currentText()
-        factory = self.ConnectionFactories[text]
+        requirements = CONNECTIONS[text]
 
-        self.comBox.setEnabled(factory.requires_com_port)
-        self.baudBox.setEnabled(factory.requires_baud_rate)
+        self.comBox.setEnabled(requirements.com_port)
+        self.baudBox.setEnabled(requirements.baud_rate)

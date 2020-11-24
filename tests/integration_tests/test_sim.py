@@ -1,7 +1,7 @@
 import pytest
 import logging
 from pytest import approx
-from connections.sim.sim_connection_factory import SimConnectionFactory, FirmwareNotFound
+from connections.sim.sim_connection import FirmwareNotFound
 from connections.sim.hw_sim import SensorType, SENSOR_READ_EVENT
 from main_window.competition.comp_app import CompApp
 from profiles.rockets.tantalus import TantalusProfile
@@ -23,11 +23,12 @@ from util.event_stats import get_event_stats_snapshot
 @pytest.fixture(scope="function")
 def main_app(caplog) -> CompApp:
     try:
-        connection = SimConnectionFactory().construct(rocket=TantalusProfile())
+        connections = TantalusProfile().construct_sim_connection()
     except FirmwareNotFound as ex:
         pytest.skip("Firmware not found")
+        return
     snapshot = get_event_stats_snapshot()
-    app = TantalusProfile().construct_app(connection)
+    app = TantalusProfile().construct_app(connections)
     assert DEVICE_REGISTERED_EVENT.wait(snapshot) == 1
     yield app  # Provides app, following code is run on cleanup
     app.shutdown()
@@ -84,7 +85,7 @@ def test_config_hello(qtbot, main_app):
 
 
 def test_gps_read(qtbot, main_app):
-    connection = main_app.connection
+    connection = main_app.connections[0]
     hw = connection._hw_sim
 
     test_vals = [
@@ -114,7 +115,7 @@ def test_baro_altitude(qtbot, main_app):
     M = 0.0289644
     altitude = lambda pres: Tb / Lb * ((Pb / pres) ** (R * Lb / (g0 * M)) - 1)
 
-    connection = main_app.connection
+    connection = main_app.connections[0]
     hw = connection._hw_sim
 
     # Set base/ground altitude
@@ -151,7 +152,7 @@ def test_baro_altitude(qtbot, main_app):
 
 
 def test_accelerometer_read(qtbot, main_app):
-    connection = main_app.connection
+    connection = main_app.connections[0]
     hw = connection._hw_sim
 
     test_vals = [
@@ -170,7 +171,7 @@ def test_accelerometer_read(qtbot, main_app):
 
 
 def test_imu_read(qtbot, main_app):
-    connection = main_app.connection
+    connection = main_app.connections[0]
     hw = connection._hw_sim
 
     test_vals = [
@@ -190,7 +191,7 @@ def test_imu_read(qtbot, main_app):
 
 
 def test_temperature_read(qtbot, main_app):
-    connection = main_app.connection
+    connection = main_app.connections[0]
     hw = connection._hw_sim
 
     test_vals = [
@@ -214,8 +215,9 @@ def test_clean_shutdown(qtbot, main_app):
     assert main_app.SendThread.isRunning()
     assert main_app.MappingThread.isRunning()
     assert main_app.rocket_data.autosaveThread.is_alive()
-    assert main_app.connection.thread.is_alive()
-    assert main_app.connection._xbee._rocket_rx_thread.is_alive()
+    for connection in main_app.connections:
+        assert connection.thread.is_alive()
+        assert connection._xbee._rocket_rx_thread.is_alive()
 
     main_app.shutdown()
 
@@ -223,5 +225,6 @@ def test_clean_shutdown(qtbot, main_app):
     assert main_app.SendThread.isFinished()
     assert main_app.MappingThread.isFinished()
     assert not main_app.rocket_data.autosaveThread.is_alive()
-    assert not main_app.connection.thread.is_alive()
-    assert not main_app.connection._xbee._rocket_rx_thread.is_alive()
+    for connection in main_app.connections:
+        assert not connection.thread.is_alive()
+        assert not connection._xbee._rocket_rx_thread.is_alive()

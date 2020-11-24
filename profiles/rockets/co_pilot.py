@@ -3,6 +3,7 @@ from ..label import (Label, update_acceleration, update_altitude,
                      update_max_altitude, update_pressure, update_state,
                      update_tank_pressure)
 from ..rocket_profile import RocketProfile
+from connections.debug.debug_connection import DebugConnection
 from main_window.competition.comp_app import CompApp
 from main_window.competition.comp_packet_parser import CompPacketParser
 from  main_window.device_manager import DeviceType
@@ -38,19 +39,22 @@ class CoPilotProfile(RocketProfile):
         ]
 
     @property
-    def sim_executable_name(self):
-        return None
-
-    @property
     def mapping_device(self):
         return DeviceType.CO_PILOT
 
-    def construct_hw_sim(self):
-        # Assemble HW here
+    def construct_serial_connection(self, com_port, baud_rate):
         return None
 
-    def construct_app(self, connection):
-        return CompApp(connection, self)
+    def construct_debug_connection(self):
+        return [
+            DebugConnection('CoPilot_HWID', 0x02, generate_radio_packets=True),
+        ]
 
-    def construct_packet_parser(self, big_endian_ints, big_endian_floats):
-        return CompPacketParser(big_endian_ints, big_endian_floats)
+    def construct_sim_connection(self):
+        return None
+
+    def construct_app(self, connections):
+        return CompApp(connections, self)
+
+    def construct_packet_parser(self):
+        return CompPacketParser()

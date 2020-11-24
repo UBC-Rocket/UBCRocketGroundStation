@@ -25,11 +25,6 @@ class RocketProfile(ABC):
 
     @property
     @abstractmethod
-    def sim_executable_name(self) -> str:
-        pass
-
-    @property
-    @abstractmethod
     def mapping_device(self) -> DeviceType:
         pass
 
@@ -37,16 +32,24 @@ class RocketProfile(ABC):
     Factory pattern for objects that should only be constructed if needed
     '''
     @abstractmethod
-    def construct_hw_sim(self) -> HWSim:
+    def construct_serial_connection(self, com_port: str, baud_rate: int) -> Iterable[Connection]:
+        pass
+
+    @abstractmethod
+    def construct_debug_connection(self) -> Iterable[Connection]:
+        pass
+
+    @abstractmethod
+    def construct_sim_connection(self) -> Iterable[Connection]:
         # Here we can define HW Sim and all its sensors etc. without them being constructed if we aren't running SIM.
         # This is useful as HW Sim may be multi-threaded or do something upon construction that we dont want to
         # happen during regular flight.
         pass
 
     @abstractmethod
-    def construct_app(self, connection: Connection):
+    def construct_app(self, connections: Iterable[Connection]):
         pass
 
     @abstractmethod
-    def construct_packet_parser(self, big_endian_ints: bool, big_endian_floats: bool) -> PacketParser:
+    def construct_packet_parser(self) -> PacketParser:
         pass

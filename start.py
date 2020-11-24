@@ -5,7 +5,6 @@ import matplotlib
 matplotlib.use('QT5Agg') # Ensures that the Qt5 backend is used, otherwise there might be some issues on some OSs (Mac)
 from com_window.main import ComWindow
 from PyQt5 import QtWidgets
-from connections.debug.debug_connection_factory import DebugConnectionFactory
 from profiles.rockets.tantalus import TantalusProfile
 from util.self_test import SelfTest
 
@@ -36,7 +35,7 @@ if __name__ == "__main__":
 
     else:
         rocket = TantalusProfile()
-        connection = DebugConnectionFactory().construct(rocket=rocket)
+        connection = rocket.construct_debug_connection()
         test = SelfTest()
         test.start()
 

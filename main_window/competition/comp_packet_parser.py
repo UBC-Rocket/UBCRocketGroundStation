@@ -28,8 +28,8 @@ OTHER_STATUS_TYPES = [DROGUE_IGNITER_CONTINUITY, MAIN_IGNITER_CONTINUITY, FILE_O
 
 class CompPacketParser(PacketParser):
 
-    def __init__(self, bigEndianInts, bigEndianFloats):
-        super().__init__(bigEndianInts, bigEndianFloats)
+    def __init__(self):
+        super().__init__()
 
         self.register_packet(SubpacketEnum.GPS.value, self.gps)
         self.register_packet(SubpacketEnum.ORIENTATION.value, self.orientation)

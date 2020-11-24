@@ -28,7 +28,7 @@ from util.event_stats import get_event_stats_snapshot
 def main_app(caplog):
     connection = DebugConnection('TestHWID', 0x02, generate_radio_packets=False)
     snapshot = get_event_stats_snapshot()
-    app = CoPilotProfile().construct_app(connection)
+    app = CoPilotProfile().construct_app([connection])
     assert DEVICE_REGISTERED_EVENT.wait(snapshot) == 1
     yield app  # Provides app, following code is run on cleanup
     app.shutdown()
@@ -53,7 +53,7 @@ def test_arm_signal(qtbot, main_app):
 
 
 def test_bulk_sensor_packet(qtbot, main_app):
-    connection = main_app.connection
+    connection = main_app.connections[0]
 
     sensor_inputs = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
 
@@ -96,7 +96,7 @@ def test_bulk_sensor_packet(qtbot, main_app):
     assert float(main_app.StateLabel.text()) == 11.0
 
 def test_single_sensor_packet(qtbot, main_app):
-    connection = main_app.connection
+    connection = main_app.connections[0]
 
     vals = [
         (SubpacketEnum.ACCELERATION_Y, 1),
@@ -137,7 +137,7 @@ def test_single_sensor_packet(qtbot, main_app):
         assert main_app.rocket_data.last_value_by_device(DeviceType.CO_PILOT, sensor_id.value) == val
 
 def test_message_packet(qtbot, main_app, caplog):
-    connection = main_app.connection
+    connection = main_app.connections[0]
 
     packet = radio_packets.message(0xFFFFFFFF, "test_message")
 
@@ -153,7 +153,7 @@ def test_message_packet(qtbot, main_app, caplog):
 
 
 def test_config_packet(qtbot, main_app):
-    connection = main_app.connection
+    connection = main_app.connections[0]
 
     version_id = 'e43f15ba448653b34c043cf90593346e7ca4f9c7'
     assert len(version_id) == VERSION_ID_LEN # make sure test val is acceptable
@@ -174,7 +174,7 @@ def test_config_packet(qtbot, main_app):
 
 
 def test_status_ping_packet(qtbot, main_app):
-    connection = main_app.connection
+    connection = main_app.connections[0]
 
     packet = radio_packets.status_ping(
         0xFFFFFFFF, radio_packets.StatusType.CRITICAL_FAILURE, 0xFF, 0xFF, 0xFF, 0xFF
@@ -198,7 +198,7 @@ def test_status_ping_packet(qtbot, main_app):
 
 
 def test_gps_packet(qtbot, main_app):
-    connection = main_app.connection
+    connection = main_app.connections[0]
 
     gps_inputs = (0xFFFFFFFF, 1, 2, 3)
 
@@ -217,7 +217,7 @@ def test_gps_packet(qtbot, main_app):
 
 
 def test_orientation_packet(qtbot, main_app):
-    connection = main_app.connection
+    connection = main_app.connections[0]
 
     orientation_inputs = (0xFFFFFFFF, 1, 2, 3, 4)
 
@@ -238,7 +238,7 @@ def test_orientation_packet(qtbot, main_app):
 
 def test_clean_shutdown(qtbot):
     connection = DebugConnection('TestHWID', 0x02, generate_radio_packets=True)
-    main_app = CoPilotProfile().construct_app(connection)
+    main_app = CoPilotProfile().construct_app([connection])
 
     assert main_app.ReadThread.isRunning()
     assert main_app.SendThread.isRunning()

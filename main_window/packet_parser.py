@@ -38,7 +38,7 @@ ID_TO_DEVICE = {
 # This class takes care of converting subpacket data coming in, according to the specifications.
 class PacketParser:
 
-    def __init__(self, bigEndianInts, bigEndianFloats):
+    def __init__(self):
         """
 
         :param bigEndianInts:
@@ -46,8 +46,8 @@ class PacketParser:
         :param bigEndianFloats:
         :type bigEndianFloats:
         """
-        self.bigEndianInts = bigEndianInts
-        self.bigEndianFloats = bigEndianFloats
+        self.big_endian_ints = None
+        self.big_endian_floats = None
 
         # Dictionary of subpacket id mapped to function to parse that data
         self.packetTypeToParser: Dict[int, Callable[[BytesIO, Header], Dict[Any, Any]]] = {
@@ -59,6 +59,10 @@ class PacketParser:
         for i in subpacket_ids.get_list_of_sensor_IDs():
             self.packetTypeToParser[i] = self.single_sensor
 
+    def set_endianness(self, big_endian_ints: bool, big_endian_floats: bool):
+        self.big_endian_ints = big_endian_ints
+        self.big_endian_floats = big_endian_floats
+
     def extract(self, byte_stream: BytesIO):
         """
         Return dict of parsed subpacket data and length of subpacket
@@ -68,6 +72,9 @@ class PacketParser:
         :return: parsed_data
         :rtype: Dict[Any, Any]
         """
+        if self.big_endian_ints is None or self.big_endian_floats is None:
+            raise Exception("Endianness not set before parsing")
+
         # header extraction
         header: Header = self.header(byte_stream)
 
@@ -79,6 +86,9 @@ class PacketParser:
             LOGGER.exception("Error parsing data")  # Automatically grabs and prints exception info
 
         parsed_data[SubpacketEnum.TIME.value] = header.timestamp
+
+        self.big_endian_ints = None
+        self.big_endian_floats = None
         return parsed_data
 
     def parse_data(self, byte_stream: BytesIO, header: Header) -> Dict[Any, Any]:
@@ -215,7 +225,7 @@ class PacketParser:
         assert len(byte_list) == 4
         data = byte_list
         b = struct.pack('4B', *data)
-        c = struct.unpack('>f' if self.bigEndianFloats else '<f', b)
+        c = struct.unpack('>f' if self.big_endian_floats else '<f', b)
         return c[0]
 
     def fourtoint(self, byte_list):
@@ -229,7 +239,7 @@ class PacketParser:
         assert len(byte_list) == 4
         data = byte_list
         b = struct.pack('4B', *data)
-        c = struct.unpack('>I' if self.bigEndianInts else '<I', b)
+        c = struct.unpack('>I' if self.big_endian_ints else '<I', b)
         return c[0]
 
     def bitfrombyte(self, val: int, targetIndex: int):

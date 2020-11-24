@@ -2,6 +2,7 @@ from ..rocket_profile import RocketProfile
 from main_window.whistler_blackcomb.wb_app import WbApp
 from main_window.whistler_blackcomb.wb_packet_parser import WbPacketParser
 from main_window.competition.comp_packet_parser import CompPacketParser
+from connections.debug.debug_connection import DebugConnection
 
 
 class WbProfile(RocketProfile):
@@ -19,20 +20,23 @@ class WbProfile(RocketProfile):
         return None
 
     @property
-    def sim_executable_name(self):
-        return None
-
-    @property
     def mapping_device(self):
         return None
 
-    def construct_hw_sim(self):
-        # Assemble HW here
+    def construct_serial_connection(self, com_port, baud_rate):
         return None
 
-    def construct_app(self, connection):
-        return WbApp(connection, self)
+    def construct_debug_connection(self):
+        return [
+            DebugConnection('TantalusStage1_HWID', 0x00, generate_radio_packets=False),
+        ]
 
-    def construct_packet_parser(self, big_endian_ints, big_endian_floats):
-        return CompPacketParser(big_endian_ints, big_endian_floats)  # TODO : Use WbPacketParser once its set up
-        #return WbPacketParser(big_endian_ints, big_endian_floats)
+    def construct_sim_connection(self):
+        return None
+
+    def construct_app(self, connections):
+        return WbApp(connections, self)
+
+    def construct_packet_parser(self):
+        return CompPacketParser()  # TODO : Use WbPacketParser once its set up
+        #return WbPacketParser()

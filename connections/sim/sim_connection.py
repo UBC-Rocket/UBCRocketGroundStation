@@ -179,8 +179,8 @@ class SimConnection(Connection):
         assert length == 4
         endianness = "big" if self.bigEndianInts else "little"
         delta_us = int.from_bytes(self.stdout.read(length), endianness)
-        new_time_ms = self._hw_sim.time_update(delta_us).to_bytes(4, endianness)
-        self._send_sim_packet(SimTxId.TIME_UPDATE.value, new_time_ms)
+        new_time_ms = self._hw_sim.time_update(delta_us)
+        self._send_sim_packet(SimTxId.TIME_UPDATE.value, new_time_ms.to_bytes(4, endianness))
 
     packetHandlers = {
         # DO NOT HANDLE "CONFIG" - it should be received only once at the start

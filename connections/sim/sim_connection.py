@@ -171,7 +171,7 @@ class SimConnection(Connection):
         sensor_id = self.stdout.read(length)[0]
         sensor_data = self._hw_sim.sensor_read(ID_TO_SENSOR[sensor_id])
         endianness = ">" if self.bigEndianFloats else "<"
-        result = struct.pack(f"{endianness}{len(sensor_data)}f", sensor_data)
+        result = struct.pack(f"{endianness}{len(sensor_data)}f", *sensor_data)
         self._send_sim_packet(SimTxId.SENSOR_READ.value, result)
 
     def _handleTimeUpdate(self):

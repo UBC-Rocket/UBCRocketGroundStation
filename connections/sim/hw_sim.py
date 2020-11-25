@@ -215,6 +215,18 @@ class HWSim:
 
             return val
 
+    def time_update(self, delta_us: float) -> float:
+        """
+        :param delta_us: the number of microseconds to shift the clock forward by.
+        :return: the current time in milliseconds.
+        """
+        with self.lock:
+            self.clock.add_time(delta_us)
+            time_ms = self.clock.get_time_ms()
+
+            LOGGER.debug(f"Time updated by {delta_us} us, new time {time_ms} ms.")
+            return time_ms
+
     def shutdown(self):
         '''
         Shut down any threads and clean-up

@@ -136,7 +136,7 @@ class Clock:
     def __init__(self) -> None:
         self._time_us = 0
 
-    def add_time(self, delta_us: float) -> None:
+    def add_time(self, delta_us: int) -> None:
         """
         :param delta_us: number of microseconds to add to the clock.
         """
@@ -146,13 +146,13 @@ class Clock:
         """
         :return: the current time in microseconds.
         """
-        return self._time_us;
+        return int(self._time_us)
 
     def get_time_ms(self) -> int:
         """
         :return: the current time in milliseconds.
         """
-        return int(self._time_us / 1e3);
+        return int(self._time_us / 1e3)
 
 class HWSim:
     def __init__(
@@ -215,7 +215,7 @@ class HWSim:
 
             return val
 
-    def time_update(self, delta_us: float) -> float:
+    def time_update(self, delta_us: int) -> int:
         """
         :param delta_us: the number of microseconds to shift the clock forward by.
         :return: the current time in milliseconds.
@@ -224,7 +224,6 @@ class HWSim:
             self.clock.add_time(delta_us)
             time_ms = self.clock.get_time_ms()
 
-            LOGGER.debug(f"Time updated by {delta_us} us, new time {time_ms} ms.")
             return time_ms
 
     def shutdown(self):

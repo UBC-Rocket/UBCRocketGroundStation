@@ -7,9 +7,11 @@ from digi.xbee.exception import TimeoutException
 from PyQt5 import QtCore
 
 from util.detail import LOGGER
+from util.event_stats import Event
 from main_window.device_manager import DeviceManager, DeviceType
 from connections.connection import Connection
 
+COMMAND_SENT_EVENT = Event('command_sent')
 
 # TODO change this section with new Radio protocol comm refactoring
 # TODO ASK Are we going to continue to send single characters according to user commands? If yes, then why not
@@ -125,6 +127,7 @@ class SendThread(QtCore.QThread):
                 connection.send(hwid, data)
 
                 LOGGER.info("Sent command!")
+                COMMAND_SENT_EVENT.increment()
 
             except TimeoutException:  # TODO: Connection should have converted this to a generic exception for decoupling
                 LOGGER.error("Message timed-out!")

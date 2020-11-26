@@ -3,6 +3,8 @@ from main_window.whistler_blackcomb.wb_app import WbApp
 from main_window.whistler_blackcomb.wb_packet_parser import WbPacketParser
 from main_window.competition.comp_packet_parser import CompPacketParser
 from connections.debug.debug_connection import DebugConnection
+from main_window.packet_parser import DEVICE_TYPE_TO_ID
+from main_window.device_manager import DeviceType
 
 
 class WbProfile(RocketProfile):
@@ -28,7 +30,7 @@ class WbProfile(RocketProfile):
 
     def construct_debug_connection(self):
         return [
-            DebugConnection('TantalusStage1_HWID', 0x00, generate_radio_packets=False),
+            DebugConnection('TantalusStage1_HWID', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1], generate_radio_packets=False),
         ]
 
     def construct_sim_connection(self):

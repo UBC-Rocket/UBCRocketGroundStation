@@ -6,7 +6,6 @@ from ..label import (
     update_max_altitude,
     update_pressure,
     update_state,
-    update_test_separation,
 )
 from ..rocket_profile import RocketProfile
 from connections.serial.serial_connection import SerialConnection
@@ -16,6 +15,7 @@ from connections.sim.hw_sim import HWSim, DummySensor, SensorType, Ignitor, Igni
 from main_window.competition.comp_app import CompApp
 from main_window.competition.comp_packet_parser import CompPacketParser
 from main_window.device_manager import DeviceType
+from main_window.packet_parser import DEVICE_TYPE_TO_ID
 
 
 class TantalusProfile(RocketProfile):
@@ -56,8 +56,8 @@ class TantalusProfile(RocketProfile):
 
     def construct_debug_connection(self):
         return [
-            DebugConnection('TantalusStage1_HWID', 0x00, generate_radio_packets=True),
-            DebugConnection('TantalusStage2_HWID', 0x01, generate_radio_packets=True),
+            DebugConnection('TantalusStage1_HWID', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1], generate_radio_packets=True),
+            DebugConnection('TantalusStage2_HWID', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_2], generate_radio_packets=True),
         ]
 
     def construct_sim_connection(self):

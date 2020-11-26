@@ -8,7 +8,6 @@ from . import subpacket_ids
 from util.detail import LOGGER
 from util.event_stats import Event
 from main_window.subpacket_ids import SubpacketEnum
-from .device_manager import DeviceManager
 
 SINGLE_SENSOR_EVENT = Event('single_sensor')
 CONFIG_EVENT = Event('config')
@@ -28,11 +27,12 @@ MESSAGE = 'MESSAGE'
 HEADER_SIZE_WITH_LEN = 6
 HEADER_SIZE_NO_LEN = 5
 
-ID_TO_DEVICE = {
+ID_TO_DEVICE_TYPE = {
         0x00: DeviceType.TANTALUS_STAGE_1,
         0x01: DeviceType.TANTALUS_STAGE_2,
         0x02: DeviceType.CO_PILOT,
 }
+DEVICE_TYPE_TO_ID = {y: x for (x, y) in ID_TO_DEVICE_TYPE.items()}
 
 
 # This class takes care of converting subpacket data coming in, according to the specifications.
@@ -176,7 +176,7 @@ class PacketParser:
 
         data = {}
         data[IS_SIM] = bool(byte_stream.read(1)[0])
-        data[DEVICE_TYPE] = ID_TO_DEVICE[byte_stream.read(1)[0]]
+        data[DEVICE_TYPE] = ID_TO_DEVICE_TYPE[byte_stream.read(1)[0]]
         version_id = byte_stream.read(VERSION_ID_LEN)
         data[VERSION_ID] = version_id.decode('ascii')
 

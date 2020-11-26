@@ -6,7 +6,8 @@ from ..rocket_profile import RocketProfile
 from connections.debug.debug_connection import DebugConnection
 from main_window.competition.comp_app import CompApp
 from main_window.competition.comp_packet_parser import CompPacketParser
-from  main_window.device_manager import DeviceType
+from main_window.device_manager import DeviceType
+from main_window.packet_parser import DEVICE_TYPE_TO_ID
 
 
 class CoPilotProfile(RocketProfile):
@@ -47,7 +48,7 @@ class CoPilotProfile(RocketProfile):
 
     def construct_debug_connection(self):
         return [
-            DebugConnection('CoPilot_HWID', 0x02, generate_radio_packets=True),
+            DebugConnection('CoPilot_HWID', DEVICE_TYPE_TO_ID[DeviceType.CO_PILOT], generate_radio_packets=True),
         ]
 
     def construct_sim_connection(self):

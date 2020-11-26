@@ -1,6 +1,7 @@
 import pytest
 import logging
 from pytest import approx
+from .integration_app import integration_app
 from connections.sim.sim_connection import FirmwareNotFound
 from connections.sim.hw_sim import SensorType, SENSOR_READ_EVENT
 from main_window.competition.comp_app import CompApp
@@ -21,23 +22,15 @@ from util.event_stats import get_event_stats_snapshot
 
 
 @pytest.fixture(scope="function")
-def main_app(caplog) -> CompApp:
+def main_app(integration_app) -> CompApp:
+    profile = TantalusProfile()
     try:
-        connections = TantalusProfile().construct_sim_connection()
+        connections = profile.construct_sim_connection()
     except FirmwareNotFound as ex:
         pytest.skip("Firmware not found")
         return
-    snapshot = get_event_stats_snapshot()
-    app = TantalusProfile().construct_app(connections)
-    assert DEVICE_REGISTERED_EVENT.wait(snapshot) == 1
-    yield app  # Provides app, following code is run on cleanup
-    app.shutdown()
-
-    # Fail test if error message in logs since we catch most exceptions in app
-    for when in ("setup", "call"):
-        messages = [x.message for x in caplog.get_records(when) if x.levelno == logging.ERROR]
-        if messages:
-            pytest.fail(f"Errors reported in logs: {messages}")
+    
+    yield integration_app(profile, connections)
 
 
 def set_dummy_sensor_values(hw, sensor_type: SensorType, *vals):

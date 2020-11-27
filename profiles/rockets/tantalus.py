@@ -50,15 +50,20 @@ class TantalusProfile(RocketProfile):
         return DeviceType.TANTALUS_STAGE_1
 
     def construct_serial_connection(self, com_port, baud_rate):
-        return [
-            SerialConnection(com_port, baud_rate),
-        ]
+        return {
+            'XBEE_RADIO': SerialConnection(com_port, baud_rate),
+        }
 
     def construct_debug_connection(self):
-        return [
-            DebugConnection('TantalusStage1_HWID', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1], generate_radio_packets=True),
-            DebugConnection('TantalusStage2_HWID', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_2], generate_radio_packets=True),
-        ]
+        return {
+            'TANTALUS_STAGE_1_CONNECTION': DebugConnection('TANTALUS_STAGE_1_RADIO_ADDRESS',
+                                                           DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1],
+                                                           generate_radio_packets=True),
+
+            'TANTALUS_STAGE_2_CONNECTION': DebugConnection('TANTALUS_STAGE_2_RADIO_ADDRESS',
+                                                           DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_2],
+                                                           generate_radio_packets=True),
+        }
 
     def construct_sim_connection(self):
         # Assemble HW here
@@ -78,9 +83,9 @@ class TantalusProfile(RocketProfile):
 
         hwsim = HWSim(hw_sim_sensors, hw_sim_ignitors)
 
-        return [
-            SimConnection("TantalusStage1", "0013A20041678FC0", hwsim),
-        ]
+        return {
+            'TANTALUS_STAGE_1_CONNECTION': SimConnection("TantalusStage1", "0013A20041678FC0", hwsim),
+        }
 
     def construct_app(self, connections):
         return CompApp(connections, self)

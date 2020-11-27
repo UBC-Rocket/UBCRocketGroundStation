@@ -15,11 +15,11 @@ PACKET_INTERVAL_S = 2
 
 class DebugConnection(Connection):
 
-    def __init__(self, hwid: str, device_id: int, generate_radio_packets=True) -> None:
+    def __init__(self, device_address: str, device_id: int, generate_radio_packets=True) -> None:
         """
 
         """
-        self.hwid = hwid
+        self.device_address = device_address
         self.device_id = device_id
         self.start_time = time.time()
         self.lastSend = time.time()
@@ -57,7 +57,7 @@ class DebugConnection(Connection):
                 full_arr.extend(self.orientation_mock_random())
                 self.receive(full_arr)
 
-        LOGGER.warning(f"Debug connection thread shut down (HWID={self.hwid})")
+        LOGGER.warning(f"Debug connection thread shut down (device_address={self.device_address})")
 
     def receive(self, data):
         with self.lock:
@@ -65,7 +65,7 @@ class DebugConnection(Connection):
             if not self.callback:
                 raise Exception("Can't receive data. Callback not set.")
 
-            message = ConnectionMessage(hwid=self.hwid, connection=self, data=data)
+            message = ConnectionMessage(device_address=self.device_address, connection=self, data=data)
 
             self.callback(message)
 
@@ -166,20 +166,20 @@ class DebugConnection(Connection):
             self.callback = fn
 
     # Send data to a specific device on this connection
-    def send(self, hwid, data) -> None:
+    def send(self, device_address, data) -> None:
         """
 
-        :param hwid:
+        :param device_address:
         :param data:
         :type data:
         """
-        if hwid != self.hwid:
-            raise Exception(f"Connection does not support HWID{hwid}")
+        if device_address != self.device_address:
+            raise Exception(f"Connection does not support address={device_address}")
         self.broadcast(data)
 
     # Send data to all devices on this connection
     def broadcast(self, data) -> None:  # must be thead safe
-        LOGGER.info(f"{data} sent to HWID={self.hwid} on DebugConnection")
+        LOGGER.info(f"{data} sent to address={self.device_address} on DebugConnection")
         with self.lock:
             if data == bytes([0x41]):
                 ARMED_EVENT.increment()

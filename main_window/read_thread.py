@@ -1,5 +1,5 @@
 import queue
-from typing import Dict, Iterable
+from typing import Dict
 from threading import RLock
 from io import BytesIO, SEEK_END
 
@@ -10,13 +10,13 @@ from util.detail import LOGGER
 from connections.connection import Connection, ConnectionMessage
 from .rocket_data import RocketData
 from .packet_parser import PacketParser, DEVICE_TYPE
-from .device_manager import DeviceManager
+from .device_manager import DeviceManager, FullAddress
 
 
 class ReadThread(QtCore.QThread):
     sig_received = pyqtSignal()
 
-    def __init__(self, connections: Iterable[Connection], rocket_data: RocketData, packet_parser: PacketParser, device_manager: DeviceManager, parent=None) -> None:
+    def __init__(self, connections: Dict[str, Connection], rocket_data: RocketData, packet_parser: PacketParser, device_manager: DeviceManager, parent=None) -> None:
         """Updates GUI, therefore needs to be a QThread and use signals/slots
 
         :param connection:
@@ -27,7 +27,11 @@ class ReadThread(QtCore.QThread):
         :type parent:
         """
         QtCore.QThread.__init__(self, parent)
+
         self.connections = connections
+        self.connection_to_name = {c: n for (n, c) in self.connections.items()}
+        assert len(self.connections) == len(self.connection_to_name)  # Different if not one-to-one
+
         self.rocket_data = rocket_data
 
         self.packet_parser = packet_parser
@@ -36,7 +40,7 @@ class ReadThread(QtCore.QThread):
 
         self.dataQueue = queue.Queue()
 
-        for connection in self.connections:
+        for connection in self.connections.values():
             connection.registerCallback(self._newData)
             # Must be done last to prevent race condition if IController
             # returns new data before ReadThread constructor is done
@@ -66,8 +70,9 @@ class ReadThread(QtCore.QThread):
                     else:
                         continue
 
-            hwid = connection_message.hwid
             connection = connection_message.connection
+            full_address = FullAddress(connection_name=self.connection_to_name[connection],
+                                       device_address=connection_message.device_address)
             data = connection_message.data
 
             byte_stream: BytesIO = BytesIO(data)
@@ -84,9 +89,9 @@ class ReadThread(QtCore.QThread):
                     parsed_data: Dict[int, any] = self.packet_parser.extract(byte_stream)
 
                     if DEVICE_TYPE in parsed_data.keys():
-                        self.device_manager.register_device(parsed_data[DEVICE_TYPE], hwid, connection)
+                        self.device_manager.register_device(parsed_data[DEVICE_TYPE], full_address)
 
-                    self.rocket_data.addBundle(hwid, parsed_data)
+                    self.rocket_data.addBundle(full_address, parsed_data)
 
                     # notify UI that new data is available to be displayed
                     self.sig_received.emit()

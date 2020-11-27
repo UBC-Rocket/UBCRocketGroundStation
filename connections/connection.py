@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections import namedtuple
 from typing import Callable
 
-ConnectionMessage = namedtuple('ConnectionMessage', ['hwid', 'connection', 'data'])
+ConnectionMessage = namedtuple('ConnectionMessage', ['device_address', 'connection', 'data'])
 
 
 class Connection(ABC):
@@ -17,7 +17,7 @@ class Connection(ABC):
 
     # Send data to a specific device on this connection
     @abstractmethod
-    def send(self, hwid: str, data) -> None:  # must be thead safe
+    def send(self, device_address: str, data) -> None:  # must be thead safe
         pass
 
     # Send data to all devices on this connection

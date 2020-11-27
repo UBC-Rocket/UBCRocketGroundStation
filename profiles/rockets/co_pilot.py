@@ -47,9 +47,11 @@ class CoPilotProfile(RocketProfile):
         return None
 
     def construct_debug_connection(self):
-        return [
-            DebugConnection('CoPilot_HWID', DEVICE_TYPE_TO_ID[DeviceType.CO_PILOT], generate_radio_packets=True),
-        ]
+        return {
+            'CO_PILOT_CONNECTION': DebugConnection('CO_PILOT_RADIO_ADDRESS',
+                                                   DEVICE_TYPE_TO_ID[DeviceType.CO_PILOT],
+                                                   generate_radio_packets=True),
+        }
 
     def construct_sim_connection(self):
         return None

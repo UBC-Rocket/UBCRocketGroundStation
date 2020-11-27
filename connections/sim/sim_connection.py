@@ -44,7 +44,7 @@ class SimConnection(Connection):
     def __init__(self, executable_name: str, gs_address: str, hw_sim):
         self._find_executable(executable_name)
 
-        self.hwid = executable_name + 'SIM_CONN_HWID'
+        self.device_address = executable_name + '_SIM_DEVICE_ADDR'
         self.callback = None
 
         self.bigEndianInts = None
@@ -79,9 +79,9 @@ class SimConnection(Connection):
         self.rocket.stdin.write(b"ACK")
         self.rocket.stdin.flush()
 
-    def send(self, hwid, data):
-        if hwid != self.hwid:
-            raise Exception(f"Connection does not support HWID={hwid}")
+    def send(self, device_address, data):
+        if device_address != self.device_address:
+            raise Exception(f"Connection does not support device_address={device_address}")
         self.broadcast(data)
 
     def broadcast(self, data):
@@ -106,7 +106,7 @@ class SimConnection(Connection):
         if not self.callback:
             raise Exception("Can't receive data. Callback not set.")
 
-        message = ConnectionMessage(hwid=self.hwid, connection=self, data=data)
+        message = ConnectionMessage(device_address=self.device_address, connection=self, data=data)
 
         self.callback(message)
 
@@ -144,7 +144,7 @@ class SimConnection(Connection):
         self.bigEndianFloats = data[4] == 0xC0
 
         LOGGER.info(
-            f"SIM: Big Endian Ints - {self.bigEndianInts}, Big Endian Floats - {self.bigEndianFloats} (HWID={self.hwid})"
+            f"SIM: Big Endian Ints - {self.bigEndianInts}, Big Endian Floats - {self.bigEndianFloats} (device_address={self.device_address})"
         )
 
     def _handleBuzzer(self):
@@ -153,7 +153,7 @@ class SimConnection(Connection):
         data = self.stdout.read(length)
 
         songType = int(data[0])
-        LOGGER.info(f"SIM: Bell rang with song type {songType} (HWID={self.hwid})")
+        LOGGER.info(f"SIM: Bell rang with song type {songType} (device_address={self.device_address})")
 
     def _handleDigitalPinWrite(self):
         length = self._getLength()
@@ -161,13 +161,13 @@ class SimConnection(Connection):
         pin, value = self.stdout.read(2)
 
         self._hw_sim.digital_write(pin, value)
-        LOGGER.info(f"SIM: Pin {pin} set to {value} (HWID={self.hwid})")
+        LOGGER.info(f"SIM: Pin {pin} set to {value} (device_address={self.device_address})")
 
     def _handleRadio(self):
         length = self._getLength()
 
         if length == 0:
-            LOGGER.warning(f"Empty SIM radio packet received (HWID={self.hwid})")
+            LOGGER.warning(f"Empty SIM radio packet received (device_address={self.device_address})")
 
         data = self.stdout.read(length)
         self._xbee.recieved_from_rocket(data)
@@ -204,7 +204,7 @@ class SimConnection(Connection):
                 id = self.stdout.read(1)[0]  # Returns 0 if process was killed
 
                 if id not in SimConnection.packetHandlers.keys():
-                    LOGGER.error(f"SIM protocol violation!!! Shutting down. (HWID={self.hwid})")
+                    LOGGER.error(f"SIM protocol violation!!! Shutting down. (device_address={self.device_address})")
                     for b in self.stdout.getHistory():
                         LOGGER.error(hex(b[0]))
                     LOGGER.error("^^^^ violation.")
@@ -216,9 +216,9 @@ class SimConnection(Connection):
         except Exception as ex:
             with self._shutdown_lock:
                 if not self._is_shutting_down:
-                    LOGGER.exception(f"Error in SIM connection. (HWID={self.hwid})")
+                    LOGGER.exception(f"Error in SIM connection. (device_address={self.device_address})")
 
-        LOGGER.warning(f"SIM connection thread shut down (HWID={self.hwid})")
+        LOGGER.warning(f"SIM connection thread shut down (device_address={self.device_address})")
 
     def _getLength(self):
         [msb, lsb] = self.stdout.read(2)

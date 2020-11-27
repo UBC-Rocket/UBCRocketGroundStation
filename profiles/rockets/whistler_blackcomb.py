@@ -29,9 +29,11 @@ class WbProfile(RocketProfile):
         return None
 
     def construct_debug_connection(self):
-        return [
-            DebugConnection('TantalusStage1_HWID', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1], generate_radio_packets=False),
-        ]
+        return {
+            'TANTALUS_STAGE_1_CONNECTION': DebugConnection('TANTALUS_STAGE_1_RADIO_ADDRESS',
+                                                           DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1],
+                                                           generate_radio_packets=False)
+        }
 
     def construct_sim_connection(self):
         return None

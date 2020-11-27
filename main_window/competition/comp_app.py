@@ -1,6 +1,6 @@
 import math
 import os
-from typing import Callable, Iterable
+from typing import Callable, Dict
 import logging
 
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
@@ -29,7 +29,7 @@ MAP_UPDATED_EVENT = Event('map_updated')
 
 class CompApp(MainApp, Ui_MainWindow):
 
-    def __init__(self, connections: Iterable[Connection], rocket_profile: RocketProfile) -> None:
+    def __init__(self, connections: Dict[str, Connection], rocket_profile: RocketProfile) -> None:
         """
 
         :param connection:

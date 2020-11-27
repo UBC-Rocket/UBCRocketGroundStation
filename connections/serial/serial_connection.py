@@ -19,7 +19,7 @@ class SerialConnection(Connection):
     def _newData(self, xbee_message):
         if self.callback:
             message = ConnectionMessage(
-                hwid=str(xbee_message.remote_device.get_64bit_addr()),
+                device_address=str(xbee_message.remote_device.get_64bit_addr()),
                 connection=self,
                 data=xbee_message.data)
 
@@ -28,8 +28,8 @@ class SerialConnection(Connection):
     def registerCallback(self, fn):
         self.callback = fn
 
-    def send(self, hwid, data):
-        remote_device = RemoteXBeeDevice(self.device, XBee64BitAddress.from_hex_string(hwid))
+    def send(self, device_address, data):
+        remote_device = RemoteXBeeDevice(self.device, XBee64BitAddress.from_hex_string(device_address))
         self.device.send_data(remote_device, bytes)
 
     def broadcast(self, data):

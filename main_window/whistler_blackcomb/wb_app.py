@@ -1,5 +1,5 @@
 import os
-from typing import Iterable
+from typing import Dict
 
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
@@ -17,7 +17,7 @@ Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 class WbApp(MainApp, Ui_MainWindow):
 
-    def __init__(self, connections: Iterable[Connection], rocket_profile: RocketProfile) -> None:
+    def __init__(self, connections: Dict[str, Connection], rocket_profile: RocketProfile) -> None:
         """
 
         :param connection:

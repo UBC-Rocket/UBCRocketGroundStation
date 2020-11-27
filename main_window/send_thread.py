@@ -1,7 +1,7 @@
 import queue
 from enum import Enum
 from threading import RLock
-from typing import Iterable
+from typing import Dict
 
 from digi.xbee.exception import TimeoutException
 from PyQt5 import QtCore
@@ -41,7 +41,7 @@ class CommandType(Enum):
 
 class SendThread(QtCore.QThread):
 
-    def __init__(self, connections: Iterable[Connection], device_manager: DeviceManager, parent=None) -> None:
+    def __init__(self, connections: Dict[str, Connection], device_manager: DeviceManager, parent=None) -> None:
         """Updates GUI, therefore needs to be a QThread and use signals/slots
 
         :param connections:
@@ -75,7 +75,7 @@ class SendThread(QtCore.QThread):
 
         # TODO : Once we have multiple connections, we will loop over and send a config request to each
         # Starting up, request hello/handshake/identification
-        for connection in self.connections:
+        for connection in self.connections.values():
             try:
                 connection.broadcast(bytes([CommandType.CONFIG.value]))
             except Exception as ex:
@@ -108,12 +108,12 @@ class SendThread(QtCore.QThread):
                     LOGGER.error(f"Unknown device: {device_str}")
                     continue
 
-                hwid = self.device_manager.get_hwid(device)
-                if hwid is None:
+                full_address = self.device_manager.get_full_address(device)
+                if full_address is None:
                     LOGGER.error(f"Device not yet connected: {device.name}")
                     continue
 
-                connection = self.device_manager.get_connection(hwid)
+                connection = self.connections[full_address.connection_name]
 
                 try:
                     command = CommandType[command_str.upper()]
@@ -121,10 +121,10 @@ class SendThread(QtCore.QThread):
                     LOGGER.error(f"Unknown command {command_str}")
                     continue
 
-                LOGGER.info(f"Sending command {command.name} to device {device.name} (HWID={hwid})")
+                LOGGER.info(f"Sending command {command.name} to device {device.name} ({full_address})")
 
                 data = bytes([command.value])
-                connection.send(hwid, data)
+                connection.send(full_address.device_address, data)
 
                 LOGGER.info("Sent command!")
                 COMMAND_SENT_EVENT.increment()

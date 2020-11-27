@@ -8,7 +8,7 @@ import numpy as np
 from util.detail import LOGS_DIR, SESSION_ID, LOGGER
 from util.event_stats import Event
 from .subpacket_ids import SubpacketEnum
-from .device_manager import DeviceManager, DeviceType
+from .device_manager import DeviceManager, DeviceType, FullAddress
 
 BUNDLE_ADDED_EVENT = Event('bundle_added')
 
@@ -59,7 +59,7 @@ statemap = {  # TODO Review legacy data format. Not deleted due to need to confe
     8: "WINTER_CONTINGENCY"
 }
 
-DataEntryKey = namedtuple('DataEntry', ['hwid', 'data_id'])
+DataEntryKey = namedtuple('DataEntry', ['full_address', 'data_id'])
 CallBackKey = namedtuple('DataEntry', ['device', 'data_id'])
 
 AUTOSAVE_INTERVAL_S = 10
@@ -120,7 +120,7 @@ class RocketData:
     # Current implementation: adds to time given, otherwise will add to the last time received?
     # NOTE how this works without a new time eg if single sensor temperature comes in 3 times in a row, the first two are overwritten
     # |_> https://trello.com/c/KE0zJ7er/170-implement-ensure-spec-where-all-subpackets-will-have-timestamps
-    def addBundle(self, hwid: str, incoming_data):
+    def addBundle(self, full_address: FullAddress, incoming_data):
         """
 
         :param incoming_data:
@@ -136,11 +136,11 @@ class RocketData:
 
             # write the data and call the respective callbacks
             for data_id in incoming_data.keys():
-                key = DataEntryKey(hwid, data_id)
+                key = DataEntryKey(full_address, data_id)
                 self.existing_entry_keys.add(key)
                 self.timeset[self.lasttime][key] = incoming_data[data_id]
 
-        device = self.device_manager.get_device(hwid)
+        device = self.device_manager.get_device_type(full_address)
         if device is not None:
             # Notify after all data has been updated
             # Also, do so outside lock to prevent mutex contention with notification listeners
@@ -163,11 +163,11 @@ class RocketData:
             times = list(self.timeset.keys())
             times.sort(reverse=True) # TODO : Should probably use OrderedDict to improve performance
 
-            hwid = self.device_manager.get_hwid(device)
-            if hwid is None:
+            full_address = self.device_manager.get_full_address(device)
+            if full_address is None:
                 return None
 
-            data_entry_key = DataEntryKey(hwid, sensor_id)
+            data_entry_key = DataEntryKey(full_address, sensor_id)
             for i in range(len(times)):
                 if data_entry_key in self.timeset[times[i]]:
                     return self.timeset[times[i]][data_entry_key]
@@ -195,8 +195,10 @@ class RocketData:
                 # Make the first row a list of sensor names
                 if iy == 0:
                     name = SubpacketEnum(keys[ix].data_id).name if type(keys[ix].data_id) is int else str(keys[ix].data_id)
-                    device = self.device_manager.get_device(keys[ix].hwid)
-                    data[ix, iy] = name + '_' + device.name if device else keys[ix].hwid
+                    device = self.device_manager.get_device_type(keys[ix].full_address)
+
+                    data[ix, iy] = name + '_' + device.name if device else \
+                        f"{keys[ix].full_address.connection_name}_{keys[ix].full_address.device_address}"
                 else:
                     if keys[ix].data_id == SubpacketEnum.TIME.value:
                         data[ix, iy] = times[iy - 1]

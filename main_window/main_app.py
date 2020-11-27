@@ -1,6 +1,6 @@
 import os
 import threading
-from typing import Iterable
+from typing import Dict
 
 import PyQt5
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -25,7 +25,7 @@ if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
 class MainApp(QtWidgets.QMainWindow):
     sig_send = pyqtSignal(str)
 
-    def __init__(self, connections: Iterable[Connection], rocket_profile: RocketProfile) -> None:
+    def __init__(self, connections: Dict[str, Connection], rocket_profile: RocketProfile) -> None:
         """
 
         :param connection:
@@ -77,7 +77,7 @@ class MainApp(QtWidgets.QMainWindow):
         self.ReadThread.shutdown()
         self.SendThread.shutdown()
         self.rocket_data.shutdown()
-        for connection in self.connections:
+        for connection in self.connections.values():
             connection.shutdown()
         LOGGER.debug(f"All threads shut down, remaining threads: {threading.enumerate()}")
 

@@ -78,7 +78,7 @@ def test_config_hello(qtbot, main_app):
 
 
 def test_gps_read(qtbot, main_app):
-    connection = main_app.connections[0]
+    connection = main_app.connections['TANTALUS_STAGE_1_CONNECTION']
     hw = connection._hw_sim
 
     test_vals = [
@@ -108,7 +108,7 @@ def test_baro_altitude(qtbot, main_app):
     M = 0.0289644
     altitude = lambda pres: Tb / Lb * ((Pb / pres) ** (R * Lb / (g0 * M)) - 1)
 
-    connection = main_app.connections[0]
+    connection = main_app.connections['TANTALUS_STAGE_1_CONNECTION']
     hw = connection._hw_sim
 
     # Set base/ground altitude
@@ -145,7 +145,7 @@ def test_baro_altitude(qtbot, main_app):
 
 
 def test_accelerometer_read(qtbot, main_app):
-    connection = main_app.connections[0]
+    connection = main_app.connections['TANTALUS_STAGE_1_CONNECTION']
     hw = connection._hw_sim
 
     test_vals = [
@@ -164,7 +164,7 @@ def test_accelerometer_read(qtbot, main_app):
 
 
 def test_imu_read(qtbot, main_app):
-    connection = main_app.connections[0]
+    connection = main_app.connections['TANTALUS_STAGE_1_CONNECTION']
     hw = connection._hw_sim
 
     test_vals = [
@@ -184,7 +184,7 @@ def test_imu_read(qtbot, main_app):
 
 
 def test_temperature_read(qtbot, main_app):
-    connection = main_app.connections[0]
+    connection = main_app.connections['TANTALUS_STAGE_1_CONNECTION']
     hw = connection._hw_sim
 
     test_vals = [
@@ -208,7 +208,7 @@ def test_clean_shutdown(qtbot, main_app):
     assert main_app.SendThread.isRunning()
     assert main_app.MappingThread.isRunning()
     assert main_app.rocket_data.autosaveThread.is_alive()
-    for connection in main_app.connections:
+    for connection in main_app.connections.values():
         assert connection.thread.is_alive()
         assert connection._xbee._rocket_rx_thread.is_alive()
 
@@ -218,6 +218,6 @@ def test_clean_shutdown(qtbot, main_app):
     assert main_app.SendThread.isFinished()
     assert main_app.MappingThread.isFinished()
     assert not main_app.rocket_data.autosaveThread.is_alive()
-    for connection in main_app.connections:
+    for connection in main_app.connections.values():
         assert not connection.thread.is_alive()
         assert not connection._xbee._rocket_rx_thread.is_alive()

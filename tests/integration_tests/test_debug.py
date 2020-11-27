@@ -30,9 +30,9 @@ from util.event_stats import get_event_stats_snapshot
 
 @pytest.fixture(scope="function")
 def single_connection_tantalus(integration_app):
-    yield integration_app(TantalusProfile(), [
-        DebugConnection('DebugTestHWID', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1], generate_radio_packets=False)
-    ])
+    yield integration_app(TantalusProfile(), {
+        'DEBUG_CONNECTION': DebugConnection('TANTALUS_STAGE_1_ADDRESS', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1], generate_radio_packets=False)
+    })
 
 
 def test_arm_signal(qtbot, single_connection_tantalus):
@@ -50,7 +50,7 @@ def test_arm_signal(qtbot, single_connection_tantalus):
 
 def test_bulk_sensor_packet(qtbot, single_connection_tantalus):
     app = single_connection_tantalus
-    connection = app.connections[0]
+    connection = app.connections['DEBUG_CONNECTION']
 
     sensor_inputs = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
 
@@ -95,7 +95,7 @@ def test_bulk_sensor_packet(qtbot, single_connection_tantalus):
 
 def test_single_sensor_packet(qtbot, single_connection_tantalus):
     app = single_connection_tantalus
-    connection = app.connections[0]
+    connection = app.connections['DEBUG_CONNECTION']
 
     vals = [
         (SubpacketEnum.ACCELERATION_Y, 1),
@@ -139,7 +139,7 @@ def test_single_sensor_packet(qtbot, single_connection_tantalus):
 
 def test_message_packet(qtbot, single_connection_tantalus, caplog):
     app = single_connection_tantalus
-    connection = app.connections[0]
+    connection = app.connections['DEBUG_CONNECTION']
 
     packet = radio_packets.message(0xFFFFFFFF, "test_message")
 
@@ -158,7 +158,7 @@ def test_message_packet(qtbot, single_connection_tantalus, caplog):
 
 def test_config_packet(qtbot, single_connection_tantalus):
     app = single_connection_tantalus
-    connection = app.connections[0]
+    connection = app.connections['DEBUG_CONNECTION']
 
     version_id = 'e43f15ba448653b34c043cf90593346e7ca4f9c7'
     assert len(version_id) == VERSION_ID_LEN  # make sure test val is acceptable
@@ -182,7 +182,7 @@ def test_config_packet(qtbot, single_connection_tantalus):
 
 def test_status_ping_packet(qtbot, single_connection_tantalus):
     app = single_connection_tantalus
-    connection = app.connections[0]
+    connection = app.connections['DEBUG_CONNECTION']
 
     packet = radio_packets.status_ping(
         0xFFFFFFFF, radio_packets.StatusType.CRITICAL_FAILURE, 0xFF, 0xFF, 0xFF, 0xFF
@@ -208,7 +208,7 @@ def test_status_ping_packet(qtbot, single_connection_tantalus):
 
 def test_gps_packet(qtbot, single_connection_tantalus):
     app = single_connection_tantalus
-    connection = app.connections[0]
+    connection = app.connections['DEBUG_CONNECTION']
 
     gps_inputs = (0xFFFFFFFF, 1, 2, 3)
 
@@ -229,7 +229,7 @@ def test_gps_packet(qtbot, single_connection_tantalus):
 
 def test_orientation_packet(qtbot, single_connection_tantalus):
     app = single_connection_tantalus
-    connection = app.connections[0]
+    connection = app.connections['DEBUG_CONNECTION']
 
     orientation_inputs = (0xFFFFFFFF, 1, 2, 3, 4)
 
@@ -254,18 +254,18 @@ def test_orientation_packet(qtbot, single_connection_tantalus):
 
 
 def test_multi_connection_receive(qtbot, integration_app):
-    con_a = DebugConnection('TANTALUS_STAGE_1_HWID', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1],
+    con_a = DebugConnection('TANTALUS_STAGE_1_ADDRESS', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1],
                             generate_radio_packets=False)
-    con_b = DebugConnection('TANTALUS_STAGE_2_HWID', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_2],
+    con_b = DebugConnection('TANTALUS_STAGE_2_ADDRESS', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_2],
                             generate_radio_packets=False)
     snapshot = get_event_stats_snapshot()
-    app = integration_app(TantalusProfile(), [con_a, con_b])
+    app = integration_app(TantalusProfile(), {'DEBUG_CONNECTION_1': con_a, 'DEBUG_CONNECTION_2': con_b})
 
     con_a.receive(radio_packets.single_sensor(0xFFFFFFFF, SubpacketEnum.PRESSURE.value, 1))
     con_b.receive(radio_packets.single_sensor(0xFFFFFFFF, SubpacketEnum.PRESSURE.value, 2))
 
     # Fake some other device on same connection
-    con_a.hwid = 'OTHER_HWID'
+    con_a.device_address = 'OTHER_ADDRESS'
     con_a.receive(radio_packets.config(0xFFFFFFFF, True, DEVICE_TYPE_TO_ID[DeviceType.CO_PILOT], 'version'))
     con_a.receive(radio_packets.single_sensor(0xFFFFFFFF, SubpacketEnum.PRESSURE.value, 3))
 
@@ -278,19 +278,19 @@ def test_multi_connection_receive(qtbot, integration_app):
 
 
 def test_multi_connection_commands(qtbot, integration_app):
-    con_a = DebugConnection('TANTALUS_STAGE_1_HWID', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1],
+    con_a = DebugConnection('TANTALUS_STAGE_1_ADDRESS', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1],
                             generate_radio_packets=False)
-    con_b = DebugConnection('TANTALUS_STAGE_2_HWID', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_2],
+    con_b = DebugConnection('TANTALUS_STAGE_2_ADDRESS', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_2],
                             generate_radio_packets=False)
 
     con_a.send = MagicMock()
     con_b.send = MagicMock()
 
     snapshot = get_event_stats_snapshot()
-    app = integration_app(TantalusProfile(), [con_a, con_b])
+    app = integration_app(TantalusProfile(), {'DEBUG_CONNECTION_1': con_a, 'DEBUG_CONNECTION_2': con_b})
 
     # Fake some other device on same connection
-    con_a.hwid = 'OTHER_HWID'
+    con_a.device_address = 'OTHER_ADDRESS'
     con_a.receive(radio_packets.config(0xFFFFFFFF, True, DEVICE_TYPE_TO_ID[DeviceType.CO_PILOT], 'version'))
 
     assert DEVICE_REGISTERED_EVENT.wait(snapshot, num_expected=3) == 3
@@ -300,27 +300,27 @@ def test_multi_connection_commands(qtbot, integration_app):
     snapshot = get_event_stats_snapshot()
     app.send_command("tantalus_stage_1.arm")
     COMMAND_SENT_EVENT.wait(snapshot)
-    con_a.send.assert_called_with('TANTALUS_STAGE_1_HWID', ANY)
+    con_a.send.assert_called_with('TANTALUS_STAGE_1_ADDRESS', ANY)
 
     snapshot = get_event_stats_snapshot()
     app.send_command("tantalus_stage_2.arm")
     COMMAND_SENT_EVENT.wait(snapshot)
-    con_b.send.assert_called_with('TANTALUS_STAGE_2_HWID', ANY)
+    con_b.send.assert_called_with('TANTALUS_STAGE_2_ADDRESS', ANY)
 
     snapshot = get_event_stats_snapshot()
     app.send_command("co_pilot.arm")
     COMMAND_SENT_EVENT.wait(snapshot)
-    con_a.send.assert_called_with('OTHER_HWID', ANY)
+    con_a.send.assert_called_with('OTHER_ADDRESS', ANY)
 
 
 def test_register_after_data(qtbot, integration_app):
-    con = DebugConnection('TANTALUS_STAGE_1_HWID', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1],
+    con = DebugConnection('TANTALUS_STAGE_1_ADDRESS', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1],
                           generate_radio_packets=False)
-    app = integration_app(TantalusProfile(), [con])
+    app = integration_app(TantalusProfile(), {'DEBUG_CONNECTION': con})
     snapshot = get_event_stats_snapshot()
 
     # Fake stage 2 on same connection
-    con.hwid = 'TANTALUS_STAGE_2_HWID'
+    con.device_address = 'TANTALUS_STAGE_2_ADDRESS'
     con.receive(radio_packets.single_sensor(0xFFFFFFFF, SubpacketEnum.PRESSURE.value, 1))
     assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 
@@ -339,7 +339,7 @@ def test_clean_shutdown(qtbot):
     assert app.SendThread.isRunning()
     assert app.MappingThread.isRunning()
     assert app.rocket_data.autosaveThread.is_alive()
-    for connection in app.connections:
+    for connection in app.connections.values():
         assert connection.connectionThread.is_alive()
 
     app.shutdown()
@@ -348,5 +348,5 @@ def test_clean_shutdown(qtbot):
     assert app.SendThread.isFinished()
     assert app.MappingThread.isFinished()
     assert not app.rocket_data.autosaveThread.is_alive()
-    for connection in app.connections:
+    for connection in app.connections.values():
         assert not connection.connectionThread.is_alive()

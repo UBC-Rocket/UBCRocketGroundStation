@@ -140,7 +140,7 @@ class Clock:
         """
         :param delta_us: number of microseconds to add to the clock.
         """
-        self._time_us += delta_us
+        self._time_us += int(delta_us)
 
     def get_time_us(self) -> int:
         """

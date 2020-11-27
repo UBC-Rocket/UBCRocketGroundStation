@@ -44,34 +44,17 @@ class ShuttingDown(Exception):
 
 
 class XBeeModuleSim:
-    def send_to_rocket(self, data):
-        """
-        :brief: Queue data to send to rocket following the XBee protocol.
-        :param data: bytearray of data.
-        """
-        reserved = b"\xff\xfe"
-        rx_options = b"\x02"
-        self.rocket_callback(
-            self._create_frame(
-                FrameType.RX_INDICATOR, SOURCE_ADDRESS + reserved + rx_options + data,
-            )
-        )
-
-        SENT_TO_ROCKET_EVENT.increment()
-
-    def recieved_from_rocket(self, data):
-        """
-        :brief: All data incoming from the rocket should be passed into this method for processing.
-        :param data: bytearray of data recieved.
-        """
-        self._rocket_rx_queue_packed.put(data)
-
     def __init__(self, gs_address: bytes):
         """
         :brief: Constructor.
         In addition to constructing this, if any useful work is to be done then the rocket_callback and ground_callback attributes should be set - by default they are simply no-op functions.
         """
+        assert len(gs_address) == 8
         self.gs_address = gs_address
+
+        self._frame_parsers = {
+            FrameType.TX_REQUEST: self._parse_tx_request_frame,
+        }
 
         # Each element in each queue is a bytearray.
         self._rocket_rx_queue_packed = SimpleQueue()  # RX from RKT
@@ -100,6 +83,28 @@ class XBeeModuleSim:
         )
 
         self._rocket_rx_thread.start()
+
+    def send_to_rocket(self, data):
+        """
+        :brief: Queue data to send to rocket following the XBee protocol.
+        :param data: bytearray of data.
+        """
+        reserved = b"\xff\xfe"
+        rx_options = b"\x02"
+        self.rocket_callback(
+            self._create_frame(
+                FrameType.RX_INDICATOR, SOURCE_ADDRESS + reserved + rx_options + data,
+            )
+        )
+
+        SENT_TO_ROCKET_EVENT.increment()
+
+    def recieved_from_rocket(self, data):
+        """
+        :brief: All data incoming from the rocket should be passed into this method for processing.
+        :param data: bytearray of data recieved.
+        """
+        self._rocket_rx_queue_packed.put(data)
 
     def _unpack(self, q):
         """
@@ -161,7 +166,7 @@ class XBeeModuleSim:
         calculated_checksum += frame_id
 
         destination_address = bytearray()
-        for _ in range(8):  # 64 bit destination address - discard
+        for _ in range(8):  # 64 bit destination address
             b = next(data)
             destination_address.append(b)
             calculated_checksum += b
@@ -203,8 +208,6 @@ class XBeeModuleSim:
         )
         self.rocket_callback(self._create_frame(FrameType.TX_STATUS, status_payload))
 
-    _frame_parsers = {FrameType.TX_REQUEST: _parse_tx_request_frame}
-
     def _parse_API_frame(self) -> None:
         """Parses one XBee API frame based on the rocket_rx_queue."""
 
@@ -225,7 +228,7 @@ class XBeeModuleSim:
         frame_len += next(unescaped)
         frame_type = next(unescaped)
         assert frame_type in self._frame_parsers
-        self._frame_parsers[frame_type](self, unescaped, frame_len)
+        self._frame_parsers[frame_type](unescaped, frame_len)
 
         FRAME_PARSED_EVENT.increment()
 

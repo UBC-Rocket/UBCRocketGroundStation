@@ -11,7 +11,8 @@ ESCAPE_XOR = 0x20
 XON = 0x11
 XOFF = 0x13
 NEEDS_ESCAPING = (START_DELIMITER, ESCAPE_CHAR, XON, XOFF)
-SOURCE_ADDRESS = b"\x01\x23\x45\x67\x89\xAB\xCD\xEF"  # Dummy address
+SOURCE_ADDRESS = bytes.fromhex('0123456789ABCDEF')  # Dummy address
+XBEE_BROADCAST_ADDRESS = bytes.fromhex('000000000000FFFF')
 
 FRAME_PARSED_EVENT = Event('frame_parsed')
 SENT_TO_ROCKET_EVENT = Event('sent_to_rocket')
@@ -65,11 +66,13 @@ class XBeeModuleSim:
         """
         self._rocket_rx_queue_packed.put(data)
 
-    def __init__(self):
+    def __init__(self, gs_address: bytes):
         """
         :brief: Constructor.
         In addition to constructing this, if any useful work is to be done then the rocket_callback and ground_callback attributes should be set - by default they are simply no-op functions.
         """
+        self.gs_address = gs_address
+
         # Each element in each queue is a bytearray.
         self._rocket_rx_queue_packed = SimpleQueue()  # RX from RKT
 
@@ -157,8 +160,11 @@ class XBeeModuleSim:
         frame_id = next(data)
         calculated_checksum += frame_id
 
+        destination_address = bytearray()
         for _ in range(8):  # 64 bit destination address - discard
-            calculated_checksum += next(data)
+            b = next(data)
+            destination_address.append(b)
+            calculated_checksum += b
 
         # Reserved 2 bytes. But in one case it's labelled as network address?
         network_addr_msb = next(data)
@@ -185,7 +191,11 @@ class XBeeModuleSim:
         if received_checksum != calculated_checksum:
             raise ChecksumMismatchError()
 
-        self.ground_callback(payload)
+        if (destination_address == bytearray(self.gs_address) or
+            destination_address == bytearray(XBEE_BROADCAST_ADDRESS)):
+            self.ground_callback(payload)
+        else:
+            LOGGER.warning(f"Discarding tx request frame with destination address other than GS ({destination_address.hex()})")
 
         # Send acknowledge
         status_payload = bytearray(

@@ -79,7 +79,7 @@ class TantalusProfile(RocketProfile):
         hwsim = HWSim(hw_sim_sensors, hw_sim_ignitors)
 
         return [
-            SimConnection("TantalusStage1", hwsim),
+            SimConnection("TantalusStage1", "0013A20041678FC0", hwsim),
         ]
 
     def construct_app(self, connections):

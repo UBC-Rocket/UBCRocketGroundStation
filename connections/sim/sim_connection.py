@@ -41,7 +41,7 @@ ID_TO_SENSOR = {
 
 
 class SimConnection(Connection):
-    def __init__(self, executable_name, hw_sim):
+    def __init__(self, executable_name: str, gs_address: str, hw_sim):
         self._find_executable(executable_name)
 
         self.hwid = executable_name + 'SIM_CONN_HWID'
@@ -60,7 +60,7 @@ class SimConnection(Connection):
         # Gets endianess of ints and floats
         self._getEndianness()
 
-        self._xbee = XBeeModuleSim()
+        self._xbee = XBeeModuleSim(bytes.fromhex(gs_address))
         self._xbee.rocket_callback = self._send_radio_sim
 
         self._hw_sim = hw_sim

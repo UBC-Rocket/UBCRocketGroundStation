@@ -21,17 +21,17 @@ class SelfTest:
 
     def _run_self_test(self):
         try:
-            LOGGER.warning("SELF TEST STARTED")
+            LOGGER.info("SELF TEST STARTED")
             snapshot = get_event_stats_snapshot()
 
-            sleep(10)
+            sleep(30)
 
             # Dont wait, check difference now all at once
             # Add any other common events here
             assert LABLES_UPDATED_EVENT.wait(snapshot, timeout=0) >= 2
             assert MAP_UPDATED_EVENT.wait(snapshot, timeout=0) >= 2
 
-            LOGGER.warning("SELF TEST PASSED")
+            LOGGER.info("SELF TEST PASSED")
             os._exit(0)
         except:
             LOGGER.exception("SELF TEST FAILED")

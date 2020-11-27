@@ -7,11 +7,13 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
 
 from util.detail import LOGGER
+from util.event_stats import Event
 from connections.connection import Connection, ConnectionMessage
 from .rocket_data import RocketData
 from .packet_parser import PacketParser, DEVICE_TYPE
 from .device_manager import DeviceManager, FullAddress
 
+CONNECTION_MESSAGE_READ_EVENT = Event('connection_message_read')
 
 class ReadThread(QtCore.QThread):
     sig_received = pyqtSignal()
@@ -99,6 +101,8 @@ class ReadThread(QtCore.QThread):
                     LOGGER.exception("Error decoding new packet! %s", e)
                     # Just discard rest of data TODO Review policy on handling remaining data or problem packets. Consider data errors too
                     byte_stream.seek(0, SEEK_END)
+
+            CONNECTION_MESSAGE_READ_EVENT.increment()
 
         LOGGER.warning("Read thread shut down")
 

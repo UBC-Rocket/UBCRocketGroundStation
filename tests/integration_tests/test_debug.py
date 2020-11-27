@@ -86,7 +86,7 @@ def test_bulk_sensor_packet(qtbot, single_connection_tantalus):
 
     assert sensor_inputs[1:] == last_values
 
-    assert LABLES_UPDATED_EVENT.wait(snapshot) == 1
+    assert LABLES_UPDATED_EVENT.wait(snapshot) >= 1
 
     assert float(app.AltitudeLabel.text()) == 2.0
     assert app.GPSLabel.text() == "9.0, 10.0"

@@ -128,6 +128,7 @@ class XBeeModuleSim:
         :brief: Process the incoming rocket data queue.
         This is the top level function, and handles any unescaped start delimiters.
         """
+        LOGGER.debug(f"Xbee sim thread started")
 
         while True:
             try:

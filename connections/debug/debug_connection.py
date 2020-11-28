@@ -38,9 +38,9 @@ class DebugConnection(Connection):
         """
 
         """
-        while True:
-            with self.cv:
-
+        with self.cv:
+            LOGGER.debug(f"Debug connection thread started (device_address={self.device_address})")
+            while True:
                 self.cv.wait_for(lambda: self._is_shutting_down, timeout=PACKET_INTERVAL_S)
 
                 if self._is_shutting_down:
@@ -57,7 +57,7 @@ class DebugConnection(Connection):
                 full_arr.extend(self.orientation_mock_random())
                 self.receive(full_arr)
 
-        LOGGER.warning(f"Debug connection thread shut down (device_address={self.device_address})")
+            LOGGER.warning(f"Debug connection thread shut down (device_address={self.device_address})")
 
     def receive(self, data):
         with self.lock:

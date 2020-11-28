@@ -72,6 +72,7 @@ class SendThread(QtCore.QThread):
         """
 
         """
+        LOGGER.debug("Send thread started")
 
         # TODO : Once we have multiple connections, we will loop over and send a config request to each
         # Starting up, request hello/handshake/identification

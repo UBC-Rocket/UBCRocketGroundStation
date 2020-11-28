@@ -147,6 +147,7 @@ class MappingThread(QtCore.QThread):
         """
 
         """
+        LOGGER.debug("Mapping thread started")
         last_latitude = None
         last_longitude = None
         last_update_time = 0
@@ -215,8 +216,9 @@ def processMap(requestQueue, resultQueue):
     # is based on the import time
     # https://docs.python.org/3/library/multiprocessing.html#logging
     # TODO: Fix by creating .session file which contains session ID and other
-    #  process-global constants. Look into file-locks to make this multiprocessing saft. This is an OS feature
+    #  process-global constants. Look into file-locks to make this multiprocessing safe. This is an OS feature
 
+    LOGGER.debug("Mapping process started")
     while True:
         try:
             (p1, p2, zoom, desiredSize) = requestQueue.get()
@@ -244,3 +246,5 @@ def processMap(requestQueue, resultQueue):
         except Exception as ex:
             LOGGER.exception("Exception in processMap process")  # Automatically grabs and prints exception info
             resultQueue.put(None)
+
+    LOGGER.warning("Mapping process shut down")

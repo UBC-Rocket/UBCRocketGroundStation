@@ -60,6 +60,7 @@ class ReadThread(QtCore.QThread):
 
     def run(self):
         """This thread loop waits for new data and processes it when available"""
+        LOGGER.debug("Read thread started")
         while True:
 
             connection_message = self.dataQueue.get(block=True, timeout=None)  # Block until something new

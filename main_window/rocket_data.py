@@ -71,13 +71,14 @@ class RocketData:
         """
         self.device_manager = device_manager
 
-        self.lock = threading.RLock()  # acquire lock ASAP since self.lock needs to be defined when autosave starts
+        self.data_lock = threading.RLock()  # create lock ASAP since self.lock needs to be defined when autosave starts
         self.timeset: Dict[int, Dict[DataEntryKey, Union[int, float]]] = {}
         self.lasttime = 0  # TODO REVIEW/CHANGE THIS, once all subpackets have their own timestamp.
         self.highest_altitude = 0
         self.sessionName = os.path.join(LOGS_DIR, "autosave_" + SESSION_ID + ".csv")
         self.existing_entry_keys = set() # Set of entry keys that have actually been recorded. Used for creating csv header
 
+        self.callback_lock = threading.RLock()  # Only for callback dict
         self.callbacks = {}
 
         self.as_cv = threading.Condition()  # Condition variable for autosave (as)
@@ -90,6 +91,7 @@ class RocketData:
         """
 
         """
+        LOGGER.debug("Auto-save thread started")
         while True:
 
             with self.as_cv:
@@ -126,7 +128,7 @@ class RocketData:
         :param incoming_data:
         :type incoming_data:
         """
-        with self.lock:
+        with self.data_lock:
             # if there's a time, set this to the most recent time val
             if SubpacketEnum.TIME.value in incoming_data.keys():
                 self.lasttime = incoming_data[SubpacketEnum.TIME.value]
@@ -143,7 +145,7 @@ class RocketData:
         device = self.device_manager.get_device_type(full_address)
         if device is not None:
             # Notify after all data has been updated
-            # Also, do so outside lock to prevent mutex contention with notification listeners
+            # Also, do so outside data_lock to prevent mutex contention with notification listeners
             for data_id in incoming_data.keys():
                 key = CallBackKey(device, data_id)
                 self._notifyCallbacksOfId(key)
@@ -159,7 +161,7 @@ class RocketData:
         :return:
         :rtype:
         """
-        with self.lock:
+        with self.data_lock:
             times = list(self.timeset.keys())
             times.sort(reverse=True) # TODO : Should probably use OrderedDict to improve performance
 
@@ -182,7 +184,7 @@ class RocketData:
         :return:
         :rtype:
         """
-        with self.lock:
+        with self.data_lock:
             if len(self.timeset) <= 0:
                 return
 
@@ -211,7 +213,6 @@ class RocketData:
         np.savetxt(csvpath, np.transpose(data), delimiter=',',
                    fmt="%s")  # Can free up the lock while we save since were no longer accessing the original data
 
-    # TODO possibly make into own object/file
     # Add a new callback for its associated ID
     def addNewCallback(self, device: DeviceType, data_id, callbackFn):
         """
@@ -221,11 +222,12 @@ class RocketData:
         :param callbackFn:
         :type callbackFn:
         """
-        key = CallBackKey(device, data_id)
-        if key not in self.callbacks.keys():
-            self.callbacks[key] = [callbackFn]
-        else:
-            self.callbacks[key].append(callbackFn)
+        with self.callback_lock:
+            key = CallBackKey(device, data_id)
+            if key not in self.callbacks.keys():
+                self.callbacks[key] = [callbackFn]
+            else:
+                self.callbacks[key].append(callbackFn)
 
     def _notifyCallbacksOfId(self, key: CallBackKey):
         """
@@ -233,13 +235,15 @@ class RocketData:
         :param data_id:
         :type data_id:
         """
-        if key in self.callbacks.keys():
-            for fn in self.callbacks[key]:
-                fn()
+        with self.callback_lock:
+            if key in self.callbacks.keys():
+                for fn in self.callbacks[key]:
+                    fn()
 
     def _notifyAllCallbacks(self):
         """
 
         """
-        for key in self.callbacks.keys():
-            self._notifyCallbacksOfId(key)
+        with self.callback_lock:
+            for key in self.callbacks.keys():
+                self._notifyCallbacksOfId(key)

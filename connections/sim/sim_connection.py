@@ -198,6 +198,8 @@ class SimConnection(Connection):
     }
 
     def _run(self):
+        LOGGER.debug(f"SIM connection started (device_address={self.device_address})")
+
         try:
             while True:
 

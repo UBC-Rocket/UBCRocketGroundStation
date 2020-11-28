@@ -83,5 +83,12 @@ class TestHWSim:
         assert hw.sensor_read(SensorType.GPS) == GPS_DATA
         assert hw.sensor_read(SensorType.BAROMETER) == BARO_DATA
 
+    def test_clock(self):
+        hw = HWSim([], [])
 
+        assert hw.clock.get_time_ms() == 0
+        assert hw.clock.get_time_us() == 0
 
+        assert hw.time_update(1000) == 1
+        assert hw.time_update(1900) == 2
+        assert hw.time_update(100) == 3

@@ -32,14 +32,15 @@ if __name__ == "__main__":
 
         rocket = com_window.chosen_rocket
         connection = com_window.chosen_connection
+        main_window = rocket.construct_app(connection)
 
     else:
         rocket = TantalusProfile()
         connection = rocket.construct_debug_connection()
-        test = SelfTest()
+        main_window = rocket.construct_app(connection)
+        test = SelfTest(main_window)
         test.start()
 
-    main_window = rocket.construct_app(connection)
     main_window.show()
     return_code = app.exec_()
     sys.exit(return_code)

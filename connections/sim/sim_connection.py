@@ -127,7 +127,8 @@ class SimConnection(Connection):
         self._xbee.shutdown()
         self._hw_sim.shutdown()
 
-        self.rocket.kill()
+        self.rocket.terminate()
+        self.rocket.wait()
 
         self.thread.join()  # join thread
 

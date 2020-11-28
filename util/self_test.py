@@ -13,7 +13,8 @@ class SelfTest:
     automatically test that the PyInstaller builds work.
     """
 
-    def __init__(self):
+    def __init__(self, main_app):
+        self.main_app = main_app
         self.thread = threading.Thread(target=self._run_self_test, daemon=True, name="SelfTestThread")
 
     def start(self):
@@ -24,7 +25,7 @@ class SelfTest:
             LOGGER.info("SELF TEST STARTED")
             snapshot = get_event_stats_snapshot()
 
-            sleep(30)
+            sleep(10)
 
             # Dont wait, check difference now all at once
             # Add any other common events here
@@ -32,7 +33,11 @@ class SelfTest:
             assert MAP_UPDATED_EVENT.wait(snapshot, timeout=0) >= 2
 
             LOGGER.info("SELF TEST PASSED")
-            os._exit(0)
-        except:
+            ret_code = 0
+
+        except AssertionError:
             LOGGER.exception("SELF TEST FAILED")
-            os._exit(1)
+            ret_code = 1
+
+        self.main_app.shutdown()
+        os._exit(ret_code)

@@ -338,6 +338,7 @@ def test_clean_shutdown(qtbot):
     assert app.ReadThread.isRunning()
     assert app.SendThread.isRunning()
     assert app.MappingThread.isRunning()
+    assert app.MappingThread.map_process.is_alive()
     assert app.rocket_data.autosaveThread.is_alive()
     for connection in app.connections.values():
         assert connection.connectionThread.is_alive()
@@ -347,6 +348,7 @@ def test_clean_shutdown(qtbot):
     assert app.ReadThread.isFinished()
     assert app.SendThread.isFinished()
     assert app.MappingThread.isFinished()
+    assert not app.MappingThread.map_process.is_alive()
     assert not app.rocket_data.autosaveThread.is_alive()
     for connection in app.connections.values():
         assert not connection.connectionThread.is_alive()

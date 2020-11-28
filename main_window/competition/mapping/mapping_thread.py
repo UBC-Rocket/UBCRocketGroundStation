@@ -2,6 +2,7 @@ import math
 import threading
 import time
 from multiprocessing import Process, Queue
+from queue import Empty
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
@@ -52,10 +53,10 @@ class MappingThread(QtCore.QThread):
         # Running the CPU bound tasks in a separate process gets around the GIL problems but introduces some additional
         # IPC complexities (i.e. the queue)
         # Might be able to turn MappingThread into a QProcess so that we dont need both a thread and a process
-        self.resultQueue = Queue(1)
-        self.requestQueue = Queue(1)
-        mapProc = Process(target=processMap, args=(self.requestQueue, self.resultQueue), daemon=True, name="MapProcess")
-        mapProc.start()
+        self.resultQueue = Queue()
+        self.requestQueue = Queue()
+        self.map_process = Process(target=processMap, args=(self.requestQueue, self.resultQueue), daemon=True, name="MapProcess")
+        self.map_process.start()
 
         # Must be done last to prevent race condition
         self.rocket_data.addNewCallback(self.device, SubpacketEnum.LATITUDE.value, self.notify)
@@ -192,13 +193,28 @@ class MappingThread(QtCore.QThread):
 
     def shutdown(self):
         with self.cv:
-            self._is_shutting_down = True
+            if self._is_shutting_down:
+                return
+            else:
+                self._is_shutting_down = True
+
+        self.resultQueue.put(None)
 
         while self.isRunning():
             with self.cv:
                 self.cv.notify()  # Wake up thread
 
         self.wait()  # join thread
+
+        self.requestQueue.put(None)
+
+        self.resultQueue.cancel_join_thread()
+        self.requestQueue.cancel_join_thread()
+
+        self.map_process.join()
+        self.map_process.close()
+        self.resultQueue.close()
+        self.requestQueue.close()
 
 
 def processMap(requestQueue, resultQueue):
@@ -221,7 +237,12 @@ def processMap(requestQueue, resultQueue):
     LOGGER.debug("Mapping process started")
     while True:
         try:
-            (p1, p2, zoom, desiredSize) = requestQueue.get()
+            request = requestQueue.get()
+
+            if request is None:  # Shutdown request
+                break
+
+            (p1, p2, zoom, desiredSize) = request
 
             location = mapbox_utils.TileGrid(p1, p2, zoom)
             location.downloadArrayImages()
@@ -247,4 +268,9 @@ def processMap(requestQueue, resultQueue):
             LOGGER.exception("Exception in processMap process")  # Automatically grabs and prints exception info
             resultQueue.put(None)
 
+    resultQueue.cancel_join_thread()
+    requestQueue.cancel_join_thread()
+    resultQueue.close()
+    requestQueue.close()
     LOGGER.warning("Mapping process shut down")
+    return 0

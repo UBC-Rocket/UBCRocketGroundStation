@@ -25,7 +25,7 @@ class SelfTest:
             LOGGER.info("SELF TEST STARTED")
             snapshot = get_event_stats_snapshot()
 
-            sleep(10)
+            sleep(20)
 
             # Dont wait, check difference now all at once
             # Add any other common events here

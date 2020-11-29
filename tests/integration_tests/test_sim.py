@@ -219,9 +219,11 @@ def test_clean_shutdown(qtbot, main_app):
     assert main_app.ReadThread.isFinished()
     assert main_app.SendThread.isFinished()
     assert main_app.MappingThread.isFinished()
-    assert not main_app.MappingThread.map_process.is_alive()
     assert not main_app.rocket_data.autosaveThread.is_alive()
     for connection in main_app.connections.values():
         assert not connection.thread.is_alive()
         assert not connection._xbee._rocket_rx_thread.is_alive()
         assert connection.rocket.poll() is not None
+
+    with pytest.raises(ValueError):
+        main_app.MappingThread.map_process.is_alive()

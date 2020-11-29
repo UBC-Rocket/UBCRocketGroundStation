@@ -1,8 +1,7 @@
 import math
 import threading
 import time
-from multiprocessing import Process, Queue
-from queue import Empty
+import multiprocessing
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
@@ -48,14 +47,24 @@ class MappingThread(QtCore.QThread):
         # Condition variable to watch for notification of new lat and lon
         self.cv = threading.Condition()  # Uses RLock inside when none is provided
 
+        # Must force spawning (as opposed to forking) on unix systems (default / only method supported on Windows) to
+        # work around a Python bug. This also makes the behavior between Linux and Windows more similar, which is good
+        # for consistency. Must be called before setting up queues.
+        # https://bugs.python.org/issue37429, https://bugs.python.org/issue6721 ,https://bugs.python.org/issue40442
+        # https://bugs.python.org/issue36533, https://bugs.python.org/issue36533
+        multiprocessing.set_start_method('spawn', True)
+        # Note: https://docs.python.org/3.7/library/multiprocessing.html#contexts-and-start-methods has a warning saying
+        # that spawning processes on Linux with PyInstaller doesn't work. This is a lie... It works... Keep an eye out
+        # for issues maybe? Some Github discussions suggest that it may be a more recent fix in PyInstaller.
+
         # Stitching (and a little bit resizing) the map is a significantly large CPU bound task which was actually
         # blocking all the threads because of Python's GIL. This is resulting in some UI freezing and stuttering.
         # Running the CPU bound tasks in a separate process gets around the GIL problems but introduces some additional
         # IPC complexities (i.e. the queue)
         # Might be able to turn MappingThread into a QProcess so that we dont need both a thread and a process
-        self.resultQueue = Queue()
-        self.requestQueue = Queue()
-        self.map_process = Process(target=processMap, args=(self.requestQueue, self.resultQueue), daemon=True, name="MapProcess")
+        self.resultQueue = multiprocessing.Queue()
+        self.requestQueue = multiprocessing.Queue()
+        self.map_process = multiprocessing.Process(target=processMap, args=(self.requestQueue, self.resultQueue), daemon=True, name="MapProcess")
         self.map_process.start()
 
         # Must be done last to prevent race condition
@@ -273,4 +282,3 @@ def processMap(requestQueue, resultQueue):
     resultQueue.close()
     requestQueue.close()
     LOGGER.warning("Mapping process shut down")
-    return 0

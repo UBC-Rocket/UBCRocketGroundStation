@@ -25,7 +25,8 @@ def integration_app(caplog):
 
     # ----- Following code is run on cleanup -----
 
-    app.shutdown()
+    if app is not None:
+        app.shutdown()
 
     # Fail test if error message in logs since we catch most exceptions in app
     for when in ("setup", "call"):

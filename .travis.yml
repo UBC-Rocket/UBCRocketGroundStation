@@ -38,7 +38,7 @@ install:
 script:
 # Unit tests & integration tests
 - source venv/bin/activate
-- python -m pytest -s
+- python -m pytest
 - deactivate
 
 # Pyinstaller "build" test & GS self-test

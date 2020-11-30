@@ -41,7 +41,7 @@ def single_sensor(time: int, sensor_id: int, value: float) -> bytearray:
 class StatusType(Enum):
     NOMINAL = 0b00
     NON_CRITICAL_FAILURE = 0b01
-    CRITICAL_FAILURE = 0b10
+    CRITICAL_FAILURE = 0b11
 
 
 # TODO: Abstract sensor & other status away from bitfield values for the parameters

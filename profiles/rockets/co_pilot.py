@@ -3,7 +3,11 @@ from ..label import (Label, update_acceleration, update_altitude,
                      update_max_altitude, update_pressure, update_state,
                      update_tank_pressure)
 from ..rocket_profile import RocketProfile
+from connections.debug.debug_connection import DebugConnection
 from main_window.competition.comp_app import CompApp
+from main_window.competition.comp_packet_parser import CompPacketParser
+from main_window.device_manager import DeviceType
+from main_window.packet_parser import DEVICE_TYPE_TO_ID
 
 
 class CoPilotProfile(RocketProfile):
@@ -15,33 +19,45 @@ class CoPilotProfile(RocketProfile):
     @property
     def buttons(self):
         return {
-            "Arm": "ARM",
-            "Halo": "halo",
-            "Data": "data",
-            "Ping": "PING"
+            "Arm": "CO_PILOT.ARM",
+            "Halo": "CO_PILOT.halo",
+            "Data": "CO_PILOT.data",
+            "Ping": "CO_PILOT.PING"
         }
 
     @property
     def labels(self):
         return [
-            Label("Altitude", update_altitude),
-            Label("MaxAltitude", update_max_altitude, "Max Altitude"),
-            Label("GPS", update_gps),
-            Label("State", update_state),
-            Label("Pressure", update_pressure),
-            Label("Acceleration", update_acceleration),
-            Label("TankPressure", update_tank_pressure, "Tank Pressure"),
-            Label("ChamberPressure", update_chamber_pressure, "Chamber Pressure"),
-            Label("ChamberTemp", update_chamber_temp, "Chamber Temperature"),
+            Label(DeviceType.CO_PILOT, "Altitude", update_altitude),
+            Label(DeviceType.CO_PILOT, "MaxAltitude", update_max_altitude, "Max Altitude"),
+            Label(DeviceType.CO_PILOT, "GPS", update_gps),
+            Label(DeviceType.CO_PILOT, "State", update_state),
+            Label(DeviceType.CO_PILOT, "Pressure", update_pressure),
+            Label(DeviceType.CO_PILOT, "Acceleration", update_acceleration),
+            Label(DeviceType.CO_PILOT, "TankPressure", update_tank_pressure, "Tank Pressure"),
+            Label(DeviceType.CO_PILOT, "ChamberPressure", update_chamber_pressure, "Chamber Pressure"),
+            Label(DeviceType.CO_PILOT, "ChamberTemp", update_chamber_temp, "Chamber Temperature"),
         ]
 
     @property
-    def sim_executable_name(self):
+    def mapping_device(self):
+        return DeviceType.CO_PILOT
+
+    def construct_serial_connection(self, com_port, baud_rate):
         return None
 
-    def construct_hw_sim(self):
-        # Assemble HW here
+    def construct_debug_connection(self):
+        return {
+            'CO_PILOT_CONNECTION': DebugConnection('CO_PILOT_RADIO_ADDRESS',
+                                                   DEVICE_TYPE_TO_ID[DeviceType.CO_PILOT],
+                                                   generate_radio_packets=True),
+        }
+
+    def construct_sim_connection(self):
         return None
 
-    def construct_app(self, connection):
-        return CompApp(connection, self)
+    def construct_app(self, connections):
+        return CompApp(connections, self)
+
+    def construct_packet_parser(self):
+        return CompPacketParser()

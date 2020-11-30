@@ -1,13 +1,14 @@
 import os
 import threading
 from typing import Dict, Union
+from collections import namedtuple
 
 import numpy as np
 
-from . import subpacket_ids
 from util.detail import LOGS_DIR, SESSION_ID, LOGGER
 from util.event_stats import Event
 from .subpacket_ids import SubpacketEnum
+from .device_manager import DeviceManager, DeviceType, FullAddress
 
 BUNDLE_ADDED_EVENT = Event('bundle_added')
 
@@ -58,22 +59,27 @@ statemap = {  # TODO Review legacy data format. Not deleted due to need to confe
     8: "WINTER_CONTINGENCY"
 }
 
+DataEntryKey = namedtuple('DataEntry', ['full_address', 'data_id'])
+CallBackKey = namedtuple('DataEntry', ['device', 'data_id'])
+
 AUTOSAVE_INTERVAL_S = 10
 
 class RocketData:
-    def __init__(self) -> None:
+    def __init__(self, device_manager: DeviceManager) -> None:
         """
         Timeset is dictionary of all of the time points mapped to a dictionary of id -> value.
         """
+        self.device_manager = device_manager
 
-        self.lock = threading.RLock()  # acquire lock ASAP since self.lock needs to be defined when autosave starts
-        self.timeset: Dict[int, Dict[str, Union[int, float]]] = {}
+        self.data_lock = threading.RLock()  # create lock ASAP since self.lock needs to be defined when autosave starts
+        self.timeset: Dict[int, Dict[DataEntryKey, Union[int, float]]] = {}
         self.lasttime = 0  # TODO REVIEW/CHANGE THIS, once all subpackets have their own timestamp.
         self.highest_altitude = 0
         self.sessionName = os.path.join(LOGS_DIR, "autosave_" + SESSION_ID + ".csv")
+        self.existing_entry_keys = set() # Set of entry keys that have actually been recorded. Used for creating csv header
 
-        #  Create Dict of lists, with ids as keys
-        self.callbacks = {k: [] for k in subpacket_ids.get_list_of_IDs()}
+        self.callback_lock = threading.RLock()  # Only for callback dict
+        self.callbacks = {}
 
         self.as_cv = threading.Condition()  # Condition variable for autosave (as)
         self._as_is_shutting_down = False  # Lock in cv is used to protect this
@@ -85,6 +91,7 @@ class RocketData:
         """
 
         """
+        LOGGER.debug("Auto-save thread started")
         while True:
 
             with self.as_cv:
@@ -115,13 +122,13 @@ class RocketData:
     # Current implementation: adds to time given, otherwise will add to the last time received?
     # NOTE how this works without a new time eg if single sensor temperature comes in 3 times in a row, the first two are overwritten
     # |_> https://trello.com/c/KE0zJ7er/170-implement-ensure-spec-where-all-subpackets-will-have-timestamps
-    def addBundle(self, incoming_data):
+    def addBundle(self, full_address: FullAddress, incoming_data):
         """
 
         :param incoming_data:
         :type incoming_data:
         """
-        with self.lock:
+        with self.data_lock:
             # if there's a time, set this to the most recent time val
             if SubpacketEnum.TIME.value in incoming_data.keys():
                 self.lasttime = incoming_data[SubpacketEnum.TIME.value]
@@ -131,17 +138,22 @@ class RocketData:
 
             # write the data and call the respective callbacks
             for data_id in incoming_data.keys():
-                self.timeset[self.lasttime][data_id] = incoming_data[data_id]
+                key = DataEntryKey(full_address, data_id)
+                self.existing_entry_keys.add(key)
+                self.timeset[self.lasttime][key] = incoming_data[data_id]
 
-        # Notify after all data has been updated
-        # Also, do so outside lock to prevent mutex contention with notification listeners
-        for data_id in incoming_data.keys():
-            self._notifyCallbacksOfId(data_id)
+        device = self.device_manager.get_device_type(full_address)
+        if device is not None:
+            # Notify after all data has been updated
+            # Also, do so outside data_lock to prevent mutex contention with notification listeners
+            for data_id in incoming_data.keys():
+                key = CallBackKey(device, data_id)
+                self._notifyCallbacksOfId(key)
 
         BUNDLE_ADDED_EVENT.increment()
 
     # Gets the most recent value specified by the sensor_id given
-    def lastvalue(self, sensor_id):
+    def last_value_by_device(self, device: DeviceType, sensor_id):
         """
 
         :param sensor_id:
@@ -149,12 +161,18 @@ class RocketData:
         :return:
         :rtype:
         """
-        with self.lock:
+        with self.data_lock:
             times = list(self.timeset.keys())
-            times.sort(reverse=True)
+            times.sort(reverse=True) # TODO : Should probably use OrderedDict to improve performance
+
+            full_address = self.device_manager.get_full_address(device)
+            if full_address is None:
+                return None
+
+            data_entry_key = DataEntryKey(full_address, sensor_id)
             for i in range(len(times)):
-                if sensor_id in self.timeset[times[i]]:
-                    return self.timeset[times[i]][sensor_id]
+                if data_entry_key in self.timeset[times[i]]:
+                    return self.timeset[times[i]][data_entry_key]
             return None
 
     # Data saving function that creates csv
@@ -166,32 +184,37 @@ class RocketData:
         :return:
         :rtype:
         """
-        with self.lock:
+        with self.data_lock:
             if len(self.timeset) <= 0:
                 return
 
-            data = np.empty((len(subpacket_ids.get_list_of_sensor_IDs()), len(self.timeset) + 1), dtype=object)
+            keys = list(self.existing_entry_keys)
+
+            data = np.empty((len(keys), len(self.timeset) + 1), dtype=object)
             times = list(self.timeset.keys())
             times.sort(reverse=False)
             for ix, iy in np.ndindex(data.shape):
                 # Make the first row a list of sensor names
                 if iy == 0:
-                    data[ix, iy] = subpacket_ids.get_list_of_sensor_names()[ix]
+                    name = SubpacketEnum(keys[ix].data_id).name if type(keys[ix].data_id) is int else str(keys[ix].data_id)
+                    device = self.device_manager.get_device_type(keys[ix].full_address)
+
+                    data[ix, iy] = name + '_' + device.name if device else \
+                        f"{keys[ix].full_address.connection_name}_{keys[ix].full_address.device_address}"
                 else:
-                    if subpacket_ids.get_list_of_sensor_names()[ix] == SubpacketEnum.TIME.name:
+                    if keys[ix].data_id == SubpacketEnum.TIME.value:
                         data[ix, iy] = times[iy - 1]
                     else:
-                        if subpacket_ids.get_list_of_sensor_IDs()[ix] in self.timeset[times[iy - 1]]:
-                            data[ix, iy] = self.timeset[times[iy - 1]][subpacket_ids.get_list_of_sensor_IDs()[ix]]
+                        if keys[ix] in self.timeset[times[iy - 1]]:
+                            data[ix, iy] = self.timeset[times[iy - 1]][keys[ix]]
                         else:
                             data[ix, iy] = ""
 
         np.savetxt(csvpath, np.transpose(data), delimiter=',',
                    fmt="%s")  # Can free up the lock while we save since were no longer accessing the original data
 
-    # TODO possibly make into own object/file
     # Add a new callback for its associated ID
-    def addNewCallback(self, data_id, callbackFn):
+    def addNewCallback(self, device: DeviceType, data_id, callbackFn):
         """
 
         :param data_id:
@@ -199,21 +222,28 @@ class RocketData:
         :param callbackFn:
         :type callbackFn:
         """
-        self.callbacks[data_id].append(callbackFn)
+        with self.callback_lock:
+            key = CallBackKey(device, data_id)
+            if key not in self.callbacks.keys():
+                self.callbacks[key] = [callbackFn]
+            else:
+                self.callbacks[key].append(callbackFn)
 
-    def _notifyCallbacksOfId(self, data_id):
+    def _notifyCallbacksOfId(self, key: CallBackKey):
         """
 
         :param data_id:
         :type data_id:
         """
-        if data_id in self.callbacks.keys():
-            for fn in self.callbacks[data_id]:
-                fn()
+        with self.callback_lock:
+            if key in self.callbacks.keys():
+                for fn in self.callbacks[key]:
+                    fn()
 
     def _notifyAllCallbacks(self):
         """
 
         """
-        for data_id in self.callbacks.keys():
-            self._notifyCallbacksOfId(data_id)
+        with self.callback_lock:
+            for key in self.callbacks.keys():
+                self._notifyCallbacksOfId(key)

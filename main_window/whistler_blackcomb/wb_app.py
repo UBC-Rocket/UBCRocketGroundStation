@@ -1,4 +1,5 @@
 import os
+from typing import Dict
 
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
@@ -16,7 +17,7 @@ Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 class WbApp(MainApp, Ui_MainWindow):
 
-    def __init__(self, connection: Connection, rocket_profile: RocketProfile) -> None:
+    def __init__(self, connections: Dict[str, Connection], rocket_profile: RocketProfile) -> None:
         """
 
         :param connection:
@@ -24,12 +25,10 @@ class WbApp(MainApp, Ui_MainWindow):
         :param rocket_profile:
         :type rocket_profile: RocketProfile
         """
-        super().__init__(connection, rocket_profile)  # Must call base
+        super().__init__(connections, rocket_profile)  # Must call base
 
         # Set up UI stuff using base class here. E.g.:
         # self.armingButton.clicked.connect(self.arming_button_pressed)
-
-        self.print_to_ui("Successfully started")
 
     def arming_button_pressed(self):
         self.send_command('ARM')

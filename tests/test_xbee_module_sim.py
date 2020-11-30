@@ -1,68 +1,67 @@
-from threading import Lock
+import pytest
+from unittest.mock import MagicMock
 
 from connections.sim.xbee_module_sim import XBeeModuleSim, FRAME_PARSED_EVENT, SENT_TO_ROCKET_EVENT
 from util.event_stats import get_event_stats_snapshot
 
-class TestXBeeModuleSim:
-    def setup_method(self):
-        """ setup any state tied to the execution of the given method in a
-        class.  setup_method is invoked for every test method of a class.
-        """
-        self.xbee = XBeeModuleSim()
-        self.rkt_lock = Lock()
-        self.gnd_lock = Lock()
-        self.msgs_to_rocket = []
-        self.msgs_to_ground = []
+TEST_GS_ADDR = bytes.fromhex('0013A200400A0127')
+TEST_GS_ADDR_ESCAPED = bytes.fromhex('007D33A200400A0127')
 
-        def rocket_callback(data):
-            with self.rkt_lock:
-                self.msgs_to_rocket.append(data)
 
-        def ground_callback(data):
-            with self.gnd_lock:
-                self.msgs_to_ground.append(data)
+@pytest.fixture()
+def xbee():
+    xbee = XBeeModuleSim(TEST_GS_ADDR)
+    xbee.rocket_callback = MagicMock()
+    xbee.ground_callback = MagicMock()
+    yield xbee
+    xbee.shutdown()
 
-        self.xbee.rocket_callback = rocket_callback
-        self.xbee.ground_callback = ground_callback
 
-    def teardown_method(self):
-        """ teardown any state that was previously setup with a setup_method
-        call.
-        """
-        self.xbee.shutdown()
+def test_rocket_rx(xbee):
+    test_data = b"TxData0A"
+    tx_example = bytearray(
+        b"\x7E\x00\x16\x10\x01" + TEST_GS_ADDR_ESCAPED +
+        b"\xFF\xFE\x00\x00" + test_data + b"\x7D\x33"
+    )
 
-    def test_rocket_rx(self):
-        tx_example = bytearray(
-            b"\x7E\x00\x16\x10\x01\x00\x7D\x33\xA2\x00\x40\x0A\x01\x27"
-            b"\xFF\xFE\x00\x00\x54\x78\x44\x61\x74\x61\x30\x41\x7D\x33"
-        )
+    snapshot = get_event_stats_snapshot()
+    xbee.recieved_from_rocket(tx_example)
 
-        snapshot = get_event_stats_snapshot()
-        self.xbee.recieved_from_rocket(tx_example)
+    assert FRAME_PARSED_EVENT.wait(snapshot) == 1
+    xbee.ground_callback.assert_called_with(test_data)
 
-        assert FRAME_PARSED_EVENT.wait(snapshot) == 1
 
-        assert self.msgs_to_ground == [b"TxData0A"]
+def test_ground_rx(xbee):
+    snapshot = get_event_stats_snapshot()
+    xbee.send_to_rocket(b"HelloRocket")  # 11 bytes
 
-    def test_ground_rx(self):
-        snapshot = get_event_stats_snapshot()
-        self.xbee.send_to_rocket(b"HelloRocket")  # 11 bytes
+    assert SENT_TO_ROCKET_EVENT.wait(snapshot) == 1
 
-        assert SENT_TO_ROCKET_EVENT.wait(snapshot) == 1
+    assert len(xbee.rocket_callback.call_args[0][0]) == 27
+    assert xbee.rocket_callback.call_args[0][0][15:-1] == b"HelloRocket"
 
-        assert len(self.msgs_to_rocket[0]) == 27
-        assert self.msgs_to_rocket[0][15:-1] == b"HelloRocket"
 
-    def test_rocket_rx_pieces(self):
-        tx_1 = bytearray(b"\x7E\x00\x16\x10\x01\x00\x7D\x33\xA2\x00\x40\x0A")
-        tx_2 = bytearray(
-            b"\x01\x27\xFF\xFE\x00\x00\x54\x78\x44\x61\x74\x61\x30\x41\x7D\x33"
-        )
+def test_rocket_rx_pieces(xbee):
+    test_data = b"TxData0A"
+    tx_1 = bytearray(b"\x7E\x00\x16\x10\x01") + TEST_GS_ADDR_ESCAPED[:7]
+    tx_2 = bytearray(TEST_GS_ADDR_ESCAPED[7:] + b"\xFF\xFE\x00\x00" + test_data + b"\x7D\x33")
 
-        snapshot = get_event_stats_snapshot()
-        self.xbee.recieved_from_rocket(tx_1)
-        self.xbee.recieved_from_rocket(tx_2)
+    snapshot = get_event_stats_snapshot()
+    xbee.recieved_from_rocket(tx_1)
+    xbee.recieved_from_rocket(tx_2)
 
-        assert FRAME_PARSED_EVENT.wait(snapshot) == 1
+    assert FRAME_PARSED_EVENT.wait(snapshot) == 1
+    xbee.ground_callback.assert_called_with(test_data)
 
-        assert self.msgs_to_ground == [b"TxData0A"]
+def test_rocket_rx_bad_addr(xbee):
+    test_data = b"TxData0A"
+    tx_example = bytearray(
+        b"\x7E\x00\x16\x10\x01" + bytes(8) +
+        b"\xFF\xFE\x00\x00" + test_data + b"\x3A"
+    )
+
+    snapshot = get_event_stats_snapshot()
+    xbee.recieved_from_rocket(tx_example)
+
+    assert FRAME_PARSED_EVENT.wait(snapshot) == 1
+    assert xbee.ground_callback.call_count == 0

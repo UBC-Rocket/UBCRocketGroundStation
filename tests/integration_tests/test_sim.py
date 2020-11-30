@@ -176,7 +176,7 @@ def test_temperature_read(qtbot, main_app):
 
         assert main_app.rocket_data.lastvalue(SubpacketEnum.TEMPERATURE.value) == vals[0]
 
-def test_time_update(qtbot, main_app: MainApp):
+def test_time_update(qtbot, main_app):
     connection = main_app.connection
     hw = connection._hw_sim
 

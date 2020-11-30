@@ -202,6 +202,18 @@ def test_temperature_read(qtbot, main_app):
 
         assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, SubpacketEnum.TEMPERATURE.value) == vals[0]
 
+def test_time_update(qtbot, main_app):
+    connection = main_app.connection
+    hw = connection._hw_sim
+
+    wait_new_bundle()
+    initial = main_app.rocket_data.lastvalue(SubpacketEnum.TIME.value)
+    hw.time_update(1000)
+    wait_new_bundle()
+    final = main_app.rocket_data.lastvalue(SubpacketEnum.TIME.value)
+    delta = final - initial
+    assert delta >= 1000
+
 
 def test_clean_shutdown(qtbot, main_app):
     assert main_app.ReadThread.isRunning()

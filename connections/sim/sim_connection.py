@@ -20,12 +20,14 @@ class SimRxId(Enum):
     RADIO = 0x52
     ANALOG_READ = 0x61
     SENSOR_READ = 0x73
+    TIME_UPDATE = 0x74
 
 
 class SimTxId(Enum):
     RADIO = 0x52
     ANALOG_READ = 0x61
     SENSOR_READ = 0x73
+    TIME_UPDATE = 0x74
 
 
 LOG_HISTORY_SIZE = 500
@@ -189,6 +191,14 @@ class SimConnection(Connection):
         result = struct.pack(f"{endianness}{len(sensor_data)}f", *sensor_data)
         self._send_sim_packet(SimTxId.SENSOR_READ.value, result)
 
+    def _handleTimeUpdate(self):
+        length = self._getLength()
+        assert length == 4
+        endianness = "big" if self.bigEndianInts else "little"
+        delta_us = int.from_bytes(self.stdout.read(length), endianness)
+        new_time_ms = self._hw_sim.time_update(delta_us)
+        self._send_sim_packet(SimTxId.TIME_UPDATE.value, new_time_ms.to_bytes(4, endianness))
+
     packetHandlers = {
         # DO NOT HANDLE "CONFIG" - it should be received only once at the start
         SimRxId.BUZZER.value: _handleBuzzer,
@@ -196,6 +206,7 @@ class SimConnection(Connection):
         SimRxId.RADIO.value: _handleRadio,
         SimRxId.ANALOG_READ.value: _handleAnalogRead,
         SimRxId.SENSOR_READ.value: _handleSensorRead,
+        SimRxId.TIME_UPDATE.value: _handleTimeUpdate,
     }
 
     def _run(self):

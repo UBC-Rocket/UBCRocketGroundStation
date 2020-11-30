@@ -17,6 +17,7 @@ from main_window.packet_parser import (
     VERSION_ID,
 )
 from main_window.competition.comp_packet_parser import BULK_SENSOR_EVENT
+from main_window.read_thread import CONNECTION_MESSAGE_READ_EVENT
 
 from util.event_stats import get_event_stats_snapshot
 
@@ -45,6 +46,7 @@ def wait_new_bundle():
         assert SENSOR_READ_EVENT.wait(snapshot) >= 1
         assert BULK_SENSOR_EVENT.wait(snapshot) >= 1
         assert BUNDLE_ADDED_EVENT.wait(snapshot) >= 1
+        assert CONNECTION_MESSAGE_READ_EVENT.wait(snapshot) >= 1
 
 
 def test_arming(qtbot, main_app):
@@ -203,14 +205,14 @@ def test_temperature_read(qtbot, main_app):
         assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, SubpacketEnum.TEMPERATURE.value) == vals[0]
 
 def test_time_update(qtbot, main_app):
-    connection = main_app.connection
+    connection = main_app.connections['TANTALUS_STAGE_1_CONNECTION']
     hw = connection._hw_sim
 
     wait_new_bundle()
-    initial = main_app.rocket_data.lastvalue(SubpacketEnum.TIME.value)
+    initial = main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, SubpacketEnum.TIME.value)
     hw.time_update(1000)
     wait_new_bundle()
-    final = main_app.rocket_data.lastvalue(SubpacketEnum.TIME.value)
+    final = main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, SubpacketEnum.TIME.value)
     delta = final - initial
     assert delta >= 1000
 

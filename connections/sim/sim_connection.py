@@ -1,5 +1,4 @@
 import os
-import sys
 import subprocess as sp
 import threading
 import struct
@@ -8,7 +7,7 @@ from pathlib import Path
 
 from .hw_sim import SensorType
 from ..connection import Connection, ConnectionMessage
-from .stream_filter import StreamFilter
+from .stream_filter import ReadFilter, WriteFilter
 from .xbee_module_sim import XBeeModuleSim
 from util.detail import LOGGER, LOCAL, EXECUTABLE_FILE_EXTENSION
 
@@ -56,7 +55,8 @@ class SimConnection(Connection):
         self.rocket = sp.Popen(
             self.executablePath, cwd=self.firmwareDir, stdin=sp.PIPE, stdout=sp.PIPE
         )
-        self.stdout = StreamFilter(self.rocket.stdout, LOG_HISTORY_SIZE)
+        self.stdout = ReadFilter(self.rocket.stdout, LOG_HISTORY_SIZE)
+        self.stdin = WriteFilter(self.rocket.stdin)
         self._rocket_handshake()
 
         # Gets endianess of ints and floats
@@ -75,7 +75,7 @@ class SimConnection(Connection):
         self.thread.start()
 
     def _rocket_handshake(self):
-        assert self.stdout.read(3) == b"SYN"
+        assert self.rocket.stdout.read(3) == b"SYN"
         # Uncomment for FW debuggers, for a chance to attach debugger
         # input(f"Received rocket SYN; press enter to respond with ACK and continue. PID={self.rocket.pid}\n")
         self.rocket.stdin.write(b"ACK")
@@ -93,9 +93,8 @@ class SimConnection(Connection):
         id_ = id_.to_bytes(length=1, byteorder="big")
         length = len(data).to_bytes(length=2, byteorder="big")
         packet = id_ + length + data
-        for b in packet:  # Work around for windows turning LF to CRLF
-            self.rocket.stdin.write(bytes([b]))
-        self.rocket.stdin.flush()
+        self.stdin.write(packet)
+        self.stdin.flush()
 
     def _send_radio_sim(self, data):
         self._send_sim_packet(SimTxId.RADIO.value, data)

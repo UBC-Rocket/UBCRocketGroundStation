@@ -10,7 +10,6 @@ from main_window.rocket_data import BUNDLE_ADDED_EVENT
 from main_window.data_entry_id import DataEntryIds
 from main_window.device_manager import DeviceType, DEVICE_REGISTERED_EVENT
 from main_window.packet_parser import (
-    DEVICE_TYPE,
     SINGLE_SENSOR_EVENT,
     CONFIG_EVENT,
 )

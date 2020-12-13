@@ -1,5 +1,5 @@
 import struct
-from main_window.subpacket_ids import SubpacketEnum
+from main_window.data_entry_id import DataEntryIds
 from enum import Enum
 
 
@@ -12,7 +12,7 @@ def bulk_sensor(time: int, barometer_altitude: float, acceleration_x: float, acc
     :rtype: bytearray
     """
     bulk_sensor_arr: bytearray = bytearray()
-    bulk_sensor_arr.append(SubpacketEnum.BULK_SENSOR.value)  # id
+    bulk_sensor_arr.append(DataEntryIds.BULK_SENSOR.value)  # id
     bulk_sensor_arr.extend((int(time)).to_bytes(length=4, byteorder='big'))  # time
     bulk_sensor_arr.extend(struct.pack(">f", barometer_altitude))  # barometer altitude
     bulk_sensor_arr.extend(struct.pack(">f", acceleration_x))  # Acceleration X
@@ -53,7 +53,7 @@ def status_ping(time: int, status: StatusType, sensor_status_msb: int, sensor_st
     :rtype: bytearray
     """
     data_arr: bytearray = bytearray()
-    data_arr.append(SubpacketEnum.STATUS_PING.value)  # id
+    data_arr.append(DataEntryIds.STATUS_PING.value)  # id
     data_arr.extend((int(time)).to_bytes(length=4, byteorder='big'))  # use current integer time
 
     data_arr.extend((int(status.value)).to_bytes(length=1, byteorder='big'))  # status
@@ -79,7 +79,7 @@ def message(time: int, message: str) -> bytearray:
         raise ValueError("Message too long for packet")
 
     data_arr: bytearray = bytearray()
-    data_arr.append(SubpacketEnum.MESSAGE.value)  # id
+    data_arr.append(DataEntryIds.MESSAGE.value)  # id
     data_arr.extend((int(time)).to_bytes(length=4, byteorder='big'))  # time
     data_arr.extend((len(message)).to_bytes(length=1, byteorder='big'))  # length of the message data
     data_arr.extend([ord(ch) for ch in message])  # message
@@ -93,7 +93,7 @@ def config(time: int, is_sim: bool, rocket_type: int, version_id: str) -> bytear
     :rtype: bytearray
     """
     data_arr: bytearray = bytearray()
-    data_arr.append(SubpacketEnum.CONFIG.value)  # id
+    data_arr.append(DataEntryIds.CONFIG.value)  # id
     data_arr.extend((int(time)).to_bytes(length=4, byteorder='big'))  # time
     data_arr.extend((int(1 if is_sim else 0)).to_bytes(length=1, byteorder='big'))  # is sim
     data_arr.extend((int(rocket_type)).to_bytes(length=1, byteorder='big'))  # rocket type
@@ -108,7 +108,7 @@ def gps(time: int, latitude: float, longitude: float, gps_altitude: float) -> by
     :rtype: bytearray
     """
     data_arr: bytearray = bytearray()
-    data_arr.append(SubpacketEnum.GPS.value)  # id
+    data_arr.append(DataEntryIds.GPS.value)  # id
     data_arr.extend((int(time)).to_bytes(length=4, byteorder='big'))  # time
     data_arr.extend(struct.pack(">f", latitude))  # Latitude
     data_arr.extend(struct.pack(">f", longitude))  # Longitude
@@ -124,7 +124,7 @@ def orientation(time: int,  orientation_1: float, orientation_2: float,
     :rtype: bytearray
     """
     data_arr: bytearray = bytearray()
-    data_arr.append(SubpacketEnum.ORIENTATION.value)  # id
+    data_arr.append(DataEntryIds.ORIENTATION.value)  # id
     data_arr.extend((int(time)).to_bytes(length=4, byteorder='big'))  # time
     data_arr.extend(struct.pack(">f", orientation_1))  # Orientation
     data_arr.extend(struct.pack(">f", orientation_2))  # Orientation

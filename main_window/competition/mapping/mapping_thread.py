@@ -8,7 +8,7 @@ from PyQt5.QtCore import pyqtSignal
 import numpy as np
 from PIL import Image
 
-from main_window.subpacket_ids import SubpacketEnum
+from main_window.data_entry_id import DataEntryIds
 from . import map_data, mapbox_utils
 from util.detail import LOGGER
 
@@ -54,8 +54,8 @@ class MappingThread(QtCore.QThread):
         mapProc.start()
 
         # Must be done last to prevent race condition
-        self.data.addNewCallback(SubpacketEnum.LATITUDE.value, self.notify)
-        self.data.addNewCallback(SubpacketEnum.LONGITUDE.value, self.notify)  # TODO review, could/should be omitted
+        self.data.addNewCallback(DataEntryIds.LATITUDE.value, self.notify)
+        self.data.addNewCallback(DataEntryIds.LONGITUDE.value, self.notify)  # TODO review, could/should be omitted
 
     def notify(self) -> None:
         """
@@ -154,8 +154,8 @@ class MappingThread(QtCore.QThread):
 
             try:
                 # acquire location to use below here, to keep the values consistent in synchronous but adjacent calls
-                latitude = self.data.lastvalue(SubpacketEnum.LATITUDE.value)
-                longitude = self.data.lastvalue(SubpacketEnum.LONGITUDE.value)
+                latitude = self.data.lastvalue(DataEntryIds.LATITUDE.value)
+                longitude = self.data.lastvalue(DataEntryIds.LONGITUDE.value)
 
                 # Prevent unnecessary work while no location data is received
                 if latitude is None or longitude is None:

@@ -4,10 +4,10 @@ from typing import Dict, Union
 
 import numpy as np
 
-from . import subpacket_ids
+from . import data_entry_id
 from util.detail import LOGS_DIR, SESSION_ID, LOGGER
 from util.event_stats import Event
-from .subpacket_ids import SubpacketEnum
+from .data_entry_id import DataEntryIds
 
 BUNDLE_ADDED_EVENT = Event('bundle_added')
 
@@ -41,22 +41,22 @@ BUNDLE_ADDED_EVENT = Event('bundle_added')
 # orderednames = list(nametochar.keys())
 # orderednames.sort()
 
-typemap = {  # TODO Review legacy data format
-    's': "state",
-    't': "int"
-}
-
-statemap = {  # TODO Review legacy data format. Not deleted due to need to confer with frontend
-    0: "STANDBY",
-    1: "ARMED",
-    2: "ASCENT",
-    3: "MACH_LOCK",
-    4: "PRESSURE_DELAY",
-    5: "INITIAL_DESCENT",
-    6: "FINAL_DESCENT",
-    7: "LANDED",
-    8: "WINTER_CONTINGENCY"
-}
+# typemap = {  # TODO Review legacy data format
+#     's': "state",
+#     't': "int"
+# }
+#
+# statemap = {  # TODO Review legacy data format. Not deleted due to need to confer with frontend
+#     0: "STANDBY",
+#     1: "ARMED",
+#     2: "ASCENT",
+#     3: "MACH_LOCK",
+#     4: "PRESSURE_DELAY",
+#     5: "INITIAL_DESCENT",
+#     6: "FINAL_DESCENT",
+#     7: "LANDED",
+#     8: "WINTER_CONTINGENCY"
+# }
 
 AUTOSAVE_INTERVAL_S = 10
 
@@ -73,7 +73,7 @@ class RocketData:
         self.sessionName = os.path.join(LOGS_DIR, "autosave_" + SESSION_ID + ".csv")
 
         #  Create Dict of lists, with ids as keys
-        self.callbacks = {k: [] for k in subpacket_ids.get_list_of_IDs()}
+        self.callbacks = {k: [] for k in data_entry_id.get_list_of_IDs()}
 
         self.as_cv = threading.Condition()  # Condition variable for autosave (as)
         self._as_is_shutting_down = False  # Lock in cv is used to protect this
@@ -111,10 +111,9 @@ class RocketData:
 
         self.autosaveThread.join()  # join thread
 
-    # adding a bundle of data points and trigger callbacks according to id
-    # Current implementation: adds to time given, otherwise will add to the last time received?
-    # NOTE how this works without a new time eg if single sensor temperature comes in 3 times in a row, the first two are overwritten
-    # |_> https://trello.com/c/KE0zJ7er/170-implement-ensure-spec-where-all-subpackets-will-have-timestamps
+    # TODO Needs to use DataEntryId. Store Enum objects, not values
+    # Adding a bundle of data points and trigger callbacks according to id.
+    # Current implementation: adds to time given, otherwise will add to the last time received.
     def addBundle(self, incoming_data):
         """
 
@@ -123,8 +122,8 @@ class RocketData:
         """
         with self.lock:
             # if there's a time, set this to the most recent time val
-            if SubpacketEnum.TIME.value in incoming_data.keys():
-                self.lasttime = incoming_data[SubpacketEnum.TIME.value]
+            if DataEntryIds.TIME in incoming_data.keys():
+                self.lasttime = incoming_data[DataEntryIds.TIME]
             # if the timeset then setup a respective dict for the data
             if self.lasttime not in self.timeset.keys():
                 self.timeset[self.lasttime] = {}
@@ -140,6 +139,8 @@ class RocketData:
 
         BUNDLE_ADDED_EVENT.increment()
 
+    # TODO update all calls. TODO write note about accessing with Enum objects, not values
+    # TODO Needs to use DataEntryId.
     # Gets the most recent value specified by the sensor_id given
     def lastvalue(self, sensor_id):
         """
@@ -157,6 +158,7 @@ class RocketData:
                     return self.timeset[times[i]][sensor_id]
             return None
 
+    # TODO make incoming converter from enum to const str (if key or val is enum (or object?))
     # Data saving function that creates csv
     def save(self, csvpath):
         """
@@ -170,19 +172,19 @@ class RocketData:
             if len(self.timeset) <= 0:
                 return
 
-            data = np.empty((len(subpacket_ids.get_list_of_sensor_IDs()), len(self.timeset) + 1), dtype=object)
+            data = np.empty((len(data_entry_id.get_list_of_sensor_IDs()), len(self.timeset) + 1), dtype=object)
             times = list(self.timeset.keys())
             times.sort(reverse=False)
             for ix, iy in np.ndindex(data.shape):
                 # Make the first row a list of sensor names
                 if iy == 0:
-                    data[ix, iy] = subpacket_ids.get_list_of_sensor_names()[ix]
+                    data[ix, iy] = data_entry_id.get_list_of_sensor_names()[ix]
                 else:
-                    if subpacket_ids.get_list_of_sensor_names()[ix] == SubpacketEnum.TIME.name:
+                    if data_entry_id.get_list_of_sensor_names()[ix] == DataEntryIds.TIME.name:
                         data[ix, iy] = times[iy - 1]
                     else:
-                        if subpacket_ids.get_list_of_sensor_IDs()[ix] in self.timeset[times[iy - 1]]:
-                            data[ix, iy] = self.timeset[times[iy - 1]][subpacket_ids.get_list_of_sensor_IDs()[ix]]
+                        if data_entry_id.get_list_of_sensor_IDs()[ix] in self.timeset[times[iy - 1]]:
+                            data[ix, iy] = self.timeset[times[iy - 1]][data_entry_id.get_list_of_sensor_IDs()[ix]]
                         else:
                             data[ix, iy] = ""
 

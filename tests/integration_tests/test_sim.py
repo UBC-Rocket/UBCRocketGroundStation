@@ -6,14 +6,11 @@ from connections.sim.hw_sim import SensorType, SENSOR_READ_EVENT
 from main_window.competition.comp_app import CompApp
 from profiles.rockets.tantalus import TantalusProfile
 from main_window.rocket_data import BUNDLE_ADDED_EVENT
-from main_window.subpacket_ids import SubpacketEnum
+from main_window.data_entry_id import DataEntryIds
 from main_window.packet_parser import (
-    IS_SIM,
-    ROCKET_TYPE,
     SINGLE_SENSOR_EVENT,
     CONFIG_EVENT,
     DeviceType,
-    VERSION_ID,
 )
 from main_window.competition.comp_packet_parser import BULK_SENSOR_EVENT
 
@@ -53,32 +50,32 @@ def wait_new_bundle():
 
 def test_arming(qtbot, main_app):
     wait_new_bundle()
-    assert main_app.rocket_data.lastvalue(SubpacketEnum.STATE.value) == 0
+    assert main_app.rocket_data.lastvalue(DataEntryIds.STATE.value) == 0
 
     main_app.send_command("arm")
     wait_new_bundle()
 
-    assert main_app.rocket_data.lastvalue(SubpacketEnum.STATE.value) == 1
+    assert main_app.rocket_data.lastvalue(DataEntryIds.STATE.value) == 1
 
     main_app.send_command("disarm")
     wait_new_bundle()
 
-    assert main_app.rocket_data.lastvalue(SubpacketEnum.STATE.value) == 0
+    assert main_app.rocket_data.lastvalue(DataEntryIds.STATE.value) == 0
 
 def test_config_hello(qtbot, main_app):
     wait_new_bundle()
     # Should have already received at least one config packet from the startup hello
-    assert main_app.rocket_data.lastvalue(IS_SIM) == True
-    assert main_app.rocket_data.lastvalue(ROCKET_TYPE) == DeviceType.TANTALUS_STAGE_1
+    assert main_app.rocket_data.lastvalue(DataEntryIds.IS_SIM.name) == True
+    assert main_app.rocket_data.lastvalue(DataEntryIds.ROCKET_TYPE.name) == DeviceType.TANTALUS_STAGE_1
 
     snapshot = get_event_stats_snapshot()
     main_app.send_command("config")
     wait_new_bundle()
     assert CONFIG_EVENT.wait(snapshot) == 1
 
-    assert main_app.rocket_data.lastvalue(IS_SIM) == True
-    assert main_app.rocket_data.lastvalue(VERSION_ID) is not None
-    assert main_app.rocket_data.lastvalue(ROCKET_TYPE) == DeviceType.TANTALUS_STAGE_1
+    assert main_app.rocket_data.lastvalue(DataEntryIds.IS_SIM.name) == True
+    assert main_app.rocket_data.lastvalue(DataEntryIds.VERSION_ID.name) is not None
+    assert main_app.rocket_data.lastvalue(DataEntryIds.ROCKET_TYPE.name) == DeviceType.TANTALUS_STAGE_1
 
 
 def test_gps_read(qtbot, main_app):
@@ -98,9 +95,9 @@ def test_gps_read(qtbot, main_app):
         main_app.send_command("gpsalt")
         assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
 
-        assert main_app.rocket_data.lastvalue(SubpacketEnum.LATITUDE.value) == vals[0]
-        assert main_app.rocket_data.lastvalue(SubpacketEnum.LONGITUDE.value) == vals[1]
-        assert main_app.rocket_data.lastvalue(SubpacketEnum.GPS_ALTITUDE.value) == vals[2]
+        assert main_app.rocket_data.lastvalue(DataEntryIds.LATITUDE.value) == vals[0]
+        assert main_app.rocket_data.lastvalue(DataEntryIds.LONGITUDE.value) == vals[1]
+        assert main_app.rocket_data.lastvalue(DataEntryIds.GPS_ALTITUDE.value) == vals[2]
 
 
 def test_baro_altitude(qtbot, main_app):
@@ -119,7 +116,7 @@ def test_baro_altitude(qtbot, main_app):
     ground_pres = hw.sensor_read(SensorType.BAROMETER)[0]
     set_dummy_sensor_values(hw, SensorType.BAROMETER, ground_pres, 25)
     wait_new_bundle()
-    assert main_app.rocket_data.lastvalue(SubpacketEnum.CALCULATED_ALTITUDE.value) == 0
+    assert main_app.rocket_data.lastvalue(DataEntryIds.CALCULATED_ALTITUDE.value) == 0
 
     # Note: Kind of a hack because ground altitude is only solidified once rocket launches. Here we are abusing the
     # fact that we dont update the ground altitude if the pressure change is too large. This allows us to run these
@@ -141,11 +138,11 @@ def test_baro_altitude(qtbot, main_app):
         main_app.send_command("barotemp")
         assert SINGLE_SENSOR_EVENT.wait(snapshot, num_expected=2) == 2
 
-        assert main_app.rocket_data.lastvalue(SubpacketEnum.PRESSURE.value) == vals[0]
-        assert main_app.rocket_data.lastvalue(SubpacketEnum.BAROMETER_TEMPERATURE.value) == vals[1]
-        assert main_app.rocket_data.lastvalue(SubpacketEnum.CALCULATED_ALTITUDE.value) == approx(
+        assert main_app.rocket_data.lastvalue(DataEntryIds.PRESSURE.value) == vals[0]
+        assert main_app.rocket_data.lastvalue(DataEntryIds.BAROMETER_TEMPERATURE.value) == vals[1]
+        assert main_app.rocket_data.lastvalue(DataEntryIds.CALCULATED_ALTITUDE.value) == approx(
             altitude(vals[0]) - altitude(ground_pres), 0.1)
-        assert main_app.rocket_data.lastvalue(SubpacketEnum.BAROMETER_TEMPERATURE.value) == vals[1]
+        assert main_app.rocket_data.lastvalue(DataEntryIds.BAROMETER_TEMPERATURE.value) == vals[1]
 
 
 def test_accelerometer_read(qtbot, main_app):
@@ -162,9 +159,9 @@ def test_accelerometer_read(qtbot, main_app):
         set_dummy_sensor_values(hw, SensorType.ACCELEROMETER, *vals)
         wait_new_bundle()
 
-        assert main_app.rocket_data.lastvalue(SubpacketEnum.ACCELERATION_X.value) == vals[0]
-        assert main_app.rocket_data.lastvalue(SubpacketEnum.ACCELERATION_Y.value) == vals[1]
-        assert main_app.rocket_data.lastvalue(SubpacketEnum.ACCELERATION_Z.value) == vals[2]
+        assert main_app.rocket_data.lastvalue(DataEntryIds.ACCELERATION_X.value) == vals[0]
+        assert main_app.rocket_data.lastvalue(DataEntryIds.ACCELERATION_Y.value) == vals[1]
+        assert main_app.rocket_data.lastvalue(DataEntryIds.ACCELERATION_Z.value) == vals[2]
 
 
 def test_imu_read(qtbot, main_app):
@@ -182,9 +179,9 @@ def test_imu_read(qtbot, main_app):
         set_dummy_sensor_values(hw, SensorType.IMU, *vals)
         wait_new_bundle()
 
-        assert main_app.rocket_data.lastvalue(SubpacketEnum.ORIENTATION_1.value) == vals[0] # TODO Problematic dependency on subpacket_ids
-        assert main_app.rocket_data.lastvalue(SubpacketEnum.ORIENTATION_2.value) == vals[1]
-        assert main_app.rocket_data.lastvalue(SubpacketEnum.ORIENTATION_3.value) == vals[2]
+        assert main_app.rocket_data.lastvalue(DataEntryIds.ORIENTATION_1.value) == vals[0]
+        assert main_app.rocket_data.lastvalue(DataEntryIds.ORIENTATION_2.value) == vals[1]
+        assert main_app.rocket_data.lastvalue(DataEntryIds.ORIENTATION_3.value) == vals[2]
 
 
 def test_temperature_read(qtbot, main_app):
@@ -204,7 +201,7 @@ def test_temperature_read(qtbot, main_app):
         main_app.send_command("TEMP")
         assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
 
-        assert main_app.rocket_data.lastvalue(SubpacketEnum.TEMPERATURE.value) == vals[0]
+        assert main_app.rocket_data.lastvalue(DataEntryIds.TEMPERATURE.value) == vals[0]
 
 
 def test_clean_shutdown(qtbot, main_app):

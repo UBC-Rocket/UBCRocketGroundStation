@@ -1,6 +1,6 @@
 import math
 from typing import TYPE_CHECKING, Callable, Optional, Union
-from main_window.subpacket_ids import SubpacketEnum
+from main_window.data_entry_id import DataEntryIds
 from main_window.rocket_data import RocketData
 
 
@@ -27,7 +27,7 @@ class Label:
 
 
 def update_altitude(rocket_data: RocketData) -> str:
-    return str(rocket_data.lastvalue(SubpacketEnum.CALCULATED_ALTITUDE.value))
+    return str(rocket_data.lastvalue(DataEntryIds.CALCULATED_ALTITUDE.value))
 
 
 def update_max_altitude(rocket_data: RocketData) -> str:
@@ -35,17 +35,17 @@ def update_max_altitude(rocket_data: RocketData) -> str:
 
 
 def update_gps(rocket_data: RocketData) -> str:
-    latitude = rocket_data.lastvalue(SubpacketEnum.LATITUDE.value)
-    longitude = rocket_data.lastvalue(SubpacketEnum.LONGITUDE.value)
+    latitude = rocket_data.lastvalue(DataEntryIds.LATITUDE.value)
+    longitude = rocket_data.lastvalue(DataEntryIds.LONGITUDE.value)
     return str(latitude) + ", " + str(longitude)
 
 
 def update_state(rocket_data: RocketData) -> str:
-    return str(rocket_data.lastvalue(SubpacketEnum.STATE.value))
+    return str(rocket_data.lastvalue(DataEntryIds.STATE.value))
 
 
 def update_pressure(rocket_data: RocketData) -> str:
-    return str(rocket_data.lastvalue(SubpacketEnum.PRESSURE.value))
+    return str(rocket_data.lastvalue(DataEntryIds.PRESSURE.value))
 
 
 def update_acceleration(rocket_data: RocketData) -> str:
@@ -53,9 +53,9 @@ def update_acceleration(rocket_data: RocketData) -> str:
         return 0 if x is None else x  # To support lastvalue returning None
 
     accel = math.sqrt(
-        nonezero(rocket_data.lastvalue(SubpacketEnum.ACCELERATION_X.value)) ** 2
-        + nonezero(rocket_data.lastvalue(SubpacketEnum.ACCELERATION_Y.value)) ** 2
-        + nonezero(rocket_data.lastvalue(SubpacketEnum.ACCELERATION_Z.value)) ** 2
+        nonezero(rocket_data.lastvalue(DataEntryIds.ACCELERATION_X.value)) ** 2
+        + nonezero(rocket_data.lastvalue(DataEntryIds.ACCELERATION_Y.value)) ** 2
+        + nonezero(rocket_data.lastvalue(DataEntryIds.ACCELERATION_Z.value)) ** 2
     )
     return str(accel)
 

@@ -79,6 +79,13 @@ class qtSignalLogHandler(logging.Handler, QObject):
         log_entry = self.format(record)
         self.qt_signal.emit(log_entry)
 
+
+EXECUTABLE_FILE_EXTENSION = {
+    'linux': '',
+    'win32': '.exe',
+    'darwin': ''
+}[sys.platform]
+
 # Helper class. python way of doing ++ (unlimited incrementing)
 class Count:
     def __init__(self, start=0, interval=1):

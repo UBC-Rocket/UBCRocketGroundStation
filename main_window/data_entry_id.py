@@ -36,7 +36,7 @@ class DataEntryIds(Enum):
 
     # Data types
     IS_SIM = 0x25
-    ROCKET_TYPE = 0x26
+    DEVICE_TYPE = 0x26
     VERSION_ID = 0x27
 
     # Sensors

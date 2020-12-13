@@ -1,7 +1,7 @@
 import math
 import threading
 import time
-from multiprocessing import Process, Queue
+import multiprocessing
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
@@ -9,6 +9,8 @@ import numpy as np
 from PIL import Image
 
 from main_window.data_entry_id import DataEntryIds
+from main_window.rocket_data import RocketData
+from profiles.rocket_profile import RocketProfile
 from . import map_data, mapbox_utils
 from util.detail import LOGGER
 
@@ -19,7 +21,7 @@ SCALE_FACTOR_NO_SCALE = 1
 class MappingThread(QtCore.QThread):
     sig_received = pyqtSignal()
 
-    def __init__(self, connection, m: map_data.MapData, data, parent=None) -> None:
+    def __init__(self, connection, m: map_data.MapData, rocket_data: RocketData, rocket_profile: RocketProfile, parent=None) -> None:
         """Mapping work and processing that gets put into MapData, repeatedly as RocketData is updated.
         Signals the main thread to fetch UI elements in MapDataSimilar to ReadData.
 
@@ -27,15 +29,17 @@ class MappingThread(QtCore.QThread):
         :type connection:
         :param map:
         :type map: map_data.MapData
-        :param data:
-        :type data:
+        :param rocket_data:
+        :type rocket_data:
         :param parent:
         :type parent:
         """
         QtCore.QThread.__init__(self, parent)
         self.connection = connection
         self.map = m
-        self.data = data
+        self.rocket_data = rocket_data
+
+        self.device = rocket_profile.mapping_device
 
         self._desiredMapSize: tuple(int, int) = None  # Lock in cv is used to protect this
         self._is_shutting_down = False  # Lock in cv is used to protect this
@@ -43,19 +47,29 @@ class MappingThread(QtCore.QThread):
         # Condition variable to watch for notification of new lat and lon
         self.cv = threading.Condition()  # Uses RLock inside when none is provided
 
+        # Must force spawning (as opposed to forking) on unix systems (default / only method supported on Windows) to
+        # work around a Python bug. This also makes the behavior between Linux and Windows more similar, which is good
+        # for consistency. Must be called before setting up queues.
+        # https://bugs.python.org/issue37429, https://bugs.python.org/issue6721 ,https://bugs.python.org/issue40442
+        # https://bugs.python.org/issue36533, https://bugs.python.org/issue36533
+        multiprocessing.set_start_method('spawn', True)
+        # Note: https://docs.python.org/3.7/library/multiprocessing.html#contexts-and-start-methods has a warning saying
+        # that spawning processes on Linux with PyInstaller doesn't work. This is a lie... It works... Keep an eye out
+        # for issues maybe? Some Github discussions suggest that it may be a more recent fix in PyInstaller.
+
         # Stitching (and a little bit resizing) the map is a significantly large CPU bound task which was actually
         # blocking all the threads because of Python's GIL. This is resulting in some UI freezing and stuttering.
         # Running the CPU bound tasks in a separate process gets around the GIL problems but introduces some additional
         # IPC complexities (i.e. the queue)
         # Might be able to turn MappingThread into a QProcess so that we dont need both a thread and a process
-        self.resultQueue = Queue(1)
-        self.requestQueue = Queue(1)
-        mapProc = Process(target=processMap, args=(self.requestQueue, self.resultQueue), daemon=True, name="MapProcess")
-        mapProc.start()
+        self.resultQueue = multiprocessing.Queue()
+        self.requestQueue = multiprocessing.Queue()
+        self.map_process = multiprocessing.Process(target=processMap, args=(self.requestQueue, self.resultQueue), daemon=True, name="MapProcess")
+        self.map_process.start()
 
         # Must be done last to prevent race condition
-        self.data.addNewCallback(DataEntryIds.LATITUDE.value, self.notify)
-        self.data.addNewCallback(DataEntryIds.LONGITUDE.value, self.notify)  # TODO review, could/should be omitted
+        self.rocket_data.addNewCallback(self.device, DataEntryIds.LATITUDE.value, self.notify)
+        self.rocket_data.addNewCallback(self.device, DataEntryIds.LONGITUDE.value, self.notify)  # TODO review, could/should be omitted
 
     def notify(self) -> None:
         """
@@ -143,6 +157,7 @@ class MappingThread(QtCore.QThread):
         """
 
         """
+        LOGGER.debug("Mapping thread started")
         last_latitude = None
         last_longitude = None
         last_update_time = 0
@@ -154,8 +169,8 @@ class MappingThread(QtCore.QThread):
 
             try:
                 # acquire location to use below here, to keep the values consistent in synchronous but adjacent calls
-                latitude = self.data.lastvalue(DataEntryIds.LATITUDE.value)
-                longitude = self.data.lastvalue(DataEntryIds.LONGITUDE.value)
+                latitude = self.rocket_data.last_value_by_device(self.device, DataEntryIds.LATITUDE.value)
+                longitude = self.rocket_data.last_value_by_device(self.device, DataEntryIds.LONGITUDE.value)
 
                 # Prevent unnecessary work while no location data is received
                 if latitude is None or longitude is None:
@@ -187,13 +202,28 @@ class MappingThread(QtCore.QThread):
 
     def shutdown(self):
         with self.cv:
-            self._is_shutting_down = True
+            if self._is_shutting_down:
+                return
+            else:
+                self._is_shutting_down = True
+
+        self.resultQueue.put(None)
 
         while self.isRunning():
             with self.cv:
                 self.cv.notify()  # Wake up thread
 
         self.wait()  # join thread
+
+        self.requestQueue.put(None)
+
+        self.resultQueue.cancel_join_thread()
+        self.requestQueue.cancel_join_thread()
+
+        self.map_process.join()
+        self.map_process.close()
+        self.resultQueue.close()
+        self.requestQueue.close()
 
 
 def processMap(requestQueue, resultQueue):
@@ -211,11 +241,17 @@ def processMap(requestQueue, resultQueue):
     # is based on the import time
     # https://docs.python.org/3/library/multiprocessing.html#logging
     # TODO: Fix by creating .session file which contains session ID and other
-    #  process-global constants. Look into file-locks to make this multiprocessing saft. This is an OS feature
+    #  process-global constants. Look into file-locks to make this multiprocessing safe. This is an OS feature
 
+    LOGGER.debug("Mapping process started")
     while True:
         try:
-            (p1, p2, zoom, desiredSize) = requestQueue.get()
+            request = requestQueue.get()
+
+            if request is None:  # Shutdown request
+                break
+
+            (p1, p2, zoom, desiredSize) = request
 
             location = mapbox_utils.TileGrid(p1, p2, zoom)
             location.downloadArrayImages()
@@ -240,3 +276,9 @@ def processMap(requestQueue, resultQueue):
         except Exception as ex:
             LOGGER.exception("Exception in processMap process")  # Automatically grabs and prints exception info
             resultQueue.put(None)
+
+    resultQueue.cancel_join_thread()
+    requestQueue.cancel_join_thread()
+    resultQueue.close()
+    requestQueue.close()
+    LOGGER.warning("Mapping process shut down")

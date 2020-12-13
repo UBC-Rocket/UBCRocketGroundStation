@@ -1,10 +1,13 @@
 from abc import ABC, abstractmethod
+from collections import namedtuple
 from typing import Callable
+
+ConnectionMessage = namedtuple('ConnectionMessage', ['device_address', 'connection', 'data'])
 
 
 class Connection(ABC):
     @abstractmethod
-    def registerCallback(self, fn: Callable[[bytearray], None]) -> None:
+    def registerCallback(self, fn: Callable[[ConnectionMessage], None]) -> None:
         """Register callback to which we will send new data.
 
         :param fn: Must be non-blocking and thread safe
@@ -12,9 +15,14 @@ class Connection(ABC):
         """
         pass
 
-    # Send data to connection
+    # Send data to a specific device on this connection
     @abstractmethod
-    def send(self, data) -> None:  # must be thead safe
+    def send(self, device_address: str, data) -> None:  # must be thead safe
+        pass
+
+    # Send data to all devices on this connection
+    @abstractmethod
+    def broadcast(self, data) -> None:  # must be thead safe
         pass
 
     # Called to upon shutdown. Clean-up tasks done here.
@@ -32,6 +40,3 @@ class Connection(ABC):
     def isFloatBigEndian(self) -> bool:
         pass
 
-
-class DataProviderException(Exception):
-    pass

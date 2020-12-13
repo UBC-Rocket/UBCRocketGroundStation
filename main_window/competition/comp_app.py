@@ -1,6 +1,6 @@
 import math
 import os
-from typing import Callable
+from typing import Callable, Dict
 import logging
 
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
@@ -29,7 +29,7 @@ MAP_UPDATED_EVENT = Event('map_updated')
 
 class CompApp(MainApp, Ui_MainWindow):
 
-    def __init__(self, connection: Connection, rocket_profile: RocketProfile) -> None:
+    def __init__(self, connections: Dict[str, Connection], rocket_profile: RocketProfile) -> None:
         """
 
         :param connection:
@@ -37,7 +37,7 @@ class CompApp(MainApp, Ui_MainWindow):
         :param rocket_profile:
         :type rocket_profile: RocketProfile
         """
-        super().__init__(connection, rocket_profile)
+        super().__init__(connections, rocket_profile)
 
         self.map = map_data.MapData()
 
@@ -66,7 +66,7 @@ class CompApp(MainApp, Ui_MainWindow):
         self.setup_labels()
 
         # Init and connection of MappingThread
-        self.MappingThread = MappingThread(self.connection, self.map, self.rocket_data)
+        self.MappingThread = MappingThread(self.connections, self.map, self.rocket_data, self.rocket_profile)
         self.MappingThread.sig_received.connect(self.receive_map)
         self.MappingThread.start()
 

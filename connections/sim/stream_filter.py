@@ -1,13 +1,10 @@
 import collections
 import os
-import sys
 from util.detail import LOGS_DIR, SESSION_ID
 
-CR = 0x0D
-LF = 0x0A
+A = ord('A')
 
-
-class StreamFilter:
+class ReadFilter:
     def __init__(self, bufstream, size: int) -> None:
         """
         :param bufstream: Buffered stream like a subprocess stdout, that supports read() and peek().
@@ -16,10 +13,7 @@ class StreamFilter:
         :type size: int
         """
 
-        if sys.platform == "win32":
-            filtered_stream = self._crcrlfFilter(bufstream)
-        else:
-            filtered_stream = self._noFilter(bufstream)
+        filtered_stream = self._filter(bufstream)
 
         self.circularBuffer = collections.deque(maxlen=size)
         self._logged_stream = self._read_and_log(filtered_stream)
@@ -34,19 +28,13 @@ class StreamFilter:
                 f.flush()
                 yield c
 
-    def _crcrlfFilter(self, stream):
+    def _filter(self, stream):
         while True:
-            c = stream.read(1)
-            if c[0] == CR and stream.peek(1)[0] == LF:
-                yield stream.read(1)  # yields the LF, skipping the CR
-            else:
-                yield c
+            msb = stream.read(1)[0] - A
+            lsb = stream.read(1)[0] - A
+            yield bytes([(msb << 4) | lsb])
 
-    def _noFilter(self, stream):
-        while True:
-            yield stream.read(1)
-
-    def read(self, number: int):
+    def read(self, number: int) -> bytes:
         """
         :param number: Number of bytes to read
         :type number: int
@@ -57,7 +45,7 @@ class StreamFilter:
         for _ in range(number):
             data += next(self._logged_stream)
 
-        return data
+        return bytes(data)
 
     def getHistory(self):
         """
@@ -65,3 +53,35 @@ class StreamFilter:
         :rtype: Iterable of bytes
         """
         return self.circularBuffer
+
+
+class WriteFilter:
+    def __init__(self, bufstream) -> None:
+        """
+        :param bufstream: Buffered stream like a subprocess stdout, that supports read() and peek().
+        :type bufstream: Buffered stream
+        """
+        self.stream = bufstream
+
+    def write(self, data: bytes) -> None:
+        """
+        Write data to buffer.
+
+        Sends each byte in two bytes to reduce ascii range to [A, A + 16). Effectively avoiding all special characters
+        that may have varying behavior depending on the OS.
+
+        :param data:
+        :type data: bytes
+        :return:
+        """
+
+        for c in data:
+            msb = (c >> 4) + A
+            lsb = (c & 0x0F) + A
+
+            self.stream.write(bytes([msb]))
+            self.stream.write(bytes([lsb]))
+
+    def flush(self) -> None:
+        self.stream.flush()
+

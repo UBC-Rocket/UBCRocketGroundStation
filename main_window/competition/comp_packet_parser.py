@@ -23,8 +23,8 @@ class SubpacketIds(Enum):
 
 class CompPacketParser(PacketParser):
 
-    def __init__(self, bigEndianInts, bigEndianFloats):
-        super().__init__(bigEndianInts, bigEndianFloats)
+    def __init__(self):
+        super().__init__()
 
         self.register_packet(SubpacketIds.GPS.value, self.gps)
         self.register_packet(SubpacketIds.ORIENTATION.value, self.orientation)
@@ -49,7 +49,7 @@ class CompPacketParser(PacketParser):
         curr_byte: int = byte_stream.read(1)[0]
 
         # Overall status from 6th and 7th bits
-        overall_status = self.bitfrombyte(curr_byte, 1) | self.bitfrombyte(curr_byte, 0)
+        overall_status = curr_byte & 0b11
         if overall_status == 0b00000000:  # TODO Review if this mapping of 0bxxx -> status should be extracted
             data[DataEntryIds.STATUS_PING] = DataEntryIds.NOMINAL.name # TODO Review if these should use .value or name
         elif overall_status == 0b00000001:

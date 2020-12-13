@@ -1,6 +1,7 @@
 import collections
 import struct
 from enum import Enum
+from .device_manager import DeviceType
 from io import BytesIO
 from typing import Any, Callable, Dict
 
@@ -35,12 +36,20 @@ class DeviceType(Enum):
     TANTALUS_STAGE_2 = 0x01
     CO_PILOT = 0x02
 
+ID_TO_DEVICE_TYPE = {
+        0x00: DeviceType.TANTALUS_STAGE_1,
+        0x01: DeviceType.TANTALUS_STAGE_2,
+        0x02: DeviceType.CO_PILOT,
+}
+DEVICE_TYPE_TO_ID = {y: x for (x, y) in ID_TO_DEVICE_TYPE.items()}
+
 
 class PacketParser:
     """
     This class takes care of converting subpacket data coming in, according to the specifications.
     """
-    def __init__(self, bigEndianInts, bigEndianFloats):
+
+    def __init__(self):
         """
 
         :param bigEndianInts:
@@ -48,8 +57,8 @@ class PacketParser:
         :param bigEndianFloats:
         :type bigEndianFloats:
         """
-        self.bigEndianInts = bigEndianInts
-        self.bigEndianFloats = bigEndianFloats
+        self.big_endian_ints = None
+        self.big_endian_floats = None
 
         # Dictionary of subpacket id mapped to function to parse that data
         self.packetTypeToParser: Dict[int, Callable[[BytesIO, Header], Dict[Any, Any]]] = {
@@ -68,6 +77,10 @@ class PacketParser:
         """
         return 5
 
+    def set_endianness(self, big_endian_ints: bool, big_endian_floats: bool):
+        self.big_endian_ints = big_endian_ints
+        self.big_endian_floats = big_endian_floats
+
     def extract(self, byte_stream: BytesIO):
         """
         Return dict of parsed subpacket data and length of subpacket
@@ -77,6 +90,9 @@ class PacketParser:
         :return: parsed_data
         :rtype: Dict[Any, Any]
         """
+        if self.big_endian_ints is None or self.big_endian_floats is None:
+            raise Exception("Endianness not set before parsing")
+
         # header extraction
         header: Header = self.header(byte_stream)
 
@@ -87,7 +103,10 @@ class PacketParser:
         except Exception as e:
             LOGGER.exception("Error parsing data")  # Automatically grabs and prints exception info
 
-        parsed_data[DataEntryIds.TIME] = header.timestamp
+        parsed_data[DataEntryIds.TIME.value] = header.timestamp
+
+        self.big_endian_ints = None
+        self.big_endian_floats = None
         return parsed_data
 
     def parse_data(self, byte_stream: BytesIO, header: Header) -> Dict[Any, Any]:
@@ -173,9 +192,9 @@ class PacketParser:
         :rtype:
         """
 
-        data: Dict = {}
+        data = {}
         data[DataEntryIds.IS_SIM] = bool(byte_stream.read(1)[0])
-        data[DataEntryIds.ROCKET_TYPE] = DeviceType(byte_stream.read(1)[0])
+        data[DataEntryIds.ROCKET_TYPE] = ID_TO_DEVICE_TYPE[byte_stream.read(1)[0]]
         version_id = byte_stream.read(VERSION_ID_LEN)
         data[DataEntryIds.VERSION_ID] = version_id.decode('ascii')
 
@@ -222,7 +241,7 @@ class PacketParser:
         assert len(byte_list) == 4
         data = byte_list
         b = struct.pack('4B', *data)
-        c = struct.unpack('>f' if self.bigEndianFloats else '<f', b)
+        c = struct.unpack('>f' if self.big_endian_floats else '<f', b)
         return c[0]
 
     def fourtoint(self, byte_list):
@@ -236,7 +255,7 @@ class PacketParser:
         assert len(byte_list) == 4
         data = byte_list
         b = struct.pack('4B', *data)
-        c = struct.unpack('>I' if self.bigEndianInts else '<I', b)
+        c = struct.unpack('>I' if self.big_endian_ints else '<I', b)
         return c[0]
 
     def bitfrombyte(self, val: int, targetIndex: int):

@@ -6,6 +6,6 @@ from main_window.packet_parser import PacketParser, Header
 
 class WbPacketParser(PacketParser):
 
-    def __init__(self, bigEndianInts, bigEndianFloats):
-        super().__init__(bigEndianInts, bigEndianFloats)
+    def __init__(self):
+        super().__init__()
 

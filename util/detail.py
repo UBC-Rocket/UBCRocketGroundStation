@@ -4,6 +4,7 @@ import os
 import sys
 import time
 import logging
+import subprocess
 from copy import copy
 
 from PyQt5.QtCore import pyqtSignal, QObject
@@ -14,6 +15,9 @@ if getattr(sys, 'frozen', False):
     IS_PYINSTALLER = True
     LOCAL = os.path.dirname(sys.executable)
     BUNDLED_DATA = sys._MEIPASS # Files that we bundle with the final file (e.g .ui files, images, etc.)
+    with open(os.path.join(BUNDLED_DATA, '.git_hash'), 'r') as _git_hash_file:
+        GIT_HASH = _git_hash_file.readline().strip()
+
 elif __file__:
     # Running normally
     IS_PYINSTALLER = False
@@ -21,6 +25,7 @@ elif __file__:
     assert os.path.basename(LOCAL) == "util"
     LOCAL = os.path.abspath(os.path.join(LOCAL, os.pardir))
     BUNDLED_DATA = LOCAL
+    GIT_HASH = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=LOCAL).strip().decode("utf-8")
 
 LOGS_DIR = os.path.join(LOCAL, "logs")
 
@@ -86,7 +91,8 @@ EXECUTABLE_FILE_EXTENSION = {
     'darwin': ''
 }[sys.platform]
 
-REQUIRED_FLARE = open(os.path.join(BUNDLED_DATA, 'required_flare.txt'), 'r').readline().strip()
+with open(os.path.join(BUNDLED_DATA, 'required_flare.txt'), 'r') as _required_flare_file:
+    REQUIRED_FLARE = _required_flare_file.readline().strip()
 
 # Helper class. python way of doing ++ (unlimited incrementing)
 class Count:

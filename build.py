@@ -12,8 +12,8 @@ EXECUTABLE_NAME = 'UBCRGS'
 ENTRY_POINT = 'start.py'
 
 DATA_FILES = [
-    './qt_files/*',
-    './required_flare.txt'
+    'qt_files/*',
+    'required_flare.txt'
 ]
 
 HIDDEN_IMPORTS = [
@@ -57,6 +57,7 @@ PYINSTALLER_SEPARATOR = {
     'darwin': ':'
 }[sys.platform]
 
+GIT_HASH_FILE = os.path.join(LOCAL, '.git_hash')
 
 def _run(executable, args):
     cmd = [executable] + args
@@ -70,6 +71,12 @@ def _is_venv():
     return (hasattr(sys, 'real_prefix') or
             (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix))
 
+def parent_dir(path):
+    path = os.path.dirname(path)
+    if len(path) == 0:
+        return '.'
+    else:
+        return path
 
 def setup_step():
     print("Creating venv...")
@@ -85,10 +92,20 @@ def setup_step():
 
 
 def build_step():
+    git_hash = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=LOCAL).strip().decode("utf-8")
+
+    print(f"Using git hash: {git_hash}")
+    with open(GIT_HASH_FILE, 'w') as f:
+        f.write(git_hash)
+
+    DATA_FILES.append(os.path.relpath(GIT_HASH_FILE, start=LOCAL))
+
     print("Running PyInstaller...")
     hidden_imports = [f"--hidden-import={i}" for i in HIDDEN_IMPORTS]
-    data_files = [f"--add-data={i}{PYINSTALLER_SEPARATOR}{os.path.dirname(i)}" for i in DATA_FILES]
+    data_files = [f"--add-data={i}{PYINSTALLER_SEPARATOR}{parent_dir(i)}" for i in DATA_FILES]
     _run(VENV_PYINSTALLER, ['-F', '-n', EXECUTABLE_NAME, ENTRY_POINT] + hidden_imports + data_files)
+
+    os.remove(GIT_HASH_FILE)
 
 
 def test_step():

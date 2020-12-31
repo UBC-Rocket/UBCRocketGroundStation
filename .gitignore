@@ -138,3 +138,4 @@ apikey.txt
 .DS_Store
 out/
 raw/
+git_hash.txt

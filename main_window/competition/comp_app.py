@@ -8,7 +8,7 @@ from PIL import Image
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
 from connections.connection import Connection
-from util.detail import LOCAL, BUNDLED_DATA, LOGGER, qtSignalLogHandler
+from util.detail import LOCAL, BUNDLED_DATA, LOGGER, qtSignalLogHandler, GIT_HASH
 from util.event_stats import Event
 from profiles.rocket_profile import RocketProfile
 
@@ -70,7 +70,7 @@ class CompApp(MainApp, Ui_MainWindow):
         self.MappingThread.sig_received.connect(self.receive_map)
         self.MappingThread.start()
 
-        LOGGER.info("Successfully started app")
+        LOGGER.info(f"Successfully started app (version = {GIT_HASH})")
 
     def setup_buttons(self):
         """Create all of the buttons for the loaded rocket profile."""

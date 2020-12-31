@@ -18,13 +18,16 @@ class DeviceType(Enum):
 
 class DeviceManager:
 
-    def __init__(self):
+    def __init__(self, required_versions: Dict[DeviceType, str], strict_versions=True):
+        self.required_versions = required_versions
+        self.strict_versions = strict_versions
+
         self._lock = RLock()
 
         self._device_type_to_device: Dict[DeviceType, RegisteredDevice] = dict()
         self._full_address_to_device: Dict[FullAddress, RegisteredDevice] = dict()
 
-    def register_device(self, device_type: DeviceType, full_address: FullAddress) -> None:
+    def register_device(self, device_type: DeviceType, device_version: str, full_address: FullAddress) -> None:
         with self._lock:
             if device_type not in self._device_type_to_device.keys() and full_address not in self._full_address_to_device.keys():
                 pass
@@ -40,6 +43,13 @@ class DeviceManager:
             else:
                 LOGGER.info(f"Already registered. Device={device_type.name}, full_address={full_address}")
                 return
+
+            if device_type in self.required_versions.keys() and device_version != self.required_versions[device_type]:
+                error_str = f"Version {device_version} does not match required version {self.required_versions[device_type]} for device {device_type.name}"
+                if self.strict_versions:
+                    raise InvalidDeviceVersion(error_str)
+                else:
+                    LOGGER.warning(error_str)
 
             self._device_type_to_device[device_type] = RegisteredDevice(device_type=device_type, full_address=full_address)
             self._full_address_to_device = {d.full_address: d for d in self._device_type_to_device.values()}
@@ -64,4 +74,7 @@ class DeviceManager:
 
 
 class InvalidRegistration(Exception):
+    pass
+
+class InvalidDeviceVersion(Exception):
     pass

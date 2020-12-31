@@ -5,7 +5,7 @@ import time
 
 import connections.debug.radio_packets as radio_packets
 from ..connection import Connection, ConnectionMessage
-from util.detail import LOGGER
+from util.detail import LOGGER, REQUIRED_FLARE
 from util.event_stats import Event
 
 ARMED_EVENT = Event('armed')
@@ -118,7 +118,7 @@ class DebugConnection(Connection):
         :rtype: bytearray
         """
 
-        return radio_packets.config(self._current_millis(), True, self.device_id, 'e43f15ba448653b34c043cf90593346e7ca4f9c7')
+        return radio_packets.config(self._current_millis(), True, self.device_id, REQUIRED_FLARE)
 
     def gps_mock_random(self) -> bytearray:
         """

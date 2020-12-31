@@ -12,7 +12,8 @@ EXECUTABLE_NAME = 'UBCRGS'
 ENTRY_POINT = 'start.py'
 
 DATA_FILES = [
-    'qt_files/*',
+    './qt_files/*',
+    './required_flare.txt'
 ]
 
 HIDDEN_IMPORTS = [

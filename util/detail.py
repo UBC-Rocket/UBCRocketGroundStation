@@ -86,6 +86,8 @@ EXECUTABLE_FILE_EXTENSION = {
     'darwin': ''
 }[sys.platform]
 
+REQUIRED_FLARE = open(os.path.join(BUNDLED_DATA, 'required_flare.txt'), 'r').readline().strip()
+
 # Helper class. python way of doing ++ (unlimited incrementing)
 class Count:
     def __init__(self, start=0, interval=1):

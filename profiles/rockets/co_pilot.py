@@ -8,6 +8,7 @@ from main_window.competition.comp_app import CompApp
 from main_window.competition.comp_packet_parser import CompPacketParser
 from main_window.device_manager import DeviceType
 from main_window.packet_parser import DEVICE_TYPE_TO_ID
+from util.detail import REQUIRED_FLARE
 
 
 class CoPilotProfile(RocketProfile):
@@ -42,6 +43,10 @@ class CoPilotProfile(RocketProfile):
     @property
     def mapping_device(self):
         return DeviceType.CO_PILOT
+
+    @property
+    def required_device_versions(self):
+        return {DeviceType.CO_PILOT: REQUIRED_FLARE}
 
     def construct_serial_connection(self, com_port, baud_rate):
         return None

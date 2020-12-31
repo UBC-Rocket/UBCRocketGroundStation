@@ -28,6 +28,11 @@ class RocketProfile(ABC):
     def mapping_device(self) -> DeviceType:
         pass
 
+    @property
+    @abstractmethod
+    def required_device_versions(self) -> Dict[DeviceType, str]:
+        pass
+
     '''
     Factory pattern for objects that should only be constructed if needed
     '''

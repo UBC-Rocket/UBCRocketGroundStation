@@ -25,6 +25,10 @@ class WbProfile(RocketProfile):
     def mapping_device(self):
         return None
 
+    @property
+    def required_device_versions(self):
+        return dict()
+
     def construct_serial_connection(self, com_port, baud_rate):
         return None
 

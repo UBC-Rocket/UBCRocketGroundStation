@@ -10,7 +10,7 @@ from util.detail import LOGGER
 from util.event_stats import Event
 from connections.connection import Connection, ConnectionMessage
 from .rocket_data import RocketData
-from .packet_parser import PacketParser, DEVICE_TYPE
+from .packet_parser import PacketParser, DEVICE_TYPE, VERSION_ID
 from .device_manager import DeviceManager, FullAddress
 
 CONNECTION_MESSAGE_READ_EVENT = Event('connection_message_read')
@@ -91,8 +91,12 @@ class ReadThread(QtCore.QThread):
                     self.packet_parser.set_endianness(connection.isIntBigEndian(), connection.isFloatBigEndian())
                     parsed_data: Dict[int, any] = self.packet_parser.extract(byte_stream)
 
-                    if DEVICE_TYPE in parsed_data.keys():
-                        self.device_manager.register_device(parsed_data[DEVICE_TYPE], full_address)
+                    if DEVICE_TYPE in parsed_data.keys() and VERSION_ID in parsed_data.keys():
+                        self.device_manager.register_device(parsed_data[DEVICE_TYPE], parsed_data[VERSION_ID], full_address)
+                    elif DEVICE_TYPE in parsed_data.keys():
+                        LOGGER.warning('Received DEVICE_TYPE but not VERSION_ID')
+                    elif VERSION_ID in parsed_data.keys():
+                        LOGGER.warning('Received VERSION_ID but not DEVICE_TYPE')
 
                     self.rocket_data.addBundle(full_address, parsed_data)
 

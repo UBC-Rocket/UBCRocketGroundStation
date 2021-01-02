@@ -180,7 +180,7 @@ class PacketParser:
         version_id = byte_stream.read(VERSION_ID_LEN)
         data[VERSION_ID] = version_id.decode('ascii')
 
-        LOGGER.info("Config: SIM? %s, Rocket type = %s, Version ID = %s",
+        LOGGER.info("Config: SIM? %s, Device type = %s, Version ID = %s",
                     str(data[IS_SIM]),
                     str(data[DEVICE_TYPE]),
                     str(data[VERSION_ID]))

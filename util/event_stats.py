@@ -38,7 +38,7 @@ class Event:
             raise ValueError("Invalid value for num")
 
         with _stats_cv:
-            if self._key in _stats.keys():
+            if self._key in _stats:
                 _stats[self._key] += num
             else:
                 _stats[self._key] = num
@@ -60,10 +60,10 @@ class Event:
         :rtype: int
         """
 
-        initial_value = snapshot[self._key] if self._key in snapshot.keys() else 0
+        initial_value = snapshot[self._key] if self._key in snapshot else 0
 
         with _stats_cv:
-            def current_value(): return _stats[self._key] if self._key in _stats.keys() else 0
+            def current_value(): return _stats[self._key] if self._key in _stats else 0
 
             if current_value() < initial_value:
                 raise ValueError("Invalid snapshot. Event counter greater than current value.")

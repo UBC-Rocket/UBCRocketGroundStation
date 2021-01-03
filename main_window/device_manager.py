@@ -29,14 +29,14 @@ class DeviceManager:
 
     def register_device(self, device_type: DeviceType, device_version: str, full_address: FullAddress) -> None:
         with self._lock:
-            if device_type not in self._device_type_to_device.keys() and full_address not in self._full_address_to_device.keys():
+            if device_type not in self._device_type_to_device and full_address not in self._full_address_to_device:
                 pass
 
-            elif device_type in self._device_type_to_device.keys() and full_address != self._device_type_to_device[device_type].full_address:
+            elif device_type in self._device_type_to_device and full_address != self._device_type_to_device[device_type].full_address:
                 raise InvalidRegistration(
                     f"Cannot reassign device_type={device_type.name} (full_address={self._device_type_to_device[device_type].full_address}) to full_address={full_address}")
 
-            elif full_address in self._full_address_to_device.keys() and device_type != self._full_address_to_device[full_address].device_type:
+            elif full_address in self._full_address_to_device and device_type != self._full_address_to_device[full_address].device_type:
                 raise InvalidRegistration(
                     f"Cannot reassign full_address={full_address} (device={self._full_address_to_device[full_address].device_type}) to device={device_type}")
 
@@ -44,7 +44,7 @@ class DeviceManager:
                 LOGGER.info(f"Already registered. Device={device_type.name}, full_address={full_address}")
                 return
 
-            if device_type in self.required_versions.keys() and device_version != self.required_versions[device_type]:
+            if device_type in self.required_versions and device_version != self.required_versions[device_type]:
                 error_str = f"Version {device_version} does not match required version {self.required_versions[device_type]} for device {device_type.name}"
                 if self.strict_versions:
                     raise InvalidDeviceVersion(error_str)

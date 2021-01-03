@@ -16,6 +16,7 @@ from main_window.competition.comp_app import CompApp
 from main_window.competition.comp_packet_parser import CompPacketParser
 from main_window.device_manager import DeviceType
 from main_window.packet_parser import DEVICE_TYPE_TO_ID
+from util.detail import REQUIRED_FLARE
 
 
 class TantalusProfile(RocketProfile):
@@ -48,6 +49,13 @@ class TantalusProfile(RocketProfile):
     @property
     def mapping_device(self):
         return DeviceType.TANTALUS_STAGE_1
+
+    @property
+    def required_device_versions(self):
+        return {
+            DeviceType.TANTALUS_STAGE_1: REQUIRED_FLARE,
+            DeviceType.TANTALUS_STAGE_2: REQUIRED_FLARE,
+        }
 
     def construct_serial_connection(self, com_port, baud_rate):
         return {

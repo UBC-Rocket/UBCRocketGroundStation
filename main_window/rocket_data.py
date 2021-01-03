@@ -82,14 +82,14 @@ class RocketData:
         """
         with self.data_lock:
             # if there's a time, set this to the most recent time val
-            if DataEntryIds.TIME in incoming_data.keys():
+            if DataEntryIds.TIME in incoming_data:
                 self.last_time = incoming_data[DataEntryIds.TIME]
-            # if new time then setup a dict for the data
-            if self.last_time not in self.timeset.keys():
+            # if the timeset then setup a respective dict for the data
+            if self.last_time not in self.timeset:
                 self.timeset[self.last_time] = {}
 
             # write the data and call the respective callbacks
-            for data_id in incoming_data.keys():
+            for data_id in incoming_data:
                 key = DataEntryKey(full_address, data_id)
                 self.existing_entry_keys.add(key)
                 self.timeset[self.last_time][key] = incoming_data[data_id]
@@ -98,7 +98,7 @@ class RocketData:
         if device is not None:
             # Notify after all data has been updated
             # Also, do so outside data_lock to prevent mutex contention with notification listeners
-            for data_id in incoming_data.keys():
+            for data_id in incoming_data:
                 key = CallBackKey(device, data_id)
                 self._notify_callbacks_of_id(key)
 
@@ -187,7 +187,7 @@ class RocketData:
         """
         with self.callback_lock:
             key = CallBackKey(device, data_id)
-            if key not in self.callbacks.keys():
+            if key not in self.callbacks:
                 self.callbacks[key] = [callback_fn]
             else:
                 self.callbacks[key].append(callback_fn)
@@ -199,7 +199,7 @@ class RocketData:
         :type data_id:
         """
         with self.callback_lock:
-            if key in self.callbacks.keys():
+            if key in self.callbacks:
                 for fn in self.callbacks[key]:
                     fn()
 
@@ -208,5 +208,5 @@ class RocketData:
 
         """
         with self.callback_lock:
-            for key in self.callbacks.keys():
+            for key in self.callbacks:
                 self._notify_callbacks_of_id(key)

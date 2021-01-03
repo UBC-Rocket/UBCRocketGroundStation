@@ -51,6 +51,8 @@ class SimConnection(Connection):
         self.bigEndianInts = None
         self.bigEndianFloats = None
 
+        self.stdin_lock = threading.RLock() # Since SIM Thread and Send Thread / XBee Thread both send packets
+
         # Firmware subprocess - Closes automatically when parent (ground station) closes
         self.rocket = sp.Popen(
             self.executablePath, cwd=self.firmwareDir, stdin=sp.PIPE, stdout=sp.PIPE
@@ -78,8 +80,9 @@ class SimConnection(Connection):
         assert self.rocket.stdout.read(3) == b"SYN"
         # Uncomment for FW debuggers, for a chance to attach debugger
         # input(f"Received rocket SYN; press enter to respond with ACK and continue. PID={self.rocket.pid}\n")
-        self.rocket.stdin.write(b"ACK")
-        self.rocket.stdin.flush()
+        with self.stdin_lock:
+            self.rocket.stdin.write(b"ACK")
+            self.rocket.stdin.flush()
 
     def send(self, device_address, data):
         if device_address != self.device_address:
@@ -93,8 +96,9 @@ class SimConnection(Connection):
         id_ = id_.to_bytes(length=1, byteorder="big")
         length = len(data).to_bytes(length=2, byteorder="big")
         packet = id_ + length + data
-        self.stdin.write(packet)
-        self.stdin.flush()
+        with self.stdin_lock:
+            self.stdin.write(packet)
+            self.stdin.flush()
 
     def _send_radio_sim(self, data):
         self._send_sim_packet(SimTxId.RADIO.value, data)
@@ -216,7 +220,7 @@ class SimConnection(Connection):
 
                 id = self.stdout.read(1)[0]  # Returns 0 if process was killed
 
-                if id not in SimConnection.packetHandlers.keys():
+                if id not in SimConnection.packetHandlers:
                     LOGGER.error(f"SIM protocol violation!!! Shutting down. (device_address={self.device_address})")
                     for b in self.stdout.getHistory():
                         LOGGER.error(hex(b[0]))

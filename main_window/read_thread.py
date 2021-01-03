@@ -93,11 +93,15 @@ class ReadThread(QtCore.QThread):
                     self.packet_parser.set_endianness(connection.isIntBigEndian(), connection.isFloatBigEndian())
                     parsed_data: Dict[DataEntryIds, any] = self.packet_parser.extract(byte_stream)
 
-                    if DataEntryIds.DEVICE_TYPE.name in parsed_data.keys():
-                        # TODO Should this have .name removed?
-                        self.device_manager.register_device(parsed_data[DataEntryIds.DEVICE_TYPE.name], full_address)
+                    if DataEntryIds.DEVICE_TYPE.name in parsed_data and DataEntryIds.VERSION_ID.name in parsed_data:
+                        self.device_manager.register_device(parsed_data[DataEntryIds.DEVICE_TYPE.name], parsed_data[DataEntryIds.VERSION_ID.name], full_address)
+                    elif DataEntryIds.DEVICE_TYPE.name in parsed_data:
+                        LOGGER.warning('Received DEVICE_TYPE but not VERSION_ID')
+                    elif DataEntryIds.VERSION_ID.name in parsed_data:
+                        LOGGER.warning('Received VERSION_ID but not DEVICE_TYPE')
+
                     print("Parsed", parsed_data)
-                    self.rocket_data.add_bundle(full_address, parsed_data)
+                    self.rocket_data.addBundle(full_address, parsed_data)
 
                     # notify UI that new data is available to be displayed
                     self.sig_received.emit()

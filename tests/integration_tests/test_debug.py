@@ -22,6 +22,7 @@ from main_window.competition.comp_packet_parser import (
 )
 
 from util.event_stats import get_event_stats_snapshot
+from util.detail import REQUIRED_FLARE
 
 
 @pytest.fixture(scope="function")
@@ -156,7 +157,7 @@ def test_config_packet(qtbot, single_connection_tantalus):
     app = single_connection_tantalus
     connection = app.connections['DEBUG_CONNECTION']
 
-    version_id = 'e43f15ba448653b34c043cf90593346e7ca4f9c7'
+    version_id = REQUIRED_FLARE
     assert len(version_id) == VERSION_ID_LEN  # make sure test val is acceptable
 
     packet = radio_packets.config(0xFFFFFFFF, True, 0x00, version_id)
@@ -321,7 +322,7 @@ def test_register_after_data(qtbot, integration_app):
     assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 
     # Cause device to register
-    con.receive(radio_packets.config(0xFFFFFFFF, True, DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_2], 'version'))
+    con.receive(radio_packets.config(0xFFFFFFFF, True, DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_2], REQUIRED_FLARE))
     assert DEVICE_REGISTERED_EVENT.wait(snapshot) == 1
 
     assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_2, DataEntryIds.PRESSURE.value) == 1

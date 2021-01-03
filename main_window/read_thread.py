@@ -78,6 +78,7 @@ class ReadThread(QtCore.QThread):
             full_address = FullAddress(connection_name=self.connection_to_name[connection],
                                        device_address=connection_message.device_address)
             data = connection_message.data
+            print("Raw data", data)
 
             byte_stream: BytesIO = BytesIO(data)
 
@@ -90,12 +91,13 @@ class ReadThread(QtCore.QThread):
             while byte_stream.tell() < end:
                 try:
                     self.packet_parser.set_endianness(connection.isIntBigEndian(), connection.isFloatBigEndian())
-                    parsed_data: Dict[int, any] = self.packet_parser.extract(byte_stream)
+                    parsed_data: Dict[DataEntryIds, any] = self.packet_parser.extract(byte_stream)
 
                     if DataEntryIds.DEVICE_TYPE.name in parsed_data.keys():
+                        # TODO Should this have .name removed?
                         self.device_manager.register_device(parsed_data[DataEntryIds.DEVICE_TYPE.name], full_address)
-
-                    self.rocket_data.addBundle(full_address, parsed_data)
+                    print("Parsed", parsed_data)
+                    self.rocket_data.add_bundle(full_address, parsed_data)
 
                     # notify UI that new data is available to be displayed
                     self.sig_received.emit()

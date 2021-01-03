@@ -21,20 +21,15 @@ Header = collections.namedtuple('Header', ['subpacket_id', 'timestamp'])
 
 # Parser's subpacket ids, according to spec. NOT DataIds
 class SubpacketIds(Enum):
-    STATUS_PING = 0x00
+    # STATUS_PING = 0x00
     MESSAGE = 0x01
     EVENT = 0x02
     CONFIG = 0x03
-    GPS = 0x04
-    ORIENTATION = 0x06
-    BULK_SENSOR = 0x30
+    # GPS = 0x04
+    # ORIENTATION = 0x06
+    # BULK_SENSOR = 0x30
 # TODO Review
 VERSION_ID_LEN = 40
-
-class DeviceType(Enum):
-    TANTALUS_STAGE_1 = 0x00
-    TANTALUS_STAGE_2 = 0x01
-    CO_PILOT = 0x02
 
 ID_TO_DEVICE_TYPE = {
         0x00: DeviceType.TANTALUS_STAGE_1,
@@ -67,7 +62,8 @@ class PacketParser:
             SubpacketIds.CONFIG.value: self.config,
             # SubpacketIds.SINGLE_SENSOR.value: single_sensor,  # See loop that maps function for range of ids below
         }
-        for i in data_entry_id.get_list_of_sensor_IDs():  # TODO or range(MIN_SINGLE_SENSOR_ID, MAX_SINGLE_SENSOR_ID + 1): ??
+        # TODO Change to actually adding ids to SubpacketId Enum instead, from range(MIN_SINGLE_SENSOR_ID, MAX_SINGLE_SENSOR_ID + 1):
+        for i in data_entry_id.get_list_of_sensor_IDs():
             self.packetTypeToParser[i] = self.single_sensor
 
     @property
@@ -103,7 +99,7 @@ class PacketParser:
         except Exception as e:
             LOGGER.exception("Error parsing data")  # Automatically grabs and prints exception info
 
-        parsed_data[DataEntryIds.TIME.value] = header.timestamp
+        parsed_data[DataEntryIds.TIME] = header.timestamp
 
         self.big_endian_ints = None
         self.big_endian_floats = None
@@ -194,13 +190,13 @@ class PacketParser:
 
         data = {}
         data[DataEntryIds.IS_SIM] = bool(byte_stream.read(1)[0])
-        data[DataEntryIds.ROCKET_TYPE] = ID_TO_DEVICE_TYPE[byte_stream.read(1)[0]]
+        data[DataEntryIds.DEVICE_TYPE] = ID_TO_DEVICE_TYPE[byte_stream.read(1)[0]]
         version_id = byte_stream.read(VERSION_ID_LEN)
         data[DataEntryIds.VERSION_ID] = version_id.decode('ascii')
 
         LOGGER.info("Config: SIM? %s, Rocket type = %s, Version ID = %s",
                     str(data[DataEntryIds.IS_SIM]),
-                    str(data[DataEntryIds.ROCKET_TYPE]),
+                    str(data[DataEntryIds.DEVICE_TYPE]),
                     str(data[DataEntryIds.VERSION_ID]))
 
         CONFIG_EVENT.increment()

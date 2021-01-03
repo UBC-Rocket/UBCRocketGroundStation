@@ -68,8 +68,8 @@ class MappingThread(QtCore.QThread):
         self.map_process.start()
 
         # Must be done last to prevent race condition
-        self.rocket_data.addNewCallback(self.device, DataEntryIds.LATITUDE.value, self.notify)
-        self.rocket_data.addNewCallback(self.device, DataEntryIds.LONGITUDE.value, self.notify)  # TODO review, could/should be omitted
+        self.rocket_data.add_new_callback(self.device, DataEntryIds.LATITUDE, self.notify)
+        self.rocket_data.add_new_callback(self.device, DataEntryIds.LONGITUDE, self.notify)  # TODO review, could/should be omitted?
 
     def notify(self) -> None:
         """
@@ -169,8 +169,8 @@ class MappingThread(QtCore.QThread):
 
             try:
                 # acquire location to use below here, to keep the values consistent in synchronous but adjacent calls
-                latitude = self.rocket_data.last_value_by_device(self.device, DataEntryIds.LATITUDE.value)
-                longitude = self.rocket_data.last_value_by_device(self.device, DataEntryIds.LONGITUDE.value)
+                latitude = self.rocket_data.last_value_by_device(self.device, DataEntryIds.LATITUDE)
+                longitude = self.rocket_data.last_value_by_device(self.device, DataEntryIds.LONGITUDE)
 
                 # Prevent unnecessary work while no location data is received
                 if latitude is None or longitude is None:

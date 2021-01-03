@@ -81,7 +81,7 @@ class CompApp(MainApp, Ui_MainWindow):
         # being used to keep all of the buttons as named attributes of MainApp and not elements of a list.
         row = 0
         col = 0
-        for button in self.rocket_profile.buttons.keys():
+        for button in self.rocket_profile.buttons:
             qt_button = QtWidgets.QPushButton(self.centralwidget)
             setattr(self, button + "Button", qt_button)
             sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
@@ -102,7 +102,7 @@ class CompApp(MainApp, Ui_MainWindow):
                 row += 1
         # A .py file created from a .ui file will have the labels all defined at the end, for some reason. Two for loops
         # are being used to be consistent with the PyQt5 conventions.
-        for button in self.rocket_profile.buttons.keys():
+        for button in self.rocket_profile.buttons:
             getattr(self, button + "Button").setText(QtCore.QCoreApplication.translate('MainWindow', button))
 
         def gen_send_command(cmd: str) -> Callable[[], None]:

@@ -220,7 +220,7 @@ class SimConnection(Connection):
 
                 id = self.stdout.read(1)[0]  # Returns 0 if process was killed
 
-                if id not in SimConnection.packetHandlers.keys():
+                if id not in SimConnection.packetHandlers:
                     LOGGER.error(f"SIM protocol violation!!! Shutting down. (device_address={self.device_address})")
                     for b in self.stdout.getHistory():
                         LOGGER.error(hex(b[0]))

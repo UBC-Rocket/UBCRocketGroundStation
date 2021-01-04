@@ -19,6 +19,7 @@ Header = collections.namedtuple('Header', ['subpacket_id', 'timestamp'])
 
 # Enum with packet IDs, belongin to this packet parser, and should not be used elsewhere
 
+# TODO Review
 # Parser's subpacket ids, according to spec. NOT DataIds
 class SubpacketIds(Enum):
     # STATUS_PING = 0x00
@@ -28,7 +29,6 @@ class SubpacketIds(Enum):
     # GPS = 0x04
     # ORIENTATION = 0x06
     # BULK_SENSOR = 0x30
-# TODO Review
 VERSION_ID_LEN = 40
 
 ID_TO_DEVICE_TYPE = {
@@ -62,7 +62,7 @@ class PacketParser:
             SubpacketIds.CONFIG.value: self.config,
             # SubpacketIds.SINGLE_SENSOR.value: single_sensor,  # See loop that maps function for range of ids below
         }
-        # TODO Change to actually adding ids to SubpacketId Enum instead, from range(MIN_SINGLE_SENSOR_ID, MAX_SINGLE_SENSOR_ID + 1):
+        # TODO Change? to actually adding ids to SubpacketId Enum instead, from range(MIN_SINGLE_SENSOR_ID, MAX_SINGLE_SENSOR_ID + 1):
         for i in data_entry_id.get_list_of_sensor_IDs():
             self.packetTypeToParser[i] = self.single_sensor
 
@@ -131,7 +131,7 @@ class PacketParser:
         subpacket_id: int = byte_stream.read(1)[0]
 
         # check that id is valid:
-        if subpacket_id not in self.packetTypeToParser:  # TODO Review: @Andrei pls check
+        if subpacket_id not in self.packetTypeToParser:
             LOGGER.error("Subpacket id %d not valid.", subpacket_id)
             raise ValueError("Subpacket id " + str(subpacket_id) + " not valid.")
 

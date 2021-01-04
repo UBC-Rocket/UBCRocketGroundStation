@@ -65,7 +65,7 @@ def test_bulk_sensor_packet(qtbot, single_connection_tantalus):
     assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 
     def get_val(val):
-        return app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, val.value)
+        return app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, val)
 
     vals_to_get = (
         DataEntryIds.CALCULATED_ALTITUDE,
@@ -121,7 +121,7 @@ def test_single_sensor_packet(qtbot, single_connection_tantalus):
     ]
 
     for sensor_id, val in vals:
-        packet = radio_packets.single_sensor(0xFFFFFFFF, sensor_id.value, val)
+        packet = radio_packets.single_sensor(0xFFFFFFFF, sensor_id, val)
 
         snapshot = get_event_stats_snapshot()
 
@@ -130,8 +130,8 @@ def test_single_sensor_packet(qtbot, single_connection_tantalus):
         assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
 
         assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1,
-                                                    DataEntryIds.TIME.value) == 0xFFFFFFFF
-        assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, sensor_id.value) == val
+                                                    DataEntryIds.TIME) == 0xFFFFFFFF
+        assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, sensor_id) == val
 
 
 def test_message_packet(qtbot, single_connection_tantalus, caplog):
@@ -147,9 +147,9 @@ def test_message_packet(qtbot, single_connection_tantalus, caplog):
     assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 
     assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1,
-                                                DataEntryIds.TIME.value) == 0xFFFFFFFF
+                                                DataEntryIds.TIME) == 0xFFFFFFFF
     assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1,
-                                                DataEntryIds.MESSAGE.value) == "test_message"
+                                                DataEntryIds.MESSAGE) == "test_message"
     assert "test_message" in caplog.text
 
 
@@ -170,11 +170,11 @@ def test_config_packet(qtbot, single_connection_tantalus):
     assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 
     assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1,
-                                                DataEntryIds.TIME.value) == 0xFFFFFFFF
-    assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.IS_SIM.name) == True
+                                                DataEntryIds.TIME) == 0xFFFFFFFF
+    assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.IS_SIM) == True
     assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1,
-                                                DataEntryIds.DEVICE_TYPE.name) == DeviceType.TANTALUS_STAGE_1
-    assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.VERSION_ID.name) == version_id
+                                                DataEntryIds.DEVICE_TYPE) == DeviceType.TANTALUS_STAGE_1
+    assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.VERSION_ID) == version_id
 
 
 def test_status_ping_packet(qtbot, single_connection_tantalus):
@@ -192,10 +192,11 @@ def test_status_ping_packet(qtbot, single_connection_tantalus):
     assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 
     assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1,
-                                                DataEntryIds.TIME.value) == 0xFFFFFFFF
+                                                DataEntryIds.TIME) == 0xFFFFFFFF
+    # TODO Not sure if this is correct, in terms of STATUS_PING and also NONCRITICAL_FAILURE comparison
     assert (
-            app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.STATUS_PING.value)
-            == DataEntryIds.NONCRITICAL_FAILURE.name
+            app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.STATUS_PING)
+            == DataEntryIds.NONCRITICAL_FAILURE
     )
     for sensor in SENSOR_TYPES:
         assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, sensor) == 1
@@ -218,10 +219,10 @@ def test_gps_packet(qtbot, single_connection_tantalus):
     assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 
     assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1,
-                                                DataEntryIds.TIME.value) == 0xFFFFFFFF
-    assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.LATITUDE.value) == 1
-    assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.LONGITUDE.value) == 2
-    assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.GPS_ALTITUDE.value) == 3
+                                                DataEntryIds.TIME) == 0xFFFFFFFF
+    assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.LATITUDE) == 1
+    assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.LONGITUDE) == 2
+    assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.GPS_ALTITUDE) == 3
 
 
 def test_orientation_packet(qtbot, single_connection_tantalus):
@@ -239,15 +240,15 @@ def test_orientation_packet(qtbot, single_connection_tantalus):
     assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 
     assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1,
-                                                DataEntryIds.TIME.value) == 0xFFFFFFFF
+                                                DataEntryIds.TIME) == 0xFFFFFFFF
     assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1,
-                                                DataEntryIds.ORIENTATION_1.value) == 1
+                                                DataEntryIds.ORIENTATION_1) == 1
     assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1,
-                                                DataEntryIds.ORIENTATION_2.value) == 2
+                                                DataEntryIds.ORIENTATION_2) == 2
     assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1,
-                                                DataEntryIds.ORIENTATION_3.value) == 3
+                                                DataEntryIds.ORIENTATION_3) == 3
     assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1,
-                                                DataEntryIds.ORIENTATION_4.value) == 4
+                                                DataEntryIds.ORIENTATION_4) == 4
 
 
 def test_multi_connection_receive(qtbot, integration_app):
@@ -258,20 +259,21 @@ def test_multi_connection_receive(qtbot, integration_app):
     snapshot = get_event_stats_snapshot()
     app = integration_app(TantalusProfile(), {'DEBUG_CONNECTION_1': con_a, 'DEBUG_CONNECTION_2': con_b})
 
-    con_a.receive(radio_packets.single_sensor(0xFFFFFFFF, DataEntryIds.PRESSURE.value, 1))
-    con_b.receive(radio_packets.single_sensor(0xFFFFFFFF, DataEntryIds.PRESSURE.value, 2))
+    con_a.receive(radio_packets.single_sensor(0xFFFFFFFF, DataEntryIds.PRESSURE, 1))
+    con_b.receive(radio_packets.single_sensor(0xFFFFFFFF, DataEntryIds.PRESSURE, 2))
 
     # Fake some other device on same connection
     con_a.device_address = 'OTHER_ADDRESS'
-    con_a.receive(radio_packets.config(0xFFFFFFFF, True, DEVICE_TYPE_TO_ID[DeviceType.CO_PILOT], 'version'))
-    con_a.receive(radio_packets.single_sensor(0xFFFFFFFF, DataEntryIds.PRESSURE.value, 3))
+    sample_version = '1234567890123456789012345678901234567890'
+    con_a.receive(radio_packets.config(0xFFFFFFFF, True, DEVICE_TYPE_TO_ID[DeviceType.CO_PILOT], sample_version))
+    con_a.receive(radio_packets.single_sensor(0xFFFFFFFF, DataEntryIds.PRESSURE, 3))
 
     assert DEVICE_REGISTERED_EVENT.wait(snapshot, num_expected=3) == 3
     assert BUNDLE_ADDED_EVENT.wait(snapshot, num_expected=6) == 6
 
-    assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.PRESSURE.value) == 1
-    assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_2, DataEntryIds.PRESSURE.value) == 2
-    assert app.rocket_data.last_value_by_device(DeviceType.CO_PILOT, DataEntryIds.PRESSURE.value) == 3
+    assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.PRESSURE) == 1
+    assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_2, DataEntryIds.PRESSURE) == 2
+    assert app.rocket_data.last_value_by_device(DeviceType.CO_PILOT, DataEntryIds.PRESSURE) == 3
 
 
 def test_multi_connection_commands(qtbot, integration_app):
@@ -288,7 +290,8 @@ def test_multi_connection_commands(qtbot, integration_app):
 
     # Fake some other device on same connection
     con_a.device_address = 'OTHER_ADDRESS'
-    con_a.receive(radio_packets.config(0xFFFFFFFF, True, DEVICE_TYPE_TO_ID[DeviceType.CO_PILOT], 'version'))
+    sample_version = '1234567890123456789012345678901234567890'
+    con_a.receive(radio_packets.config(0xFFFFFFFF, True, DEVICE_TYPE_TO_ID[DeviceType.CO_PILOT], sample_version))
 
     assert DEVICE_REGISTERED_EVENT.wait(snapshot, num_expected=3) == 3
 
@@ -318,14 +321,14 @@ def test_register_after_data(qtbot, integration_app):
 
     # Fake stage 2 on same connection
     con.device_address = 'TANTALUS_STAGE_2_ADDRESS'
-    con.receive(radio_packets.single_sensor(0xFFFFFFFF, DataEntryIds.PRESSURE.value, 1))
+    con.receive(radio_packets.single_sensor(0xFFFFFFFF, DataEntryIds.PRESSURE, 1))
     assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 
     # Cause device to register
     con.receive(radio_packets.config(0xFFFFFFFF, True, DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_2], REQUIRED_FLARE))
     assert DEVICE_REGISTERED_EVENT.wait(snapshot) == 1
 
-    assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_2, DataEntryIds.PRESSURE.value) == 1
+    assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_2, DataEntryIds.PRESSURE) == 1
 
 
 def test_clean_shutdown(qtbot):

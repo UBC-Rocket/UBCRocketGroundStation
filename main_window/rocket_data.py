@@ -32,7 +32,7 @@ class RocketData:
         self.existing_entry_keys: Set[DataEntryKey] = set() # Set of entry keys that have actually been recorded. Used for creating csv header
 
         self.callback_lock = threading.RLock()  # Only for callback dict
-        self.callbacks: Dict[Callable] = {}
+        self.callbacks: Dict[CallBackKey, List[Callable]] = {}
 
         self.as_cv = threading.Condition()  # Condition variable for autosave (as)
         self._as_is_shutting_down = False  # Lock in cv is used to protect this
@@ -131,7 +131,6 @@ class RocketData:
                     return self.timeset[times[i]][data_entry_key]
             return None
 
-    # TODO make incoming converter from enum to const str (if key or val is enum (or object?))
     def save(self, csv_path):
         """
         Data saving function that creates csv
@@ -147,7 +146,7 @@ class RocketData:
 
             # all appearing keys
             keys: List[DataEntryKey] = list(map(
-                lambda data_entry_key: DataEntryKey(data_entry_key.full_address, data_entry_key.data_id.name),
+                lambda data_entry_key: DataEntryKey(data_entry_key.full_address, data_entry_key.data_id),
                 self.existing_entry_keys))
 
             data = np.empty((len(keys), len(self.timeset) + 1), dtype=object)
@@ -156,12 +155,15 @@ class RocketData:
             for ix, iy in np.ndindex(data.shape):
                 # Make the first row a list of sensor names
                 if iy == 0:
-                    # TODO Get rid of this check once tests cleaned up, should only ever pass in DataEntryIds
-                    name = DataEntryIds(keys[ix].data_id).name if type(keys[ix].data_id) is int else str(keys[ix].data_id)
+                    # TODO Get rid of int check once tests cleaned up, should only ever pass in DataEntryIds
+                    data_name = DataEntryIds(keys[ix].data_id).name if type(keys[ix].data_id) is int else keys[ix].data_id.name
                     device = self.device_manager.get_device_type(keys[ix].full_address)
 
-                    data[ix, iy] = name + '_' + device.name if device else \
-                        f"{keys[ix].full_address.connection_name}_{keys[ix].full_address.device_address}"
+                    if device:
+                        device_name = device.name
+                    else:
+                        device_name = f"{keys[ix].full_address.connection_name}_{keys[ix].full_address.device_address}"
+                    data[ix, iy] = data_name + '_' + device_name
                 else:
                     if keys[ix].data_id == DataEntryIds.TIME:
                         data[ix, iy] = times[iy - 1]

@@ -78,7 +78,6 @@ class ReadThread(QtCore.QThread):
             full_address = FullAddress(connection_name=self.connection_to_name[connection],
                                        device_address=connection_message.device_address)
             data = connection_message.data
-            print("Raw data", data)
 
             byte_stream: BytesIO = BytesIO(data)
 
@@ -100,8 +99,7 @@ class ReadThread(QtCore.QThread):
                     elif DataEntryIds.VERSION_ID.name in parsed_data:
                         LOGGER.warning('Received VERSION_ID but not DEVICE_TYPE')
 
-                    print("Parsed", parsed_data)
-                    self.rocket_data.addBundle(full_address, parsed_data)
+                    self.rocket_data.add_bundle(full_address, parsed_data)
 
                     # notify UI that new data is available to be displayed
                     self.sig_received.emit()

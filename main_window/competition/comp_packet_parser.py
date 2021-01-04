@@ -51,11 +51,11 @@ class CompPacketParser(PacketParser):
         # Overall status from 6th and 7th bits
         overall_status = curr_byte & 0b11
         if overall_status == 0b00000000:  # TODO Review if this mapping of 0bxxx -> status should be extracted
-            data[DataEntryIds.STATUS_PING] = DataEntryIds.NOMINAL.name # TODO Review if these should use .value or name
+            data[DataEntryIds.STATUS_PING] = DataEntryIds.NOMINAL
         elif overall_status == 0b00000001:
-            data[DataEntryIds.STATUS_PING] = DataEntryIds.NONCRITICAL_FAILURE.name
+            data[DataEntryIds.STATUS_PING] = DataEntryIds.NONCRITICAL_FAILURE
         elif overall_status == 0b00000011:
-            data[DataEntryIds.STATUS_PING] = DataEntryIds.CRITICAL_FAILURE.name
+            data[DataEntryIds.STATUS_PING] = DataEntryIds.CRITICAL_FAILURE
         data[DataEntryIds.OVERALL_STATUS] = curr_byte  # TODO Review if safer this way
         LOGGER.info("Overall rocket status: %s", str(data[DataEntryIds.STATUS_PING]))
 

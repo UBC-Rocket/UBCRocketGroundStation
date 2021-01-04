@@ -48,32 +48,32 @@ def wait_new_bundle():
 
 def test_arming(qtbot, main_app):
     wait_new_bundle()
-    assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.STATE.value) == 0
+    assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.STATE) == 0
 
     main_app.send_command("tantalus_stage_1.arm")
     wait_new_bundle()
 
-    assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.STATE.value) == 1
+    assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.STATE) == 1
 
     main_app.send_command("tantalus_stage_1.disarm")
     wait_new_bundle()
 
-    assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.STATE.value) == 0
+    assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.STATE) == 0
 
 def test_config_hello(qtbot, main_app):
     wait_new_bundle()
     # Should have already received at least one config packet from the startup hello
-    assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.IS_SIM.name) == True
-    assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.DEVICE_TYPE.name) == DeviceType.TANTALUS_STAGE_1
+    assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.IS_SIM) == True
+    assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.DEVICE_TYPE) == DeviceType.TANTALUS_STAGE_1
 
     snapshot = get_event_stats_snapshot()
     main_app.send_command("tantalus_stage_1.config")
     wait_new_bundle()
     assert CONFIG_EVENT.wait(snapshot) == 1
 
-    assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.IS_SIM.name) == True
-    assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.VERSION_ID.name) is not None
-    assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.DEVICE_TYPE.name) == DeviceType.TANTALUS_STAGE_1
+    assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.IS_SIM) == True
+    assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.VERSION_ID) is not None
+    assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.DEVICE_TYPE) == DeviceType.TANTALUS_STAGE_1
 
 
 def test_gps_read(qtbot, main_app):
@@ -93,9 +93,9 @@ def test_gps_read(qtbot, main_app):
         main_app.send_command("tantalus_stage_1.gpsalt")
         assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
 
-        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.LATITUDE.value) == vals[0]
-        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.LONGITUDE.value) == vals[1]
-        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.GPS_ALTITUDE.value) == vals[2]
+        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.LATITUDE) == vals[0]
+        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.LONGITUDE) == vals[1]
+        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.GPS_ALTITUDE) == vals[2]
 
 
 def test_baro_altitude(qtbot, main_app):
@@ -114,7 +114,7 @@ def test_baro_altitude(qtbot, main_app):
     ground_pres = hw.sensor_read(SensorType.BAROMETER)[0]
     set_dummy_sensor_values(hw, SensorType.BAROMETER, ground_pres, 25)
     wait_new_bundle()
-    assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.CALCULATED_ALTITUDE.value) == 0
+    assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.CALCULATED_ALTITUDE) == 0
 
     # Note: Kind of a hack because ground altitude is only solidified once rocket launches. Here we are abusing the
     # fact that we dont update the ground altitude if the pressure change is too large. This allows us to run these
@@ -136,11 +136,11 @@ def test_baro_altitude(qtbot, main_app):
         main_app.send_command("tantalus_stage_1.barotemp")
         assert SINGLE_SENSOR_EVENT.wait(snapshot, num_expected=2) == 2
 
-        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.PRESSURE.value) == vals[0]
-        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.BAROMETER_TEMPERATURE.value) == vals[1]
-        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.CALCULATED_ALTITUDE.value) == approx(
+        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.PRESSURE) == vals[0]
+        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.BAROMETER_TEMPERATURE) == vals[1]
+        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.CALCULATED_ALTITUDE) == approx(
             altitude(vals[0]) - altitude(ground_pres), 0.1)
-        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.BAROMETER_TEMPERATURE.value) == vals[1]
+        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.BAROMETER_TEMPERATURE) == vals[1]
 
 
 def test_accelerometer_read(qtbot, main_app):
@@ -157,9 +157,9 @@ def test_accelerometer_read(qtbot, main_app):
         set_dummy_sensor_values(hw, SensorType.ACCELEROMETER, *vals)
         wait_new_bundle()
 
-        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.ACCELERATION_X.value) == vals[0]
-        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.ACCELERATION_Y.value) == vals[1]
-        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.ACCELERATION_Z.value) == vals[2]
+        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.ACCELERATION_X) == vals[0]
+        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.ACCELERATION_Y) == vals[1]
+        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.ACCELERATION_Z) == vals[2]
 
 
 def test_imu_read(qtbot, main_app):
@@ -177,9 +177,9 @@ def test_imu_read(qtbot, main_app):
         set_dummy_sensor_values(hw, SensorType.IMU, *vals)
         wait_new_bundle()
 
-        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.ORIENTATION_1.value) == vals[0]
-        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.ORIENTATION_2.value) == vals[1]
-        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.ORIENTATION_3.value) == vals[2]
+        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.ORIENTATION_1) == vals[0]
+        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.ORIENTATION_2) == vals[1]
+        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.ORIENTATION_3) == vals[2]
 
 
 def test_temperature_read(qtbot, main_app):
@@ -199,17 +199,17 @@ def test_temperature_read(qtbot, main_app):
         main_app.send_command("tantalus_stage_1.TEMP")
         assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
 
-        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.TEMPERATURE.value) == vals[0]
+        assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.TEMPERATURE) == vals[0]
 
 def test_time_update(qtbot, main_app):
     connection = main_app.connections['TANTALUS_STAGE_1_CONNECTION']
     hw = connection._hw_sim
 
     wait_new_bundle()
-    initial = main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.TIME.value)
+    initial = main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.TIME)
     hw.time_update(1000)
     wait_new_bundle()
-    final = main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.TIME.value)
+    final = main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.TIME)
     delta = final - initial
     assert delta >= 1000
 

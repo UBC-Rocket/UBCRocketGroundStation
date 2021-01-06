@@ -128,7 +128,6 @@ def test_single_sensor_packet(qtbot, single_connection_tantalus):
         connection.receive(packet)
 
         assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
-
         assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1,
                                                     DataEntryIds.TIME) == 0xFFFFFFFF
         assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, sensor_id) == val
@@ -196,7 +195,7 @@ def test_status_ping_packet(qtbot, single_connection_tantalus):
     # TODO Not sure if this is correct, in terms of STATUS_PING and also NONCRITICAL_FAILURE comparison
     assert (
             app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DataEntryIds.STATUS_PING)
-            == DataEntryIds.NONCRITICAL_FAILURE
+            == DataEntryIds.CRITICAL_FAILURE
     )
     for sensor in SENSOR_TYPES:
         assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, sensor) == 1
@@ -339,7 +338,7 @@ def test_clean_shutdown(qtbot):
     assert app.SendThread.isRunning()
     assert app.MappingThread.isRunning()
     assert app.MappingThread.map_process.is_alive()
-    assert app.rocket_data.autosaveThread.is_alive()
+    assert app.rocket_data.autosave_thread.is_alive()
     for connection in app.connections.values():
         assert connection.connectionThread.is_alive()
 
@@ -348,7 +347,7 @@ def test_clean_shutdown(qtbot):
     assert app.ReadThread.isFinished()
     assert app.SendThread.isFinished()
     assert app.MappingThread.isFinished()
-    assert not app.rocket_data.autosaveThread.is_alive()
+    assert not app.rocket_data.autosave_thread.is_alive()
     for connection in app.connections.values():
         assert not connection.connectionThread.is_alive()
 

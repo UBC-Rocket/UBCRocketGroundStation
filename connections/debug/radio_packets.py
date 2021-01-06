@@ -1,6 +1,7 @@
 import struct
 from enum import Enum
 
+from main_window.data_entry_id import DataEntryIds
 from main_window.packet_parser import SubpacketIds
 from main_window.competition.comp_packet_parser import SubpacketIds as SubpacketIds_Comp
 
@@ -28,17 +29,18 @@ def bulk_sensor(time: int, barometer_altitude: float, acceleration_x: float, acc
     bulk_sensor_arr.extend(state.to_bytes(length=1, byteorder='big'))  # State
     return bulk_sensor_arr
 
-def single_sensor(time: int, sensor_id: int, value: float) -> bytearray:
+def single_sensor(time: int, sensor_id: DataEntryIds, value: float) -> bytearray:
     """
 
     :return: data_arr
     :rtype: bytearray
     """
     data_arr: bytearray = bytearray()
-    data_arr.append(sensor_id)  # id
+    data_arr.append(sensor_id.value)  # id
     data_arr.extend((int(time)).to_bytes(length=4, byteorder='big'))  # time
     data_arr.extend(struct.pack(">f", value))  # barometer altitude
     return data_arr
+
 
 class StatusType(Enum):
     NOMINAL = 0b00
@@ -119,7 +121,7 @@ def gps(time: int, latitude: float, longitude: float, gps_altitude: float) -> by
 
 
 def orientation(time: int,  orientation_1: float, orientation_2: float,
-                orientation_3: float,orientation_4: float) -> bytearray:
+                orientation_3: float, orientation_4: float) -> bytearray:
     """
 
     :return: data_arr

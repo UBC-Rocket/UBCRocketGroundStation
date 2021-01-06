@@ -56,7 +56,7 @@ class PacketParser:
         self.big_endian_floats = None
 
         # Dictionary of subpacket id mapped to function to parse that data
-        self.packetTypeToParser: Dict[int, Callable[[BytesIO, Header], Dict[Any, Any]]] = {
+        self.packet_type_to_parser: Dict[int, Callable[[BytesIO, Header], Dict[Any, Any]]] = {
             SubpacketIds.MESSAGE.value: self.message,
             SubpacketIds.EVENT.value: self.event,
             SubpacketIds.CONFIG.value: self.config,
@@ -64,7 +64,7 @@ class PacketParser:
         }
         # TODO Change? to actually adding ids to SubpacketId Enum instead, from range(MIN_SINGLE_SENSOR_ID, MAX_SINGLE_SENSOR_ID + 1):
         for i in data_entry_id.get_list_of_sensor_IDs():
-            self.packetTypeToParser[i] = self.single_sensor
+            self.packet_type_to_parser[i] = self.single_sensor
 
     @property
     def header_size(self):
@@ -116,7 +116,7 @@ class PacketParser:
         :return:
         :rtype:
         """
-        return self.packetTypeToParser[header.subpacket_id](byte_stream, header)
+        return self.packet_type_to_parser[header.subpacket_id](byte_stream, header)
 
     def header(self, byte_stream: BytesIO) -> Header:
         """
@@ -131,7 +131,7 @@ class PacketParser:
         subpacket_id: int = byte_stream.read(1)[0]
 
         # check that id is valid:
-        if subpacket_id not in self.packetTypeToParser:
+        if subpacket_id not in self.packet_type_to_parser:
             LOGGER.error("Subpacket id %d not valid.", subpacket_id)
             raise ValueError("Subpacket id " + str(subpacket_id) + " not valid.")
 
@@ -223,7 +223,7 @@ class PacketParser:
         return data
 
     def register_packet(self, packetType: int, parsing_fn: Callable[[BytesIO, Header], Dict[Any, Any]]):
-        self.packetTypeToParser[packetType] = parsing_fn
+        self.packet_type_to_parser[packetType] = parsing_fn
 
     # TODO Put these in utils folder/file?
     def fourtofloat(self, byte_list):

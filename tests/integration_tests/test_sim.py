@@ -219,7 +219,7 @@ def test_clean_shutdown(qtbot, main_app):
     assert main_app.SendThread.isRunning()
     assert main_app.MappingThread.isRunning()
     assert main_app.MappingThread.map_process.is_alive()
-    assert main_app.rocket_data.autosaveThread.is_alive()
+    assert main_app.rocket_data.autosave_thread.is_alive()
     for connection in main_app.connections.values():
         assert connection.thread.is_alive()
         assert connection._xbee._rocket_rx_thread.is_alive()
@@ -230,7 +230,7 @@ def test_clean_shutdown(qtbot, main_app):
     assert main_app.ReadThread.isFinished()
     assert main_app.SendThread.isFinished()
     assert main_app.MappingThread.isFinished()
-    assert not main_app.rocket_data.autosaveThread.is_alive()
+    assert not main_app.rocket_data.autosave_thread.is_alive()
     for connection in main_app.connections.values():
         assert not connection.thread.is_alive()
         assert not connection._xbee._rocket_rx_thread.is_alive()

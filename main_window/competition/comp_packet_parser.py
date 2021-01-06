@@ -77,9 +77,9 @@ class CompPacketParser(PacketParser):
             data[OTHER_STATUS_TYPES[i]] = self.bitfrombyte(byte_list[byte_index], relative_bit_index)
 
         LOGGER.info(" - status of sensors" + ", %s" * len(SENSOR_TYPES),
-                    *[sensor + ": " + str(data[sensor]) for sensor in SENSOR_TYPES])
+                    *[sensor.name + ": " + str(data[sensor]) for sensor in SENSOR_TYPES])
         LOGGER.info(" - status of others" + ", %s" * len(OTHER_STATUS_TYPES),
-                    *[other + ": " + str(data[other]) for other in OTHER_STATUS_TYPES])
+                    *[other.name + ": " + str(data[other]) for other in OTHER_STATUS_TYPES])
         return data
 
     def bulk_sensor(self, byte_stream: BytesIO, header: Header):

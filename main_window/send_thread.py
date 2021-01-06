@@ -122,7 +122,7 @@ class SendThread(QtCore.QThread):
                     LOGGER.error(f"Unknown command {command_str}")
                     continue
 
-                LOGGER.info(f"Sending command {command.name} to device {device.name} ({full_address})")
+                LOGGER.info(f"Sending command {command} to device {device.name} ({full_address})")
 
                 data = bytes([command.value])
                 connection.send(full_address.device_address, data)

@@ -83,7 +83,10 @@ class TantalusProfile(RocketProfile):
     def construct_sim_connection(self):
         # Assemble HW here
 
-        hw_sim_sensors = [
+        '''
+        Stage 1
+        '''
+        hw_sim_sensors_stage_1 = [
             DummySensor(SensorType.BAROMETER, (1000, 25)),
             DummySensor(SensorType.GPS, (12.6, 13.2, 175)),
             DummySensor(SensorType.ACCELEROMETER, (1, 0, 0)),
@@ -91,15 +94,34 @@ class TantalusProfile(RocketProfile):
             DummySensor(SensorType.TEMPERATURE, (20,)),
         ]
 
-        hw_sim_ignitors = [
+        hw_sim_ignitors_stage_1 = [
             Ignitor(IgnitorType.MAIN, 4, 14, 16),
             Ignitor(IgnitorType.DROGUE, 17, 34, 35),
         ]
 
-        hwsim = HWSim(hw_sim_sensors, hw_sim_ignitors)
+        hwsim_stage_1 = HWSim(hw_sim_sensors_stage_1, hw_sim_ignitors_stage_1)
+
+        '''
+        Stage 2
+        '''
+        hw_sim_sensors_stage_2 = [
+            DummySensor(SensorType.BAROMETER, (1000, 25)),
+            DummySensor(SensorType.GPS, (12.6, 13.2, 175)),
+            DummySensor(SensorType.ACCELEROMETER, (1, 0, 0)),
+            DummySensor(SensorType.IMU, (1, 0, 0, 0)),
+            DummySensor(SensorType.TEMPERATURE, (20,)),
+        ]
+
+        hw_sim_ignitors_stage_2 = [
+            Ignitor(IgnitorType.MAIN, 4, 14, 16),
+            Ignitor(IgnitorType.DROGUE, 17, 34, 35),
+        ]
+
+        hwsim_stage_2 = HWSim(hw_sim_sensors_stage_2, hw_sim_ignitors_stage_2)
 
         return {
-            'TANTALUS_STAGE_1_CONNECTION': SimConnection("TantalusStage1", "0013A20041678FC0", hwsim),
+            'TANTALUS_STAGE_1_CONNECTION': SimConnection("TantalusStage1", "0013A20041678FC0", hwsim_stage_1),
+            'TANTALUS_STAGE_2_CONNECTION': SimConnection("TantalusStage2", "0013A20041678FC0", hwsim_stage_2),
         }
 
     def construct_app(self, connections):

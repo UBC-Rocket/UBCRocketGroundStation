@@ -20,7 +20,7 @@ def integration_app(caplog):
         else:
             expected = num_devices
 
-        assert DEVICE_REGISTERED_EVENT.wait(snapshot, num_expected=num_devices) == num_devices
+        assert DEVICE_REGISTERED_EVENT.wait(snapshot, num_expected=expected) == expected
 
         return app
 

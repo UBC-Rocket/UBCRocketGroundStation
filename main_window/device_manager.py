@@ -67,7 +67,7 @@ class DeviceManager:
             # If two devices somehow have the same full address, mapping wont be one-to-one.
             assert len(self._device_type_to_device) == len(self._full_address_to_device)
 
-            LOGGER.info(f"Registered device={device_type.name}, full_address={full_address}, {self.num_expected_registered}/{len(self.expected_devices)} expected devices")
+            LOGGER.info(f"Registered device={device_type.name}, full_address={full_address}, {self.num_expected_registered()}/{len(self.expected_devices)} expected devices")
             DEVICE_REGISTERED_EVENT.increment()
 
     def get_full_address(self, device_type: DeviceType) -> FullAddress:

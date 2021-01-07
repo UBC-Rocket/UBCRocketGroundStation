@@ -18,6 +18,7 @@ from main_window.packet_parser import (
 )
 from main_window.competition.comp_packet_parser import BULK_SENSOR_EVENT
 from main_window.read_thread import CONNECTION_MESSAGE_READ_EVENT
+from main_window.rocket_data import RocketData
 
 from util.event_stats import get_event_stats_snapshot
 
@@ -39,39 +40,46 @@ def set_dummy_sensor_values(hw, sensor_type: SensorType, *vals):
         hw._sensors[sensor_type].set_value(tuple(vals))
 
 
-def wait_new_bundle():
+def wait_new_bundle(rocket_data: RocketData, device_type: DeviceType):
     # Wait a few update cycles to flush any old packets out
-    for i in range(5):
+    received = 0
+    last_time = 0
+    while received < 5:
         snapshot = get_event_stats_snapshot()
         assert SENSOR_READ_EVENT.wait(snapshot) >= 1
         assert BULK_SENSOR_EVENT.wait(snapshot) >= 1
         assert BUNDLE_ADDED_EVENT.wait(snapshot) >= 1
         assert CONNECTION_MESSAGE_READ_EVENT.wait(snapshot) >= 1
 
+        # To ensure that we're only considering packets from specific device
+        new_time = rocket_data.last_value_by_device(device_type, SubpacketEnum.TIME.value)
+        if new_time != last_time: # No guarantee that packets come in chronological order
+            received += 1
+            last_time = new_time
 
 def test_arming(qtbot, main_app):
-    wait_new_bundle()
+    wait_new_bundle(main_app.rocket_data, DeviceType.TANTALUS_STAGE_1)
     assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, SubpacketEnum.STATE.value) == 0
 
     main_app.send_command("tantalus_stage_1.arm")
-    wait_new_bundle()
+    wait_new_bundle(main_app.rocket_data, DeviceType.TANTALUS_STAGE_1)
 
     assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, SubpacketEnum.STATE.value) == 1
 
     main_app.send_command("tantalus_stage_1.disarm")
-    wait_new_bundle()
+    wait_new_bundle(main_app.rocket_data, DeviceType.TANTALUS_STAGE_1)
 
     assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, SubpacketEnum.STATE.value) == 0
 
 def test_config_hello(qtbot, main_app):
-    wait_new_bundle()
+    wait_new_bundle(main_app.rocket_data, DeviceType.TANTALUS_STAGE_1)
     # Should have already received at least one config packet from the startup hello
     assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, IS_SIM) == True
     assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, DEVICE_TYPE) == DeviceType.TANTALUS_STAGE_1
 
     snapshot = get_event_stats_snapshot()
     main_app.send_command("tantalus_stage_1.config")
-    wait_new_bundle()
+    wait_new_bundle(main_app.rocket_data, DeviceType.TANTALUS_STAGE_1)
     assert CONFIG_EVENT.wait(snapshot) == 1
 
     assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, IS_SIM) == True
@@ -91,7 +99,7 @@ def test_gps_read(qtbot, main_app):
 
     for vals in test_vals:
         set_dummy_sensor_values(hw, SensorType.GPS, *vals)
-        wait_new_bundle()
+        wait_new_bundle(main_app.rocket_data, DeviceType.TANTALUS_STAGE_1)
         snapshot = get_event_stats_snapshot()
         main_app.send_command("tantalus_stage_1.gpsalt")
         assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
@@ -116,7 +124,7 @@ def test_baro_altitude(qtbot, main_app):
     # Set base/ground altitude
     ground_pres = hw.sensor_read(SensorType.BAROMETER)[0]
     set_dummy_sensor_values(hw, SensorType.BAROMETER, ground_pres, 25)
-    wait_new_bundle()
+    wait_new_bundle(main_app.rocket_data, DeviceType.TANTALUS_STAGE_1)
     assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, SubpacketEnum.CALCULATED_ALTITUDE.value) == 0
 
     # Note: Kind of a hack because ground altitude is only solidified once rocket launches. Here we are abusing the
@@ -132,7 +140,7 @@ def test_baro_altitude(qtbot, main_app):
 
     for vals in test_vals:
         set_dummy_sensor_values(hw, SensorType.BAROMETER, *vals)
-        wait_new_bundle()
+        wait_new_bundle(main_app.rocket_data, DeviceType.TANTALUS_STAGE_1)
 
         snapshot = get_event_stats_snapshot()
         main_app.send_command("tantalus_stage_1.baropres")
@@ -158,7 +166,7 @@ def test_accelerometer_read(qtbot, main_app):
 
     for vals in test_vals:
         set_dummy_sensor_values(hw, SensorType.ACCELEROMETER, *vals)
-        wait_new_bundle()
+        wait_new_bundle(main_app.rocket_data, DeviceType.TANTALUS_STAGE_1)
 
         assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, SubpacketEnum.ACCELERATION_X.value) == vals[0]
         assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, SubpacketEnum.ACCELERATION_Y.value) == vals[1]
@@ -178,7 +186,7 @@ def test_imu_read(qtbot, main_app):
 
     for vals in test_vals:
         set_dummy_sensor_values(hw, SensorType.IMU, *vals)
-        wait_new_bundle()
+        wait_new_bundle(main_app.rocket_data, DeviceType.TANTALUS_STAGE_1)
 
         assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, SubpacketEnum.ORIENTATION_1.value) == vals[0] # TODO Problematic dependency on subpacket_ids
         assert main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, SubpacketEnum.ORIENTATION_2.value) == vals[1]
@@ -197,7 +205,7 @@ def test_temperature_read(qtbot, main_app):
 
     for vals in test_vals:
         set_dummy_sensor_values(hw, SensorType.TEMPERATURE, *vals)
-        wait_new_bundle()  # Just to wait a few cycles for the FW to read from HW sim
+        wait_new_bundle(main_app.rocket_data, DeviceType.TANTALUS_STAGE_1)  # Just to wait a few cycles for the FW to read from HW sim
         snapshot = get_event_stats_snapshot()
         main_app.send_command("tantalus_stage_1.TEMP")
         assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
@@ -208,10 +216,10 @@ def test_time_update(qtbot, main_app):
     connection = main_app.connections['TANTALUS_STAGE_1_CONNECTION']
     hw = connection._hw_sim
 
-    wait_new_bundle()
+    wait_new_bundle(main_app.rocket_data, DeviceType.TANTALUS_STAGE_1)
     initial = main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, SubpacketEnum.TIME.value)
     hw.time_update(1000)
-    wait_new_bundle()
+    wait_new_bundle(main_app.rocket_data, DeviceType.TANTALUS_STAGE_1)
     final = main_app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1, SubpacketEnum.TIME.value)
     delta = final - initial
     assert delta >= 1000

@@ -18,8 +18,18 @@ class DeviceType(Enum):
 
 class DeviceManager:
 
-    def __init__(self, required_versions: Dict[DeviceType, str], strict_versions=True):
-        self.required_versions = required_versions
+    def __init__(self, expected_devices: List[DeviceType], required_versions: Dict[DeviceType, str], strict_versions=True):
+
+        if expected_devices is None:
+            self.expected_devices = []
+        else:
+            self.expected_devices = expected_devices
+
+        if required_versions is None:
+            self.required_versions = dict()
+        else:
+            self.required_versions = required_versions
+
         self.strict_versions = strict_versions
 
         self._lock = RLock()
@@ -57,7 +67,7 @@ class DeviceManager:
             # If two devices somehow have the same full address, mapping wont be one-to-one.
             assert len(self._device_type_to_device) == len(self._full_address_to_device)
 
-            LOGGER.info(f"Registered device={device_type.name}, full_address={full_address}")
+            LOGGER.info(f"Registered device={device_type.name}, full_address={full_address}, {self.num_expected_registered}/{len(self.expected_devices)} expected devices")
             DEVICE_REGISTERED_EVENT.increment()
 
     def get_full_address(self, device_type: DeviceType) -> FullAddress:
@@ -72,6 +82,15 @@ class DeviceManager:
                 return None
             return self._full_address_to_device[full_address].device_type
 
+    def num_expected_registered(self):
+        with self._lock:
+            count = 0
+
+            for device_type in self._device_type_to_device:
+                if device_type in self.expected_devices:
+                    count += 1
+
+        return count
 
 class InvalidRegistration(Exception):
     pass

@@ -22,12 +22,16 @@ class WbProfile(RocketProfile):
         return None
 
     @property
+    def expected_devices(self):
+        return None
+
+    @property
     def mapping_device(self):
         return None
 
     @property
     def required_device_versions(self):
-        return dict()
+        return None
 
     def construct_serial_connection(self, com_port, baud_rate):
         return None

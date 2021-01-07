@@ -4,7 +4,7 @@ from util.event_stats import get_event_stats_snapshot
 
 
 def test_normal_registration():
-    device_manager = DeviceManager(dict())
+    device_manager = DeviceManager(None, None)
 
     full_address_1 = FullAddress(connection_name='TantalusStage1Connection', device_address='TantalusStage1Address')
     full_address_2 = FullAddress(connection_name='TantalusStage2Connection', device_address='TantalusStage2Address')
@@ -20,7 +20,7 @@ def test_normal_registration():
 
 
 def test_existing_device():
-    device_manager = DeviceManager(dict())
+    device_manager = DeviceManager(None, None)
     full_address_1 = FullAddress(connection_name='TantalusStage1Connection', device_address='TantalusStage1Address')
     full_address_2 = FullAddress(connection_name='TantalusStage2Connection', device_address='TantalusStage2Address')
     device_manager.register_device(DeviceType.TANTALUS_STAGE_1, None, full_address_1)
@@ -32,7 +32,7 @@ def test_existing_device():
 
 
 def test_existing_full_address():
-    device_manager = DeviceManager(dict())
+    device_manager = DeviceManager(None, None)
     full_address_1 = FullAddress(connection_name='TantalusStage1Connection', device_address='TantalusStage1Address')
     device_manager.register_device(DeviceType.TANTALUS_STAGE_1, None, full_address_1)
 
@@ -42,10 +42,21 @@ def test_existing_full_address():
     assert device_manager.get_full_address(DeviceType.TANTALUS_STAGE_1) == full_address_1
 
 def test_wrong_version():
-    device_manager = DeviceManager({DeviceType.TANTALUS_STAGE_1: 'RequiredVersion'})
+    device_manager = DeviceManager(None, {DeviceType.TANTALUS_STAGE_1: 'RequiredVersion'})
     full_address_1 = FullAddress(connection_name='TantalusStage1Connection', device_address='TantalusStage1Address')
 
     with pytest.raises(InvalidDeviceVersion):
         device_manager.register_device(DeviceType.TANTALUS_STAGE_1, 'OtherVersion', full_address_1)
 
     assert device_manager.get_full_address(DeviceType.TANTALUS_STAGE_1) is None
+
+def test_num_expected():
+    device_manager = DeviceManager([DeviceType.TANTALUS_STAGE_1], None)
+    full_address_1 = FullAddress(connection_name='TantalusStage1Connection', device_address='TantalusStage1Address')
+    full_address_2 = FullAddress(connection_name='TantalusStage2Connection', device_address='TantalusStage2Address')
+
+    device_manager.register_device(DeviceType.TANTALUS_STAGE_2, None, full_address_2)
+    assert device_manager.num_expected_registered() == 0
+
+    device_manager.register_device(DeviceType.TANTALUS_STAGE_1, None, full_address_1)
+    assert device_manager.num_expected_registered() == 1

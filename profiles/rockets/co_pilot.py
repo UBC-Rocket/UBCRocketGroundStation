@@ -41,6 +41,10 @@ class CoPilotProfile(RocketProfile):
         ]
 
     @property
+    def expected_devices(self):
+        return [DeviceType.CO_PILOT]
+
+    @property
     def mapping_device(self):
         return DeviceType.CO_PILOT
 

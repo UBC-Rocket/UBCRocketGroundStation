@@ -47,6 +47,13 @@ class TantalusProfile(RocketProfile):
         ]
 
     @property
+    def expected_devices(self):
+        return [
+            DeviceType.TANTALUS_STAGE_1,
+            DeviceType.TANTALUS_STAGE_2,
+        ]
+
+    @property
     def mapping_device(self):
         return DeviceType.TANTALUS_STAGE_1
 

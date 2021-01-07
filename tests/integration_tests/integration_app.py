@@ -2,7 +2,6 @@ import pytest
 import logging
 
 from main_window.device_manager import DEVICE_REGISTERED_EVENT
-from main_window.read_thread import CONNECTION_MESSAGE_READ_EVENT
 
 from util.event_stats import get_event_stats_snapshot
 
@@ -11,13 +10,17 @@ from util.event_stats import get_event_stats_snapshot
 def integration_app(caplog):
     app = None
 
-    def construct(profile, connections):
+    def construct(profile, connections, num_devices=None):
         nonlocal app
         snapshot = get_event_stats_snapshot()
         app = profile.construct_app(connections)
 
-        assert DEVICE_REGISTERED_EVENT.wait(snapshot, num_expected=len(connections)) == len(connections)
-        assert CONNECTION_MESSAGE_READ_EVENT.wait(snapshot, num_expected=len(connections)) >= len(connections)
+        if num_devices is None:
+            expected = len(profile.expected_devices)
+        else:
+            expected = num_devices
+
+        assert DEVICE_REGISTERED_EVENT.wait(snapshot, num_expected=num_devices) == num_devices
 
         return app
 

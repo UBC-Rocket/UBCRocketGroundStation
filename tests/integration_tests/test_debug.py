@@ -33,7 +33,7 @@ from util.detail import REQUIRED_FLARE
 def single_connection_tantalus(integration_app):
     yield integration_app(TantalusProfile(), {
         'DEBUG_CONNECTION': DebugConnection('TANTALUS_STAGE_1_ADDRESS', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1], generate_radio_packets=False)
-    })
+    }, num_devices=1)
 
 
 def test_arm_signal(qtbot, single_connection_tantalus):
@@ -260,7 +260,7 @@ def test_multi_connection_receive(qtbot, integration_app):
     con_b = DebugConnection('TANTALUS_STAGE_2_ADDRESS', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_2],
                             generate_radio_packets=False)
     snapshot = get_event_stats_snapshot()
-    app = integration_app(TantalusProfile(), {'DEBUG_CONNECTION_1': con_a, 'DEBUG_CONNECTION_2': con_b})
+    app = integration_app(TantalusProfile(), {'DEBUG_CONNECTION_1': con_a, 'DEBUG_CONNECTION_2': con_b}, num_devices=2)
 
     con_a.receive(radio_packets.single_sensor(0xFFFFFFFF, SubpacketEnum.PRESSURE.value, 1))
     con_b.receive(radio_packets.single_sensor(0xFFFFFFFF, SubpacketEnum.PRESSURE.value, 2))
@@ -288,7 +288,7 @@ def test_multi_connection_commands(qtbot, integration_app):
     con_b.send = MagicMock()
 
     snapshot = get_event_stats_snapshot()
-    app = integration_app(TantalusProfile(), {'DEBUG_CONNECTION_1': con_a, 'DEBUG_CONNECTION_2': con_b})
+    app = integration_app(TantalusProfile(), {'DEBUG_CONNECTION_1': con_a, 'DEBUG_CONNECTION_2': con_b}, num_devices=2)
 
     # Fake some other device on same connection
     con_a.device_address = 'OTHER_ADDRESS'
@@ -317,7 +317,7 @@ def test_multi_connection_commands(qtbot, integration_app):
 def test_register_after_data(qtbot, integration_app):
     con = DebugConnection('TANTALUS_STAGE_1_ADDRESS', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1],
                           generate_radio_packets=False)
-    app = integration_app(TantalusProfile(), {'DEBUG_CONNECTION': con})
+    app = integration_app(TantalusProfile(), {'DEBUG_CONNECTION': con}, num_devices=1)
     snapshot = get_event_stats_snapshot()
 
     # Fake stage 2 on same connection

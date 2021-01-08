@@ -28,40 +28,40 @@ class TantalusProfile(RocketProfile):
     @property
     def buttons(self):
         return {
-            "Arm Stage 1": "TANTALUS_STAGE_1.ARM",
-            "Ping Stage 1": "TANTALUS_STAGE_1.PING",
-            "Arm Stage 2": "TANTALUS_STAGE_2.ARM",
-            "Ping Stage 2": "TANTALUS_STAGE_2.PING",
+            "Arm Stage 1": "TANTALUS_STAGE_1_FLARE.ARM",
+            "Ping Stage 1": "TANTALUS_STAGE_1_FLARE.PING",
+            "Arm Stage 2": "TANTALUS_STAGE_2_FLARE.ARM",
+            "Ping Stage 2": "TANTALUS_STAGE_2_FLARE.PING",
         }
 
     @property
     def labels(self):
         return [
-            Label(DeviceType.TANTALUS_STAGE_1, "Altitude", update_altitude),
-            Label(DeviceType.TANTALUS_STAGE_1, "MaxAltitude", update_max_altitude, "Max Altitude"),
-            Label(DeviceType.TANTALUS_STAGE_1, "GPS", update_gps),
-            Label(DeviceType.TANTALUS_STAGE_1, "State", update_state),
-            Label(DeviceType.TANTALUS_STAGE_1, "Pressure", update_pressure),
-            Label(DeviceType.TANTALUS_STAGE_1, "Acceleration", update_acceleration),
-            Label(DeviceType.TANTALUS_STAGE_2, "Stage2State", update_state, "Stage 2 State"),
+            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Altitude", update_altitude),
+            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "MaxAltitude", update_max_altitude, "Max Altitude"),
+            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "GPS", update_gps),
+            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "State", update_state),
+            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Pressure", update_pressure),
+            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Acceleration", update_acceleration),
+            Label(DeviceType.TANTALUS_STAGE_2_FLARE, "Stage2State", update_state, "Stage 2 State"),
         ]
 
     @property
     def expected_devices(self):
         return [
-            DeviceType.TANTALUS_STAGE_1,
-            DeviceType.TANTALUS_STAGE_2,
+            DeviceType.TANTALUS_STAGE_1_FLARE,
+            DeviceType.TANTALUS_STAGE_2_FLARE,
         ]
 
     @property
     def mapping_device(self):
-        return DeviceType.TANTALUS_STAGE_1
+        return DeviceType.TANTALUS_STAGE_1_FLARE
 
     @property
     def required_device_versions(self):
         return {
-            DeviceType.TANTALUS_STAGE_1: REQUIRED_FLARE,
-            DeviceType.TANTALUS_STAGE_2: REQUIRED_FLARE,
+            DeviceType.TANTALUS_STAGE_1_FLARE: REQUIRED_FLARE,
+            DeviceType.TANTALUS_STAGE_2_FLARE: REQUIRED_FLARE,
         }
 
     def construct_serial_connection(self, com_port, baud_rate):
@@ -72,11 +72,11 @@ class TantalusProfile(RocketProfile):
     def construct_debug_connection(self):
         return {
             'TANTALUS_STAGE_1_CONNECTION': DebugConnection('TANTALUS_STAGE_1_RADIO_ADDRESS',
-                                                           DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1],
+                                                           DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1_FLARE],
                                                            generate_radio_packets=True),
 
             'TANTALUS_STAGE_2_CONNECTION': DebugConnection('TANTALUS_STAGE_2_RADIO_ADDRESS',
-                                                           DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_2],
+                                                           DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_2_FLARE],
                                                            generate_radio_packets=True),
         }
 

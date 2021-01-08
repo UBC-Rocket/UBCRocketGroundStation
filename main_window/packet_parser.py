@@ -28,9 +28,9 @@ HEADER_SIZE_WITH_LEN = 6
 HEADER_SIZE_NO_LEN = 5
 
 ID_TO_DEVICE_TYPE = {
-        0x00: DeviceType.TANTALUS_STAGE_1,
-        0x01: DeviceType.TANTALUS_STAGE_2,
-        0x02: DeviceType.CO_PILOT,
+        0x00: DeviceType.TANTALUS_STAGE_1_FLARE,
+        0x01: DeviceType.TANTALUS_STAGE_2_FLARE,
+        0x02: DeviceType.CO_PILOT_FLARE,
 }
 DEVICE_TYPE_TO_ID = {y: x for (x, y) in ID_TO_DEVICE_TYPE.items()}
 

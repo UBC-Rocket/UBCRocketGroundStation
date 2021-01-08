@@ -1,13 +1,11 @@
 import pytest
-import logging
 from pytest import approx
-from .integration_utils import test_app, valid_paramitrization, all_devices, all_profiles, only_flare
+from .integration_utils import test_app, valid_paramitrization, all_devices, all_profiles, only_flare, flush_packets
 from connections.sim.sim_connection import FirmwareNotFound
-from connections.sim.hw_sim import HWSim, SensorType, SENSOR_READ_EVENT
+from connections.sim.hw_sim import HWSim, SensorType
 from main_window.competition.comp_app import CompApp
-from main_window.rocket_data import BUNDLE_ADDED_EVENT
 from main_window.subpacket_ids import SubpacketEnum
-from main_window.device_manager import DeviceType, DEVICE_REGISTERED_EVENT
+from main_window.device_manager import DeviceType
 from main_window.packet_parser import (
     IS_SIM,
     DEVICE_TYPE,
@@ -15,9 +13,6 @@ from main_window.packet_parser import (
     CONFIG_EVENT,
     VERSION_ID,
 )
-from main_window.competition.comp_packet_parser import BULK_SENSOR_EVENT
-from main_window.read_thread import CONNECTION_MESSAGE_READ_EVENT
-from main_window.rocket_data import RocketData
 
 from util.event_stats import get_event_stats_snapshot
 
@@ -27,38 +22,22 @@ def sim_app(test_app, request) -> CompApp:
     profile = request.param
     try:
         connections = profile.construct_sim_connection()
-    except FirmwareNotFound as ex:
+    except FirmwareNotFound:
         pytest.skip("Firmware not found")
         return
 
     return test_app(profile, connections)
 
 
-def set_dummy_sensor_values(hw, sensor_type: SensorType, *vals):
-    with hw.lock:
-        hw._sensors[sensor_type].set_value(tuple(vals))
-
-
-def wait_new_bundle(rocket_data: RocketData, device_type: DeviceType):
-    # Wait a few update cycles to flush any old packets out
-    received = 0
-    last_time = 0
-    while received < 5:
-        snapshot = get_event_stats_snapshot()
-        assert SENSOR_READ_EVENT.wait(snapshot) >= 1
-        assert BULK_SENSOR_EVENT.wait(snapshot) >= 1
-        assert BUNDLE_ADDED_EVENT.wait(snapshot) >= 1
-        assert CONNECTION_MESSAGE_READ_EVENT.wait(snapshot) >= 1
-
-        # To ensure that we're only considering packets from specific device
-        new_time = rocket_data.last_value_by_device(device_type, SubpacketEnum.TIME.value)
-        if new_time != last_time:  # No guarantee that packets come in chronological order
-            received += 1
-            last_time = new_time
-            
 def get_hw_sim(sim_app, device_type: DeviceType) -> HWSim:
     connection_name = sim_app.device_manager.get_full_address(device_type).connection_name
     return sim_app.connections[connection_name]._hw_sim
+
+
+def set_dummy_sensor_values(sim_app, device_type: DeviceType, sensor_type: SensorType, *vals):
+    hw = get_hw_sim(sim_app, device_type)
+    with hw.lock:
+        hw._sensors[sensor_type].set_value(tuple(vals))
 
 
 @pytest.mark.parametrize(
@@ -68,28 +47,28 @@ def get_hw_sim(sim_app, device_type: DeviceType) -> HWSim:
     indirect=['sim_app'])
 class TestFlare:
     def test_arming(self, qtbot, sim_app, device_type):
-        wait_new_bundle(sim_app.rocket_data, device_type)
+        flush_packets(sim_app, device_type)
         assert sim_app.rocket_data.last_value_by_device(device_type, SubpacketEnum.STATE.value) == 0
 
         sim_app.send_command(device_type.name + ".arm")
-        wait_new_bundle(sim_app.rocket_data, device_type)
+        flush_packets(sim_app, device_type)
 
         assert sim_app.rocket_data.last_value_by_device(device_type, SubpacketEnum.STATE.value) == 1
 
         sim_app.send_command(device_type.name + ".disarm")
-        wait_new_bundle(sim_app.rocket_data, device_type)
+        flush_packets(sim_app, device_type)
 
         assert sim_app.rocket_data.last_value_by_device(device_type, SubpacketEnum.STATE.value) == 0
 
     def test_config_hello(self, qtbot, sim_app, device_type):
-        wait_new_bundle(sim_app.rocket_data, device_type)
+        flush_packets(sim_app, device_type)
         # Should have already received at least one config packet from the startup hello
         assert sim_app.rocket_data.last_value_by_device(device_type, IS_SIM) == True
         assert sim_app.rocket_data.last_value_by_device(device_type, DEVICE_TYPE) == device_type
 
         snapshot = get_event_stats_snapshot()
         sim_app.send_command(device_type.name + ".config")
-        wait_new_bundle(sim_app.rocket_data, device_type)
+        flush_packets(sim_app, device_type)
         assert CONFIG_EVENT.wait(snapshot) == 1
 
         assert sim_app.rocket_data.last_value_by_device(device_type, IS_SIM) == True
@@ -97,8 +76,6 @@ class TestFlare:
         assert sim_app.rocket_data.last_value_by_device(device_type, DEVICE_TYPE) == device_type
 
     def test_gps_read(self, qtbot, sim_app, device_type):
-        hw = get_hw_sim(sim_app, device_type)
-
         test_vals = [
             (11, 12, 13),
             (21, 22, 23),
@@ -106,8 +83,8 @@ class TestFlare:
         ]
 
         for vals in test_vals:
-            set_dummy_sensor_values(hw, SensorType.GPS, *vals)
-            wait_new_bundle(sim_app.rocket_data, device_type)
+            set_dummy_sensor_values(sim_app, device_type, SensorType.GPS, *vals)
+            flush_packets(sim_app, device_type)
             snapshot = get_event_stats_snapshot()
             sim_app.send_command(device_type.name + ".gpsalt")
             assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
@@ -129,8 +106,8 @@ class TestFlare:
 
         # Set base/ground altitude
         ground_pres = hw.sensor_read(SensorType.BAROMETER)[0]
-        set_dummy_sensor_values(hw, SensorType.BAROMETER, ground_pres, 25)
-        wait_new_bundle(sim_app.rocket_data, device_type)
+        set_dummy_sensor_values(sim_app, device_type, SensorType.BAROMETER, ground_pres, 25)
+        flush_packets(sim_app, device_type)
         assert sim_app.rocket_data.last_value_by_device(device_type, SubpacketEnum.CALCULATED_ALTITUDE.value) == 0
 
         # Note: Kind of a hack because ground altitude is only solidified once rocket launches. Here we are abusing the
@@ -145,8 +122,8 @@ class TestFlare:
         ]
 
         for vals in test_vals:
-            set_dummy_sensor_values(hw, SensorType.BAROMETER, *vals)
-            wait_new_bundle(sim_app.rocket_data, device_type)
+            set_dummy_sensor_values(sim_app, device_type, SensorType.BAROMETER, *vals)
+            flush_packets(sim_app, device_type)
 
             snapshot = get_event_stats_snapshot()
             sim_app.send_command(device_type.name + ".baropres")
@@ -155,16 +132,14 @@ class TestFlare:
 
             assert sim_app.rocket_data.last_value_by_device(device_type, SubpacketEnum.PRESSURE.value) == vals[0]
             assert sim_app.rocket_data.last_value_by_device(device_type,
-                                                             SubpacketEnum.BAROMETER_TEMPERATURE.value) == vals[1]
+                                                            SubpacketEnum.BAROMETER_TEMPERATURE.value) == vals[1]
             assert sim_app.rocket_data.last_value_by_device(device_type,
-                                                             SubpacketEnum.CALCULATED_ALTITUDE.value) == approx(
+                                                            SubpacketEnum.CALCULATED_ALTITUDE.value) == approx(
                 altitude(vals[0]) - altitude(ground_pres), 0.1)
             assert sim_app.rocket_data.last_value_by_device(device_type,
-                                                             SubpacketEnum.BAROMETER_TEMPERATURE.value) == vals[1]
+                                                            SubpacketEnum.BAROMETER_TEMPERATURE.value) == vals[1]
 
     def test_accelerometer_read(self, qtbot, sim_app, device_type):
-        hw = get_hw_sim(sim_app, device_type)
-
         test_vals = [
             (1, 0, 0),
             (0, 1, 0),
@@ -172,16 +147,14 @@ class TestFlare:
         ]
 
         for vals in test_vals:
-            set_dummy_sensor_values(hw, SensorType.ACCELEROMETER, *vals)
-            wait_new_bundle(sim_app.rocket_data, device_type)
+            set_dummy_sensor_values(sim_app, device_type, SensorType.ACCELEROMETER, *vals)
+            flush_packets(sim_app, device_type)
 
             assert sim_app.rocket_data.last_value_by_device(device_type, SubpacketEnum.ACCELERATION_X.value) == vals[0]
             assert sim_app.rocket_data.last_value_by_device(device_type, SubpacketEnum.ACCELERATION_Y.value) == vals[1]
             assert sim_app.rocket_data.last_value_by_device(device_type, SubpacketEnum.ACCELERATION_Z.value) == vals[2]
 
     def test_imu_read(self, qtbot, sim_app, device_type):
-        hw = get_hw_sim(sim_app, device_type)
-
         test_vals = [
             (1, 0, 0, 0),
             (0, 1, 0, 0),
@@ -190,16 +163,15 @@ class TestFlare:
         ]
 
         for vals in test_vals:
-            set_dummy_sensor_values(hw, SensorType.IMU, *vals)
-            wait_new_bundle(sim_app.rocket_data, device_type)
+            set_dummy_sensor_values(sim_app, device_type, SensorType.IMU, *vals)
+            flush_packets(sim_app, device_type)
 
-            assert sim_app.rocket_data.last_value_by_device(device_type, SubpacketEnum.ORIENTATION_1.value) == vals[0]  # TODO Problematic dependency on subpacket_ids
+            assert sim_app.rocket_data.last_value_by_device(device_type, SubpacketEnum.ORIENTATION_1.value) == vals[
+                0]  # TODO Problematic dependency on subpacket_ids
             assert sim_app.rocket_data.last_value_by_device(device_type, SubpacketEnum.ORIENTATION_2.value) == vals[1]
             assert sim_app.rocket_data.last_value_by_device(device_type, SubpacketEnum.ORIENTATION_3.value) == vals[2]
 
     def test_temperature_read(self, qtbot, sim_app, device_type):
-        hw = get_hw_sim(sim_app, device_type)
-
         test_vals = [
             (0,),
             (10,),
@@ -207,8 +179,8 @@ class TestFlare:
         ]
 
         for vals in test_vals:
-            set_dummy_sensor_values(hw, SensorType.TEMPERATURE, *vals)
-            wait_new_bundle(sim_app.rocket_data, device_type)  # Just to wait a few cycles for the FW to read from HW sim
+            set_dummy_sensor_values(sim_app, device_type, SensorType.TEMPERATURE, *vals)
+            flush_packets(sim_app, device_type)  # Just to wait a few cycles for the FW to read from HW sim
             snapshot = get_event_stats_snapshot()
             sim_app.send_command(device_type.name + ".TEMP")
             assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
@@ -218,16 +190,17 @@ class TestFlare:
     def test_time_update(self, qtbot, sim_app, device_type):
         hw = get_hw_sim(sim_app, device_type)
 
-        wait_new_bundle(sim_app.rocket_data, device_type)
+        flush_packets(sim_app, device_type)
         initial = sim_app.rocket_data.last_value_by_device(device_type, SubpacketEnum.TIME.value)
         hw.time_update(1000)
-        wait_new_bundle(sim_app.rocket_data, device_type)
+        flush_packets(sim_app, device_type)
         final = sim_app.rocket_data.last_value_by_device(device_type, SubpacketEnum.TIME.value)
         delta = final - initial
         assert delta >= 1000
 
 
-@pytest.mark.parametrize("sim_app", valid_paramitrization(all_profiles(excluding=['WbProfile', 'CoPilotProfile'])), indirect=True)
+@pytest.mark.parametrize("sim_app", valid_paramitrization(all_profiles(excluding=['WbProfile', 'CoPilotProfile'])),
+                         indirect=True)
 def test_clean_shutdown(qtbot, sim_app):
     assert sim_app.ReadThread.isRunning()
     assert sim_app.SendThread.isRunning()

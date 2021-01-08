@@ -3,7 +3,11 @@ import logging
 from typing import List, Tuple
 
 from profiles.rocket_profile_list import ROCKET_PROFILES, RocketProfile
+from main_window.main_app import MainApp
 from main_window.device_manager import DeviceType, DEVICE_REGISTERED_EVENT, is_device_type_flare
+from main_window.read_thread import CONNECTION_MESSAGE_READ_EVENT
+from main_window.rocket_data import BUNDLE_ADDED_EVENT
+from main_window.subpacket_ids import SubpacketEnum
 
 from util.event_stats import get_event_stats_snapshot
 
@@ -47,6 +51,28 @@ def test_app(caplog):
         if messages:
             pytest.fail(f"Errors reported in logs: {messages}")
 
+
+def flush_packets(main_app: MainApp, device_type: DeviceType):
+    """
+    Wait a few update cycles to flush any old packets out
+
+    :param rocket_data:
+    :param device_type:
+    :return:
+    """
+
+    received = 0
+    last_time = 0
+    while received < 5:
+        snapshot = get_event_stats_snapshot()
+        assert BUNDLE_ADDED_EVENT.wait(snapshot) >= 1
+        assert CONNECTION_MESSAGE_READ_EVENT.wait(snapshot) >= 1
+
+        # To ensure that we're only considering packets from specific device
+        new_time = main_app.rocket_data.last_value_by_device(device_type, SubpacketEnum.TIME.value)
+        if new_time != last_time:  # No guarantee that packets come in chronological order
+            received += 1
+            last_time = new_time
 
 def all_profiles(excluding: List[str] = []) -> List[RocketProfile]:
     """

@@ -283,6 +283,9 @@ class CompApp(MainApp, Ui_MainWindow):
         annotation_box = AnnotationBbox(OffsetImage(MAP_MARKER), mark, frameon=False)
         self.plotWidget.canvas.ax.add_artist(annotation_box)
 
+        # For debugging marker position
+        #self.plotWidget.canvas.ax.plot(mark[0], mark[1], marker='o', markersize=3, color="red")
+
         self.plotWidget.canvas.draw()
 
         MAP_UPDATED_EVENT.increment()

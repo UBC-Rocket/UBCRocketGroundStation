@@ -117,7 +117,7 @@ class MappingThread(QtCore.QThread):
         zoom = self.map.getMapValue(map_data.ZOOM)
 
         # Create MapPoints that correspond to corners of a square area (of side length 2*radius) surrounding the
-        # inputted latitude and longitude.
+        # inputted latitude and longitude. Radius is in km
 
         lat1 = latitude + radius / 110.574
         lon1 = longitude - radius / 111.320 / math.cos(lat1 * math.pi / 180.0)
@@ -145,7 +145,7 @@ class MappingThread(QtCore.QThread):
         p = mapbox_utils.MapPoint(latitude, longitude)
         x = (p.x - xMin) / (xMax - xMin)
         y = (p.y - yMin) / (yMax - yMin)
-        mark = (x * resizedMapImage.shape[0], y * resizedMapImage.shape[1])
+        mark = (x * resizedMapImage.shape[1], y * resizedMapImage.shape[0]) # images are (h,w) = (y,x) not (w,h) = (x,y)
 
         # TODO NOT ROBUST: What if mapdata updated between top of this function and this setMap
         self.map.setMapValue(map_data.IMAGE, resizedMapImage)
@@ -271,7 +271,7 @@ def processMap(requestQueue, resultQueue):
             # Downsizing the map here to the ideal size for the plot reduces the amount of work required in the main
             # thread and thus reduces stuttering
             resizedMapImage = np.array(Image.fromarray(largeMapImage).resize(
-                (int(scaleFactor * largeMapImage.shape[0]), int(scaleFactor * largeMapImage.shape[1]))))
+                (int(scaleFactor * largeMapImage.shape[1]), int(scaleFactor * largeMapImage.shape[0])))) # x,y order is opposite for resize
 
             resultQueue.put((resizedMapImage, location.xMin, location.xMax, location.yMin, location.yMax))
         except Exception as ex:

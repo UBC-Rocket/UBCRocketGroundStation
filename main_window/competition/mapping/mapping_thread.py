@@ -88,6 +88,7 @@ class MappingThread(QtCore.QThread):
         """
         with self.cv:
             self._desiredMapSize = (x, y)
+            self.notify()
 
     def getDesiredMapSize(self):
         """
@@ -168,7 +169,12 @@ class MappingThread(QtCore.QThread):
                     break
 
             try:
-                # acquire location to use below here, to keep the values consistent in synchronous but adjacent calls
+                # Prevent update spam
+                current_time = time.time()
+                if current_time - last_update_time < 0.5:
+                    time.sleep(0.5)
+
+                # copy location values to use, to keep the values consistent in synchronous but adjacent calls
                 latitude = self.rocket_data.last_value_by_device(self.device, SubpacketEnum.LATITUDE.value)
                 longitude = self.rocket_data.last_value_by_device(self.device, SubpacketEnum.LONGITUDE.value)
 
@@ -178,11 +184,6 @@ class MappingThread(QtCore.QThread):
 
                 # Prevent unnecessary work while data hasnt changed
                 if latitude == last_latitude and longitude == last_longitude:
-                    continue
-
-                # Prevent update spam
-                current_time = time.time()
-                if current_time - last_update_time < 0.5:
                     continue
 
                 if self.plotMap(latitude, longitude):

@@ -237,6 +237,8 @@ class CompApp(MainApp, Ui_MainWindow):
 
         for sub in self.mdiArea.subWindowList():
             sub.close()
+            sub.deleteLater()  # Required to prevent memory leak. Also deletes window sub-objects (plot widget, etc.)
+
         self.setup_subwindow().showMaximized()
 
     def save_view(self):

@@ -132,6 +132,8 @@ class MappingThread(QtCore.QThread):
         p2 = mapbox_utils.MapPoint(lat2, lon2)  # Map corner 2
 
         desiredSize = self.getDesiredMapSize()  # x,y
+        if not desiredSize:
+            return False
 
         self.requestQueue.put_nowait((p0, p1, p2, zoom, desiredSize))
 

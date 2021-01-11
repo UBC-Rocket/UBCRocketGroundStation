@@ -74,7 +74,7 @@ class RocketData:
         self.data_lock = threading.RLock()  # create lock ASAP since self.lock needs to be defined when autosave starts
         self.timeset: Dict[int, Dict[DataEntryKey, Union[int, float]]] = {}
         self.lasttime = 0  # TODO REVIEW/CHANGE THIS, once all subpackets have their own timestamp.
-        self.highest_altitude = 0
+        self.highest_altitude: Dict[FullAddress, float] = dict()
         self.sessionName = os.path.join(LOGS_DIR, "autosave_" + SESSION_ID + ".csv")
         self.existing_entry_keys = set() # Set of entry keys that have actually been recorded. Used for creating csv header
 
@@ -132,11 +132,20 @@ class RocketData:
             # if there's a time, set this to the most recent time val
             if SubpacketEnum.TIME.value in incoming_data:
                 self.lasttime = incoming_data[SubpacketEnum.TIME.value]
+
             # if the timeset then setup a respective dict for the data
             if self.lasttime not in self.timeset:
                 self.timeset[self.lasttime] = {}
 
-            # write the data and call the respective callbacks
+            # if there's an altitude value, update max
+            if SubpacketEnum.CALCULATED_ALTITUDE.value in incoming_data:
+                if full_address in self.highest_altitude:
+                    self.highest_altitude[full_address] = max(self.highest_altitude[full_address],
+                                                              incoming_data[SubpacketEnum.CALCULATED_ALTITUDE.value])
+                else:
+                    self.highest_altitude[full_address] = incoming_data[SubpacketEnum.CALCULATED_ALTITUDE.value]
+
+            # write the data
             for data_id in incoming_data:
                 key = DataEntryKey(full_address, data_id)
                 self.existing_entry_keys.add(key)
@@ -152,10 +161,12 @@ class RocketData:
 
         BUNDLE_ADDED_EVENT.increment()
 
-    # Gets the most recent value specified by the sensor_id given
     def last_value_by_device(self, device: DeviceType, sensor_id):
         """
+        Gets the most recent value specified by the sensor_id given
 
+        :param device:
+        :type device:
         :param sensor_id:
         :type sensor_id:
         :return:
@@ -173,6 +184,25 @@ class RocketData:
             for i in range(len(times)):
                 if data_entry_key in self.timeset[times[i]]:
                     return self.timeset[times[i]][data_entry_key]
+            return None
+
+    def highest_altitude_by_device(self, device: DeviceType):
+        """
+        Gets the max altitude for the device specified
+
+        :param device:
+        :type device:
+        :return:
+        :rtype:
+        """
+        with self.data_lock:
+            full_address = self.device_manager.get_full_address(device)
+            if full_address is None:
+                return None
+
+            if full_address in self.highest_altitude:
+                return self.highest_altitude[full_address]
+
             return None
 
     # Data saving function that creates csv

@@ -42,7 +42,7 @@ def update_altitude(rocket_data: RocketData, device: DeviceType) -> str:
 
 
 def update_max_altitude(rocket_data: RocketData, device: DeviceType) -> str:
-    altitude = rocket_data.highest_altitude
+    altitude = rocket_data.highest_altitude_by_device(device)
     if altitude is not None:
         return f'{altitude:.2f} m'
     else:

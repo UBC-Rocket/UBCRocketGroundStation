@@ -280,7 +280,7 @@ def processMap(requestQueue, resultQueue):
                     x_crop_size = (abs(p1.x - p2.x) * largeMapImage.shape[1]) / (location.xMax - location.xMin)
                     y_crop_size = (x_crop_size * desiredSize[1]) / desiredSize[0]
                 else: # Taller aspect ratio
-                    y_crop_size = (abs(p1.y - p2.y) * largeMapImage.shape[0]) / (location.xMax - location.xMin)
+                    y_crop_size = (abs(p1.y - p2.y) * largeMapImage.shape[0]) / (location.yMax - location.yMin)
                     x_crop_size = (y_crop_size * desiredSize[0]) / desiredSize[1]
 
                 center_x = ((p0.x - location.xMin) * largeMapImage.shape[1]) / (location.xMax - location.xMin)
@@ -298,8 +298,6 @@ def processMap(requestQueue, resultQueue):
                 assert abs(x_crop_size/y_crop_size - desiredSize[0]/desiredSize[1]) < 1/max(croppedMapImage.shape[0:2])
                 assert croppedMapImage.shape[1] == round(x_crop_size)
                 assert croppedMapImage.shape[0] == round(y_crop_size)
-                # TODO: EXTREMELY rarely, one of these last two asserts will fail (off by one).
-                #  Likely rounding up "off the edge" and the crop silently returning truncating the result
 
                 x_min, x_max, y_min, y_max = min(p1.x, p2.x), max(p1.x, p2.x), min(p1.y, p2.y), max(p1.y, p2.y)
 

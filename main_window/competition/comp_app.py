@@ -144,8 +144,8 @@ class CompApp(MainApp, Ui_MainWindow):
         # are being used to be consistent with the PyQt5 conventions.
         for label in self.rocket_profile.labels:
             name = label.name
-            getattr(self, name + "Text").setText(QtCore.QCoreApplication.translate("MainWindow", label.display_name))
-            getattr(self, name + "Label").setText(QtCore.QCoreApplication.translate("MainWindow", "0"))
+            getattr(self, name + "Text").setText(QtCore.QCoreApplication.translate("MainWindow", label.display_name + ":"))
+            getattr(self, name + "Label").setText(QtCore.QCoreApplication.translate("MainWindow", ""))
 
     def setup_subwindow(self):
         self.plotWidget = MplWidget()
@@ -172,9 +172,12 @@ class CompApp(MainApp, Ui_MainWindow):
         """
 
         for label in self.rocket_profile.labels:
-            getattr(self, label.name + "Label").setText(
-                label.update(self.rocket_data)
-            )
+            try:
+                getattr(self, label.name + "Label").setText(
+                    label.update(self.rocket_data)
+                )
+            except:
+                LOGGER.exception(f'Failed to update {label.name}Label:')
 
         LABLES_UPDATED_EVENT.increment()
 

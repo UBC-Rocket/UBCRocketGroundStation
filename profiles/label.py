@@ -4,6 +4,7 @@ from main_window.subpacket_ids import SubpacketEnum
 from main_window.rocket_data import RocketData
 from main_window.device_manager import DeviceType
 
+VALUE_NOT_AVAILABLE = 'N/A'
 
 class Label:
     """Front-end data representation for a RocketProfile.
@@ -33,17 +34,27 @@ class Label:
 
 
 def update_altitude(rocket_data: RocketData, device: DeviceType) -> str:
-    return str(rocket_data.last_value_by_device(device, SubpacketEnum.CALCULATED_ALTITUDE.value))
+    altitude = rocket_data.last_value_by_device(device, SubpacketEnum.CALCULATED_ALTITUDE.value)
+    if altitude is not None:
+        return f'{altitude:.2f} m'
+    else:
+        return VALUE_NOT_AVAILABLE
 
 
 def update_max_altitude(rocket_data: RocketData, device: DeviceType) -> str:
-    return str(rocket_data.highest_altitude)
-
+    altitude = rocket_data.highest_altitude
+    if altitude is not None:
+        return f'{altitude:.2f} m'
+    else:
+        return VALUE_NOT_AVAILABLE
 
 def update_gps(rocket_data: RocketData, device: DeviceType) -> str:
     latitude = rocket_data.last_value_by_device(device, SubpacketEnum.LATITUDE.value)
     longitude = rocket_data.last_value_by_device(device, SubpacketEnum.LONGITUDE.value)
-    return str(latitude) + ", " + str(longitude)
+    if latitude is not None and longitude is not None:
+        return f'{latitude:.5f}\xb0, {longitude:.5f}\xb0'
+    else:
+        return VALUE_NOT_AVAILABLE
 
 
 def update_state(rocket_data: RocketData, device: DeviceType) -> str:
@@ -51,19 +62,23 @@ def update_state(rocket_data: RocketData, device: DeviceType) -> str:
 
 
 def update_pressure(rocket_data: RocketData, device: DeviceType) -> str:
-    return str(rocket_data.last_value_by_device(device, SubpacketEnum.PRESSURE.value))
+    pressure = rocket_data.last_value_by_device(device, SubpacketEnum.PRESSURE.value)
+    if pressure is not None:
+        return f'{pressure:.2f} mbar'
+    else:
+        return VALUE_NOT_AVAILABLE
 
 
 def update_acceleration(rocket_data: RocketData, device: DeviceType) -> str:
-    def nonezero(x: Union[float, None]) -> float:
-        return 0 if x is None else x  # To support lastvalue returning None
+    x = rocket_data.last_value_by_device(device, SubpacketEnum.ACCELERATION_X.value)
+    y = rocket_data.last_value_by_device(device, SubpacketEnum.ACCELERATION_Y.value)
+    z = rocket_data.last_value_by_device(device, SubpacketEnum.ACCELERATION_Z.value)
 
-    accel = math.sqrt(
-        nonezero(rocket_data.last_value_by_device(device, SubpacketEnum.ACCELERATION_X.value)) ** 2
-        + nonezero(rocket_data.last_value_by_device(device, SubpacketEnum.ACCELERATION_Y.value)) ** 2
-        + nonezero(rocket_data.last_value_by_device(device, SubpacketEnum.ACCELERATION_Z.value)) ** 2
-    )
-    return str(accel)
+    if all([val is not None for val in (x, y, z)]):
+        accel = math.sqrt(x ** 2 + y ** 2 + z ** 2)
+        return f'{accel:.2f} g'
+    else:
+        return VALUE_NOT_AVAILABLE
 
 
 # TODO: Implement Tantalus test separation label update.

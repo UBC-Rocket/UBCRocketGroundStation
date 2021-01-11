@@ -261,12 +261,12 @@ class CompApp(MainApp, Ui_MainWindow):
             if isinstance(c, AnnotationBbox):
                 c.remove()
 
-        mapImage = self.map.getMapValue(map_data.IMAGE)
+        zoom, radius, map_image, mark = self.map.get_map_value()
 
         # plotMap UI modification
         self.plotWidget.canvas.ax.set_axis_off()
-        self.plotWidget.canvas.ax.set_ylim(mapImage.shape[0], 0)
-        self.plotWidget.canvas.ax.set_xlim(0, mapImage.shape[1])
+        self.plotWidget.canvas.ax.set_ylim(map_image.shape[0], 0)
+        self.plotWidget.canvas.ax.set_xlim(0, map_image.shape[1])
 
         # Removes pesky white boarder
         self.plotWidget.canvas.fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
@@ -276,10 +276,9 @@ class CompApp(MainApp, Ui_MainWindow):
             # NOTE: im.set_data() can also be used
             self.im.remove()
 
-        self.im = self.plotWidget.canvas.ax.imshow(mapImage)
+        self.im = self.plotWidget.canvas.ax.imshow(map_image)
 
         # updateMark UI modification
-        mark = self.map.getMapValue(map_data.MARK)
         annotation_box = AnnotationBbox(OffsetImage(MAP_MARKER), mark, frameon=False)
         self.plotWidget.canvas.ax.add_artist(annotation_box)
 

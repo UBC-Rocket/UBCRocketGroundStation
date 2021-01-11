@@ -1,10 +1,7 @@
 import threading
+from collections import namedtuple
 
-ZOOM = '_zoom'
-RADIUS = '_radius'
-IMAGE = '_image'
-MARK = '_mark'
-
+MapDataValue = namedtuple('MapDataValue', ('zoom', 'radius', 'image', 'mark'))
 
 class MapData:
     def __init__(self) -> None:
@@ -12,33 +9,24 @@ class MapData:
 
         """
         self.lock = threading.Lock()
+        self.value: MapDataValue = None
 
-        # Map UI attributes
-        setattr(self, ZOOM, 20)
-        setattr(self, RADIUS, 0.1)
-        setattr(self, IMAGE, None)
-        setattr(self, MARK, None)
-
-    # Get the value of the item from the map by Id
-    def getMapValue(self, valueId):
+    def get_map_value(self) -> MapDataValue:
         """
+        Get the stored value
 
-        :param valueId:
-        :type valueId:
         :return:
         :rtype:
         """
         with self.lock:
-            return getattr(self, valueId)
+            return self.value
 
-    # set the value of the item from the map by Id
-    def setMapValue(self, valueId, value) -> None:
+    def set_map_value(self, value: MapDataValue) -> None:
         """
+        Set the value
 
-        :param valueId:
-        :type valueId:
         :param value:
         :type value:
         """
         with self.lock:
-            setattr(self, valueId, value)
+            self.value = value

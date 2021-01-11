@@ -11,32 +11,38 @@ from PIL import Image
 from main_window.subpacket_ids import SubpacketEnum
 from main_window.rocket_data import RocketData
 from profiles.rocket_profile import RocketProfile
-from . import map_data, mapbox_utils
+from . import mapbox_utils
+from .map_data import MapData, MapDataValue
 from util.detail import LOGGER
 
 # Scaling is linear so a scale factor of 1 means no scaling (aka 1*x=x)
 SCALE_FACTOR_NO_SCALE = 1
 
+DEFAULT_RADIUS = 0.1  # Radius in km defining region to be shown in map
+DEFAULT_ZOOM = 20  # Scale factor for map tiles
+
 
 class MappingThread(QtCore.QThread):
     sig_received = pyqtSignal()
 
-    def __init__(self, connection, m: map_data.MapData, rocket_data: RocketData, rocket_profile: RocketProfile, parent=None) -> None:
+    def __init__(self, connection, map_data: MapData, rocket_data: RocketData, rocket_profile: RocketProfile, parent=None) -> None:
         """Mapping work and processing that gets put into MapData, repeatedly as RocketData is updated.
         Signals the main thread to fetch UI elements in MapDataSimilar to ReadData.
 
         :param connection:
         :type connection:
-        :param map:
-        :type map: map_data.MapData
+        :param map_data:
+        :type map_data: MapData
         :param rocket_data:
         :type rocket_data:
+        :param rocket_profile:
+        :type rocket_profile:
         :param parent:
         :type parent:
         """
         QtCore.QThread.__init__(self, parent)
         self.connection = connection
-        self.map = m
+        self.map = map_data
         self.rocket_data = rocket_data
 
         self.device = rocket_profile.mapping_device
@@ -100,7 +106,7 @@ class MappingThread(QtCore.QThread):
             return self._desiredMapSize
 
     # Draw and show the map on the UI
-    def plotMap(self, latitude: float, longitude: float):
+    def plotMap(self, latitude: float, longitude: float, radius: float, zoom: float):
         """
 
         :param latitude:
@@ -112,9 +118,6 @@ class MappingThread(QtCore.QThread):
         """
         if longitude is None or latitude is None:
             return False
-
-        radius = self.map.getMapValue(map_data.RADIUS)
-        zoom = self.map.getMapValue(map_data.ZOOM)
 
         p0 = mapbox_utils.MapPoint(latitude, longitude)  # Point of interest
 
@@ -152,9 +155,8 @@ class MappingThread(QtCore.QThread):
         assert abs(mark[0] - resizedMapImage.shape[1] / 2) < 1  # x
         assert abs(mark[1] - resizedMapImage.shape[0] / 2) < 1  # y
 
-        # TODO NOT ROBUST: What if mapdata updated between top of this function and this setMap
-        self.map.setMapValue(map_data.IMAGE, resizedMapImage)
-        self.map.setMapValue(map_data.MARK, mark)
+        map_data_value = MapDataValue(zoom=zoom, radius=radius, image=resizedMapImage, mark=mark)
+        self.map.set_map_value(map_data_value)
 
         return True
 
@@ -193,7 +195,7 @@ class MappingThread(QtCore.QThread):
                 if (latitude, longitude, desired_size) == (last_latitude, last_longitude, last_desired_size):
                     continue
 
-                if self.plotMap(latitude, longitude):
+                if self.plotMap(latitude, longitude, DEFAULT_RADIUS, DEFAULT_ZOOM):
                     # notify UI that new data is available to be displayed
                     self.sig_received.emit()
                 else:

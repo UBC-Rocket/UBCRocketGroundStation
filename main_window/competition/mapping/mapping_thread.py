@@ -116,9 +116,10 @@ class MappingThread(QtCore.QThread):
         radius = self.map.getMapValue(map_data.RADIUS)
         zoom = self.map.getMapValue(map_data.ZOOM)
 
+        p0 = mapbox_utils.MapPoint(latitude, longitude)  # Point of interest
+
         # Create MapPoints that correspond to corners of a square area (of side length 2*radius) surrounding the
         # inputted latitude and longitude. Radius is in km
-
         lat1 = latitude + radius / 110.574
         lon1 = longitude - radius / 111.320 / math.cos(lat1 * math.pi / 180.0)
         p1 = mapbox_utils.MapPoint(lat1, lon1)  # Map corner 1
@@ -127,9 +128,9 @@ class MappingThread(QtCore.QThread):
         lon2 = longitude + radius / 111.320 / math.cos(lat2 * math.pi / 180.0)
         p2 = mapbox_utils.MapPoint(lat2, lon2)  # Map corner 2
 
-        desiredSize = self.getDesiredMapSize()
+        desiredSize = self.getDesiredMapSize()  # x,y
 
-        self.requestQueue.put_nowait((p1, p2, zoom, desiredSize))
+        self.requestQueue.put_nowait((p0, p1, p2, zoom, desiredSize))
 
         # NOTE: Passing numpy arrays through any sort of IPC other than plane old shared memory will result in the data
         # being "pickled" and un-"pickled". This uses more processing time than just using shared memory. Since we're
@@ -147,6 +148,10 @@ class MappingThread(QtCore.QThread):
         y = (p.y - yMin) / (yMax - yMin)
         mark = (x * resizedMapImage.shape[1], y * resizedMapImage.shape[0]) # images are (h,w) = (y,x) not (w,h) = (x,y)
 
+        # Because of the cropping, the mark should be in the middle:
+        assert abs(mark[0] - resizedMapImage.shape[1] / 2) < 1  # x
+        assert abs(mark[1] - resizedMapImage.shape[0] / 2) < 1  # y
+
         # TODO NOT ROBUST: What if mapdata updated between top of this function and this setMap
         self.map.setMapValue(map_data.IMAGE, resizedMapImage)
         self.map.setMapValue(map_data.MARK, mark)
@@ -161,6 +166,7 @@ class MappingThread(QtCore.QThread):
         LOGGER.debug("Mapping thread started")
         last_latitude = None
         last_longitude = None
+        last_desired_size = None
         last_update_time = 0
         while True:
             with self.cv:
@@ -177,13 +183,14 @@ class MappingThread(QtCore.QThread):
                 # copy location values to use, to keep the values consistent in synchronous but adjacent calls
                 latitude = self.rocket_data.last_value_by_device(self.device, SubpacketEnum.LATITUDE.value)
                 longitude = self.rocket_data.last_value_by_device(self.device, SubpacketEnum.LONGITUDE.value)
+                desired_size = self.getDesiredMapSize()
 
                 # Prevent unnecessary work while no location data is received
                 if latitude is None or longitude is None:
                     continue
 
                 # Prevent unnecessary work while data hasnt changed
-                if latitude == last_latitude and longitude == last_longitude:
+                if (latitude, longitude, desired_size) == (last_latitude, last_longitude, last_desired_size):
                     continue
 
                 if self.plotMap(latitude, longitude):
@@ -195,6 +202,7 @@ class MappingThread(QtCore.QThread):
                 last_latitude = latitude
                 last_longitude = longitude
                 last_update_time = current_time
+                last_desired_size = desired_size
 
             except Exception:
                 LOGGER.exception("Error in map thread loop")  # Automatically grabs and prints exception info
@@ -252,28 +260,55 @@ def processMap(requestQueue, resultQueue):
             if request is None:  # Shutdown request
                 break
 
-            (p1, p2, zoom, desiredSize) = request
+            (p0, p1, p2, zoom, desiredSize) = request
 
             location = mapbox_utils.TileGrid(p1, p2, zoom)
             location.downloadArrayImages()
 
             largeMapImage = location.genStitchedMap()
+            x_min, x_max, y_min, y_max = location.xMin, location.xMax, location.yMin, location.yMax
 
-            if desiredSize is not None:
-                # Scale "to fit", maintains map aspect ratio even if it differs from the desired dimensions aspect ratio
-                scaleFactor = min(desiredSize[0] / largeMapImage.shape[0], desiredSize[1] / largeMapImage.shape[1])
+            if desiredSize is None:
+                resizedMapImage = largeMapImage
             else:
-                scaleFactor = SCALE_FACTOR_NO_SCALE
 
-            scaleFactor = min(scaleFactor,
-                              SCALE_FACTOR_NO_SCALE)  # You shall not scale the map larger. Waste of memory.
+                if desiredSize[0]/desiredSize[1] > abs(p1.x - p2.x)/abs(p1.y - p2.y): # Wider aspect ratio
+                    x_crop_size = (abs(p1.x - p2.x) * largeMapImage.shape[1]) / (location.xMax - location.xMin)
+                    y_crop_size = (x_crop_size * desiredSize[1]) / desiredSize[0]
+                else: # Taller aspect ratio
+                    y_crop_size = (abs(p1.y - p2.y) * largeMapImage.shape[0]) / (location.xMax - location.xMin)
+                    x_crop_size = (y_crop_size * desiredSize[0]) / desiredSize[1]
 
-            # Downsizing the map here to the ideal size for the plot reduces the amount of work required in the main
-            # thread and thus reduces stuttering
-            resizedMapImage = np.array(Image.fromarray(largeMapImage).resize(
-                (int(scaleFactor * largeMapImage.shape[1]), int(scaleFactor * largeMapImage.shape[0])))) # x,y order is opposite for resize
+                center_x = ((p0.x - location.xMin) * largeMapImage.shape[1]) / (location.xMax - location.xMin)
+                center_y = ((p0.y - location.yMin) * largeMapImage.shape[0]) / (location.yMax - location.yMin)
 
-            resultQueue.put((resizedMapImage, location.xMin, location.xMax, location.yMin, location.yMax))
+                # Crop image centered around p0 (point of interest) and at the desired aspect ratio.
+                # Crop is largest possible within rectangle defined by p1 & p2
+                x_crop_start = round(center_x - x_crop_size / 2)
+                x_crop_end = round(x_crop_start + x_crop_size)
+                y_crop_start = round(center_y - y_crop_size / 2)
+                y_crop_end = round(y_crop_start + y_crop_size)
+                croppedMapImage = largeMapImage[y_crop_start:y_crop_end, x_crop_start:x_crop_end]
+
+                # Check obtained desired aspect ratio (within one pixel)
+                assert abs(x_crop_size/y_crop_size - desiredSize[0]/desiredSize[1]) < 1/max(croppedMapImage.shape[0:2])
+                assert croppedMapImage.shape[1] == round(x_crop_size)
+                assert croppedMapImage.shape[0] == round(y_crop_size)
+                # TODO: EXTREMELY rarely, one of these last two asserts will fail (off by one).
+                #  Likely rounding up "off the edge" and the crop silently returning truncating the result
+
+                x_min, x_max, y_min, y_max = min(p1.x, p2.x), max(p1.x, p2.x), min(p1.y, p2.y), max(p1.y, p2.y)
+
+                if croppedMapImage.shape[1] < desiredSize[0]:
+                    # Dont scale up the image. Waste of memory.
+                    resizedMapImage = croppedMapImage
+                else:
+                    # Downsizing the map here to the ideal size for the plot reduces the amount of work required in the
+                    # main thread and thus reduces stuttering
+                    resizedMapImage = np.array(Image.fromarray(croppedMapImage).resize(
+                        (desiredSize[0], desiredSize[1])))  # x,y order is opposite for resize
+
+            resultQueue.put((resizedMapImage, x_min, x_max, y_min, y_max))
         except Exception as ex:
             LOGGER.exception("Exception in processMap process")  # Automatically grabs and prints exception info
             resultQueue.put(None)

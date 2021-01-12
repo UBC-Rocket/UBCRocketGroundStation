@@ -101,6 +101,14 @@ def config(time: int, is_sim: bool, rocket_type: int, version_id: str) -> bytear
     return data_arr
 
 
+def event(time: int, event: int) -> bytearray:
+    data_arr: bytearray = bytearray()
+    data_arr.append(SubpacketEnum.EVENT.value)
+    data_arr.extend((int(time)).to_bytes(length=4, byteorder='big'))  # time
+    data_arr.extend((int(event)).to_bytes(length=2, byteorder='big'))  # time
+    return data_arr
+
+
 def gps(time: int, latitude: float, longitude: float, gps_altitude: float) -> bytearray:
     """
 

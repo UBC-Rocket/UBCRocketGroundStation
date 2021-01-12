@@ -2,8 +2,7 @@ import os
 import threading
 from typing import Dict
 
-import PyQt5
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtWidgets
 from PyQt5.QtCore import pyqtSignal
 
 from connections.connection import Connection
@@ -14,12 +13,6 @@ from main_window.read_thread import ReadThread
 from main_window.rocket_data import RocketData
 from main_window.send_thread import SendThread
 from main_window.device_manager import DeviceManager
-
-if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
-    PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
-
-if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
-    PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
 
 
 class MainApp(QtWidgets.QMainWindow):

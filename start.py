@@ -4,9 +4,17 @@ import argparse
 import matplotlib
 matplotlib.use('QT5Agg') # Ensures that the Qt5 backend is used, otherwise there might be some issues on some OSs (Mac)
 from com_window.main import ComWindow
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtCore
 from profiles.rockets.tantalus import TantalusProfile
 from util.self_test import SelfTest
+
+if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
+    QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
+
+if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
+    QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
+
+MIN_APP_FONT_POINT_SIZE = 8
 
 if __name__ == "__main__":
     # Pyinstaller fix https://stackoverflow.com/questions/32672596/pyinstaller-loads-script-multiple-times
@@ -21,6 +29,10 @@ if __name__ == "__main__":
     # QApplication expects the first argument to be the program name.
     qt_args = sys.argv[:1] + unparsed_args
     app = QtWidgets.QApplication(qt_args)
+
+    font = app.font()
+    font.setPointSize(max(MIN_APP_FONT_POINT_SIZE, font.pointSize()))
+    app.setFont(font)
 
     if not args.self_test:
         # Open com_window dialog to get startup details

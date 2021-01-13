@@ -172,7 +172,7 @@
   </widget>
   <widget class="QDockWidget" name="dockWidget_3">
    <property name="windowTitle">
-    <string>Command Sortcuts</string>
+    <string>Command Shortcuts</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>2</number>

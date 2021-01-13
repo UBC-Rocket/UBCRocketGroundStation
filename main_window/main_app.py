@@ -44,7 +44,7 @@ class MainApp(QtWidgets.QMainWindow):
 
         self.connections = connections
         self.rocket_profile = rocket_profile
-        self.device_manager = DeviceManager(self.rocket_profile.required_device_versions, strict_versions=False)
+        self.device_manager = DeviceManager(self.rocket_profile.expected_devices, self.rocket_profile.required_device_versions, strict_versions=False)
         self.rocket_data = RocketData(self.device_manager)
 
         packet_parser = self.rocket_profile.construct_packet_parser()

@@ -20,33 +20,37 @@ class CoPilotProfile(RocketProfile):
     @property
     def buttons(self):
         return {
-            "Arm": "CO_PILOT.ARM",
-            "Halo": "CO_PILOT.halo",
-            "Data": "CO_PILOT.data",
-            "Ping": "CO_PILOT.PING"
+            "Arm": "CO_PILOT_FLARE.ARM",
+            "Halo": "CO_PILOT_FLARE.halo",
+            "Data": "CO_PILOT_FLARE.data",
+            "Ping": "CO_PILOT_FLARE.PING"
         }
 
     @property
     def labels(self):
         return [
-            Label(DeviceType.CO_PILOT, "Altitude", update_altitude),
-            Label(DeviceType.CO_PILOT, "MaxAltitude", update_max_altitude, "Max Altitude"),
-            Label(DeviceType.CO_PILOT, "GPS", update_gps),
-            Label(DeviceType.CO_PILOT, "State", update_state),
-            Label(DeviceType.CO_PILOT, "Pressure", update_pressure),
-            Label(DeviceType.CO_PILOT, "Acceleration", update_acceleration),
-            Label(DeviceType.CO_PILOT, "TankPressure", update_tank_pressure, "Tank Pressure"),
-            Label(DeviceType.CO_PILOT, "ChamberPressure", update_chamber_pressure, "Chamber Pressure"),
-            Label(DeviceType.CO_PILOT, "ChamberTemp", update_chamber_temp, "Chamber Temperature"),
+            Label(DeviceType.CO_PILOT_FLARE, "Altitude", update_altitude),
+            Label(DeviceType.CO_PILOT_FLARE, "MaxAltitude", update_max_altitude, "Max Altitude"),
+            Label(DeviceType.CO_PILOT_FLARE, "GPS", update_gps),
+            Label(DeviceType.CO_PILOT_FLARE, "State", update_state),
+            Label(DeviceType.CO_PILOT_FLARE, "Pressure", update_pressure),
+            Label(DeviceType.CO_PILOT_FLARE, "Acceleration", update_acceleration),
+            Label(DeviceType.CO_PILOT_FLARE, "TankPressure", update_tank_pressure, "Tank Pressure"),
+            Label(DeviceType.CO_PILOT_FLARE, "ChamberPressure", update_chamber_pressure, "Chamber Pressure"),
+            Label(DeviceType.CO_PILOT_FLARE, "ChamberTemp", update_chamber_temp, "Chamber Temperature"),
         ]
 
     @property
+    def expected_devices(self):
+        return [DeviceType.CO_PILOT_FLARE]
+
+    @property
     def mapping_device(self):
-        return DeviceType.CO_PILOT
+        return DeviceType.CO_PILOT_FLARE
 
     @property
     def required_device_versions(self):
-        return {DeviceType.CO_PILOT: REQUIRED_FLARE}
+        return {DeviceType.CO_PILOT_FLARE: REQUIRED_FLARE}
 
     def construct_serial_connection(self, com_port, baud_rate):
         return None
@@ -54,7 +58,7 @@ class CoPilotProfile(RocketProfile):
     def construct_debug_connection(self):
         return {
             'CO_PILOT_CONNECTION': DebugConnection('CO_PILOT_RADIO_ADDRESS',
-                                                   DEVICE_TYPE_TO_ID[DeviceType.CO_PILOT],
+                                                   DEVICE_TYPE_TO_ID[DeviceType.CO_PILOT_FLARE],
                                                    generate_radio_packets=True),
         }
 

@@ -22,12 +22,16 @@ class WbProfile(RocketProfile):
         return None
 
     @property
+    def expected_devices(self):
+        return None
+
+    @property
     def mapping_device(self):
         return None
 
     @property
     def required_device_versions(self):
-        return dict()
+        return None
 
     def construct_serial_connection(self, com_port, baud_rate):
         return None
@@ -35,7 +39,7 @@ class WbProfile(RocketProfile):
     def construct_debug_connection(self):
         return {
             'TANTALUS_STAGE_1_CONNECTION': DebugConnection('TANTALUS_STAGE_1_RADIO_ADDRESS',
-                                                           DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1],
+                                                           DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1_FLARE],
                                                            generate_radio_packets=False)
         }
 

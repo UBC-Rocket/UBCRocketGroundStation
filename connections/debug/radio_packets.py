@@ -29,7 +29,7 @@ def bulk_sensor(time: int, barometer_altitude: float, acceleration_x: float, acc
     bulk_sensor_arr.extend(state.to_bytes(length=1, byteorder='big'))  # State
     return bulk_sensor_arr
 
-def single_sensor(time: int, sensor_id: DataEntryIds, value: float) -> bytearray:
+def single_sensor(time: int, sensor_id: SubpacketIds, value: float) -> bytearray:
     """
 
     :return: data_arr

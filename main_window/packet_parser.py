@@ -17,18 +17,30 @@ CONFIG_EVENT = Event('config')
 # can be expanded if necessary elsewhere.
 Header = collections.namedtuple('Header', ['subpacket_id', 'timestamp'])
 
-# Enum with packet IDs, belongin to this packet parser, and should not be used elsewhere
-
-# TODO Review
-# Parser's subpacket ids, according to spec. NOT DataIds
+# Parser's subpacket ids. Should not be used elsewhere, NOT DataIds
 class SubpacketIds(Enum):
-    # STATUS_PING = 0x00
     MESSAGE = 0x01
     EVENT = 0x02
     CONFIG = 0x03
-    # GPS = 0x04
-    # ORIENTATION = 0x06
-    # BULK_SENSOR = 0x30
+    # SINGLE_SENSOR's many values, added dynamically in constructor
+    ACCELERATION_X = 0x10
+    ACCELERATION_Y = 0x11
+    ACCELERATION_Z = 0x12
+    PRESSURE = 0x13
+    BAROMETER_TEMPERATURE = 0x14
+    TEMPERATURE = 0x15
+    LATITUDE = 0x19
+    LONGITUDE = 0x1A
+    GPS_ALTITUDE = 0x1B
+    CALCULATED_ALTITUDE = 0x1C
+    STATE = 0x1D
+    VOLTAGE = 0x1E
+    GROUND_ALTITUDE = 0x1F
+    TIME = 0x20
+    ORIENTATION_1 = 0x21 # TODO Remove once dependencies can be resolved. Relates to https://trello.com/c/uFHtaN51/ https://trello.com/c/bA3RuHUC
+    ORIENTATION_2 = 0x22 # TODO Remove
+    ORIENTATION_3 = 0x23 # TODO Remove
+    ORIENTATION_4 = 0x24 # TODO Remove
 VERSION_ID_LEN = 40
 
 ID_TO_DEVICE_TYPE = {
@@ -62,8 +74,7 @@ class PacketParser:
             SubpacketIds.CONFIG.value: self.config,
             # SubpacketIds.SINGLE_SENSOR.value: single_sensor,  # See loop that maps function for range of ids below
         }
-        # TODO Change? to actually adding ids to SubpacketId Enum instead, from range(MIN_SINGLE_SENSOR_ID, MAX_SINGLE_SENSOR_ID + 1):
-        for i in data_entry_id.get_list_of_sensor_IDs():
+        for i in range(MIN_SINGLE_SENSOR_ID, MAX_SINGLE_SENSOR_ID + 1):
             self.packet_type_to_parser[i] = self.single_sensor
 
     @property
@@ -212,12 +223,11 @@ class PacketParser:
         :return:
         :rtype:
         """
-        subpacket_id = header.subpacket_id
-        # Transform local subpacket id to global DataEntryId
-        data_id_entry = DataEntryIds(subpacket_id)
+        # Transform int single sensor id to global DataEntryId
+        data_id = DataEntryIds[SubpacketIds(header.subpacket_id).name]
 
         data: Dict = {}
-        data[data_id_entry] = self.fourtofloat(byte_stream.read(4))
+        data[data_id] = self.fourtofloat(byte_stream.read(4))
 
         SINGLE_SENSOR_EVENT.increment()
         return data

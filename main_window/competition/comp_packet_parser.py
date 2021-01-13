@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 
 from util.detail import LOGGER
 from util.event_stats import Event
-from main_window.data_entry_id import DataEntryIds
+from main_window.data_entry_id import DataEntryIds, DataEntryValues
 from main_window.packet_parser import PacketParser, Header
 
 BULK_SENSOR_EVENT = Event('bulk_sensor')
@@ -13,6 +13,13 @@ BULK_SENSOR_EVENT = Event('bulk_sensor')
 # Aggregated DataEntryIds for iteration. Outside function for access by tests
 SENSOR_TYPES = [DataEntryIds.BAROMETER, DataEntryIds.GPS, DataEntryIds.ACCELEROMETER, DataEntryIds.IMU, DataEntryIds.TEMPERATURE]
 OTHER_STATUS_TYPES = [DataEntryIds.DROGUE_IGNITER_CONTINUITY, DataEntryIds.MAIN_IGNITER_CONTINUITY, DataEntryIds.FILE_OPEN_SUCCESS]
+
+# Converting bit array status to readable values
+BITARRAY_TO_STATUS = {
+    0b00000000: DataEntryValues.NOMINAL,
+    0b00000001: DataEntryValues.NONCRITICAL_FAILURE,
+    0b00000011: DataEntryValues.CRITICAL_FAILURE,
+}
 
 # Parser's subpacket ids, according to spec. NOT DataIds
 class SubpacketIds(Enum):
@@ -50,14 +57,7 @@ class CompPacketParser(PacketParser):
 
         # Overall status from 6th and 7th bits
         overall_status = curr_byte & 0b11
-        if overall_status == 0b00000000:  # TODO Review if this mapping of 0bxxx -> status should be extracted
-            data[DataEntryIds.STATUS_PING] = DataEntryIds.NOMINAL
-        elif overall_status == 0b00000001:
-            data[DataEntryIds.STATUS_PING] = DataEntryIds.NONCRITICAL_FAILURE
-        elif overall_status == 0b00000011:
-            data[DataEntryIds.STATUS_PING] = DataEntryIds.CRITICAL_FAILURE
-        data[DataEntryIds.OVERALL_STATUS] = curr_byte  # TODO Review if safer this way
-        LOGGER.info("Overall rocket status: %s", str(data[DataEntryIds.STATUS_PING]))
+        data[DataEntryIds.OVERALL_STATUS] = BITARRAY_TO_STATUS[overall_status]
 
         # save since we do multiple passes over each byte
         byte_list: List[int] = [b for b in byte_stream.read(2)]
@@ -76,6 +76,7 @@ class CompPacketParser(PacketParser):
             relative_bit_index = 7 - (i % 8)
             data[OTHER_STATUS_TYPES[i]] = self.bitfrombyte(byte_list[byte_index], relative_bit_index)
 
+        LOGGER.info("Overall rocket status: %s", str(data[DataEntryIds.OVERALL_STATUS]))
         LOGGER.info(" - status of sensors" + ", %s" * len(SENSOR_TYPES),
                     *[sensor.name + ": " + str(data[sensor]) for sensor in SENSOR_TYPES])
         LOGGER.info(" - status of others" + ", %s" * len(OTHER_STATUS_TYPES),

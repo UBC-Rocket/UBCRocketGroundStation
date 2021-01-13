@@ -71,7 +71,6 @@ class RocketData:
 
         self.autosave_thread.join()  # join thread
 
-    # TODO Needs to use DataEntryId. Store Enum objects, not values
     def add_bundle(self, full_address: FullAddress, incoming_data: Dict[DataEntryIds, any]):
         """
         Adding a bundle of data points and trigger callbacks according to id.
@@ -104,8 +103,6 @@ class RocketData:
 
         BUNDLE_ADDED_EVENT.increment()
 
-    # TODO update all calls. TODO write note about accessing with Enum objects, not values
-    # TODO Needs to use DataEntryId.
     def last_value_by_device(self, device: DeviceType, sensor_id: DataEntryIds):
         """
         Gets the most recent value specified by the DataEntryIds (enum object) given
@@ -153,16 +150,15 @@ class RocketData:
             times = list(self.timeset.keys())
             times.sort(reverse=False)
             for ix, iy in np.ndindex(data.shape):
-                # Make the first row a list of sensor names
+                # Make the first row a list of sensor names. Use the enum's name property
                 if iy == 0:
-                    # TODO Get rid of int check once tests cleaned up, should only ever pass in DataEntryIds
-                    data_name = DataEntryIds(keys[ix].data_id).name if type(keys[ix].data_id) is int else keys[ix].data_id.name
+                    data_name = keys[ix].data_id.name if isinstance(keys[ix].data_id, DataEntryIds) else str(keys[ix].data_id)
                     device = self.device_manager.get_device_type(keys[ix].full_address)
-
                     if device:
                         device_name = device.name
                     else:
                         device_name = f"{keys[ix].full_address.connection_name}_{keys[ix].full_address.device_address}"
+
                     data[ix, iy] = data_name + '_' + device_name
                 else:
                     if keys[ix].data_id == DataEntryIds.TIME:

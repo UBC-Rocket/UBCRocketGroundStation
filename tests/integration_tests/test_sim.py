@@ -27,8 +27,11 @@ def main_app(integration_app) -> CompApp:
     except FirmwareNotFound as ex:
         pytest.skip("Firmware not found")
         return
-    
-    yield integration_app(profile, connections)
+    try:
+        yield integration_app(profile, connections)
+    except:
+        next(integration_app)
+        raise
 
 
 def set_dummy_sensor_values(hw, sensor_type: SensorType, *vals):

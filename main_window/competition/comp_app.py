@@ -238,6 +238,9 @@ class CompApp(MainApp, Ui_MainWindow):
         self.restoreGeometry(self.original_geometry)
         self.restoreState(self.original_state)
 
+        # Workaround for known Qt issue. See section on X11 in https://doc.qt.io/qt-5/restoring-geometry.html
+        self.center_window()
+
         for sub in self.mdiArea.subWindowList():
             sub.close()
             sub.deleteLater()  # Required to prevent memory leak. Also deletes window sub-objects (plot widget, etc.)
@@ -256,6 +259,13 @@ class CompApp(MainApp, Ui_MainWindow):
         state = self.settings.value("windowState")
         if state is not None:
             self.restoreState(state)
+
+    def center_window(self):
+        center_point = QtWidgets.QDesktopWidget().availableGeometry().center()
+        geometry = self.frameGeometry()
+
+        geometry.moveCenter(center_point)
+        self.move(geometry.topLeft())
 
     def receive_map(self) -> None:
         """

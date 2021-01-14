@@ -75,12 +75,11 @@ class SendThread(QtCore.QThread):
         LOGGER.debug("Send thread started")
 
         # TODO : Once we have multiple connections, we will loop over and send a config request to each
-        # Starting up, request hello/handshake/identification
+        # Starting up, request hello/ha ndshake/identification
         for connection in self.connections.values():
             try:
                 connection.broadcast(bytes([CommandType.CONFIG.value]))
             except Exception as ex:
-                self.sig_print.emit("Unexpected error while sending config requests!")
                 LOGGER.exception("Exception in send thread while sending config requests")
 
         while True:

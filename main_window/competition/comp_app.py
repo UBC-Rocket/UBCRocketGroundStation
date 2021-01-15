@@ -235,11 +235,14 @@ class CompApp(MainApp, Ui_MainWindow):
             self.rocket_data.save(name)
 
     def reset_view(self) -> None:
+        original_position = self.geometry().center()
         self.restoreGeometry(self.original_geometry)
         self.restoreState(self.original_state)
 
         # Workaround for known Qt issue. See section on X11 in https://doc.qt.io/qt-5/restoring-geometry.html
-        self.center_window()
+        geometry = self.frameGeometry()
+        geometry.moveCenter(original_position)
+        self.move(geometry.topLeft())
 
         for sub in self.mdiArea.subWindowList():
             sub.close()
@@ -259,13 +262,6 @@ class CompApp(MainApp, Ui_MainWindow):
         state = self.settings.value("windowState")
         if state is not None:
             self.restoreState(state)
-
-    def center_window(self):
-        center_point = QtWidgets.QDesktopWidget().availableGeometry().center()
-        geometry = self.frameGeometry()
-
-        geometry.moveCenter(center_point)
-        self.move(geometry.topLeft())
 
     def receive_map(self) -> None:
         """

@@ -1,6 +1,6 @@
 from io import BytesIO
 
-from main_window.subpacket_ids import SubpacketEnum
+from main_window.data_entry_id import DataEntryIds
 from main_window.packet_parser import PacketParser, Header
 
 

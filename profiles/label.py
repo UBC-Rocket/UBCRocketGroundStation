@@ -1,6 +1,6 @@
 import math
 from typing import TYPE_CHECKING, Callable, Optional, Union
-from main_window.subpacket_ids import SubpacketEnum
+from main_window.data_entry_id import DataEntryIds
 from main_window.rocket_data import RocketData
 from main_window.device_manager import DeviceType
 
@@ -33,7 +33,7 @@ class Label:
 
 
 def update_altitude(rocket_data: RocketData, device: DeviceType) -> str:
-    return str(rocket_data.last_value_by_device(device, SubpacketEnum.CALCULATED_ALTITUDE.value))
+    return str(rocket_data.last_value_by_device(device, DataEntryIds.CALCULATED_ALTITUDE))
 
 
 def update_max_altitude(rocket_data: RocketData, device: DeviceType) -> str:
@@ -41,17 +41,17 @@ def update_max_altitude(rocket_data: RocketData, device: DeviceType) -> str:
 
 
 def update_gps(rocket_data: RocketData, device: DeviceType) -> str:
-    latitude = rocket_data.last_value_by_device(device, SubpacketEnum.LATITUDE.value)
-    longitude = rocket_data.last_value_by_device(device, SubpacketEnum.LONGITUDE.value)
+    latitude = rocket_data.last_value_by_device(device, DataEntryIds.LATITUDE)
+    longitude = rocket_data.last_value_by_device(device, DataEntryIds.LONGITUDE)
     return str(latitude) + ", " + str(longitude)
 
 
 def update_state(rocket_data: RocketData, device: DeviceType) -> str:
-    return str(rocket_data.last_value_by_device(device, SubpacketEnum.STATE.value))
+    return str(rocket_data.last_value_by_device(device, DataEntryIds.STATE))
 
 
 def update_pressure(rocket_data: RocketData, device: DeviceType) -> str:
-    return str(rocket_data.last_value_by_device(device, SubpacketEnum.PRESSURE.value))
+    return str(rocket_data.last_value_by_device(device, DataEntryIds.PRESSURE))
 
 
 def update_acceleration(rocket_data: RocketData, device: DeviceType) -> str:
@@ -59,9 +59,9 @@ def update_acceleration(rocket_data: RocketData, device: DeviceType) -> str:
         return 0 if x is None else x  # To support lastvalue returning None
 
     accel = math.sqrt(
-        nonezero(rocket_data.last_value_by_device(device, SubpacketEnum.ACCELERATION_X.value)) ** 2
-        + nonezero(rocket_data.last_value_by_device(device, SubpacketEnum.ACCELERATION_Y.value)) ** 2
-        + nonezero(rocket_data.last_value_by_device(device, SubpacketEnum.ACCELERATION_Z.value)) ** 2
+        nonezero(rocket_data.last_value_by_device(device, DataEntryIds.ACCELERATION_X)) ** 2
+        + nonezero(rocket_data.last_value_by_device(device, DataEntryIds.ACCELERATION_Y)) ** 2
+        + nonezero(rocket_data.last_value_by_device(device, DataEntryIds.ACCELERATION_Z)) ** 2
     )
     return str(accel)
 

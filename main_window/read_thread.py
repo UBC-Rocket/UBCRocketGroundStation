@@ -6,11 +6,12 @@ from io import BytesIO, SEEK_END
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
 
+from main_window.data_entry_id import DataEntryIds
 from util.detail import LOGGER
 from util.event_stats import Event
 from connections.connection import Connection, ConnectionMessage
 from .rocket_data import RocketData
-from .packet_parser import PacketParser, DEVICE_TYPE, VERSION_ID
+from .packet_parser import PacketParser
 from .device_manager import DeviceManager, FullAddress
 
 CONNECTION_MESSAGE_READ_EVENT = Event('connection_message_read')
@@ -89,16 +90,16 @@ class ReadThread(QtCore.QThread):
             while byte_stream.tell() < end:
                 try:
                     self.packet_parser.set_endianness(connection.isIntBigEndian(), connection.isFloatBigEndian())
-                    parsed_data: Dict[int, any] = self.packet_parser.extract(byte_stream)
+                    parsed_data: Dict[DataEntryIds, any] = self.packet_parser.extract(byte_stream)
 
-                    if DEVICE_TYPE in parsed_data and VERSION_ID in parsed_data:
-                        self.device_manager.register_device(parsed_data[DEVICE_TYPE], parsed_data[VERSION_ID], full_address)
-                    elif DEVICE_TYPE in parsed_data:
+                    if DataEntryIds.DEVICE_TYPE in parsed_data and DataEntryIds.VERSION_ID in parsed_data:
+                        self.device_manager.register_device(parsed_data[DataEntryIds.DEVICE_TYPE], parsed_data[DataEntryIds.VERSION_ID], full_address)
+                    elif DataEntryIds.DEVICE_TYPE in parsed_data:
                         LOGGER.warning('Received DEVICE_TYPE but not VERSION_ID')
-                    elif VERSION_ID in parsed_data:
+                    elif DataEntryIds.VERSION_ID in parsed_data:
                         LOGGER.warning('Received VERSION_ID but not DEVICE_TYPE')
 
-                    self.rocket_data.addBundle(full_address, parsed_data)
+                    self.rocket_data.add_bundle(full_address, parsed_data)
 
                     # notify UI that new data is available to be displayed
                     self.sig_received.emit()

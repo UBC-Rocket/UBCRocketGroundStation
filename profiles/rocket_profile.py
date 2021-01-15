@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Iterable, Dict
+from typing import Dict, List
 from connections.connection import Connection
 from main_window.packet_parser import PacketParser
 from connections.sim.hw_sim import HWSim
@@ -20,7 +20,12 @@ class RocketProfile(ABC):
 
     @property
     @abstractmethod
-    def labels(self) -> Iterable[Label]:
+    def labels(self) -> List[Label]:
+        pass
+
+    @property
+    @abstractmethod
+    def expected_devices(self) -> List[DeviceType]:
         pass
 
     @property
@@ -31,6 +36,9 @@ class RocketProfile(ABC):
     @property
     @abstractmethod
     def required_device_versions(self) -> Dict[DeviceType, str]:
+        '''
+        :return: Optional restrictions on device versions
+        '''
         pass
 
     '''

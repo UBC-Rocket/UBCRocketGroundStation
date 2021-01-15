@@ -41,7 +41,7 @@ class WbApp(MainApp, Ui_MainWindow):
         """
 
         # Handle new data here. New data is put retrieved from rocket_data. E.g.:
-        # self.pressureLabel.setText(self.rocket_data.lastvalue(SubpacketEnum.PRESSURE.value))
+        # self.pressureLabel.setText(self.rocket_data.last_value_by_device(DataEntryIds.PRESSURE))
 
         pass
 

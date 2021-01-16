@@ -9,39 +9,14 @@ from PyQt5 import QtCore
 from util.detail import LOGGER
 from util.event_stats import Event
 from main_window.device_manager import DeviceManager, DeviceType
+from main_window.command_parser import CommandParser, CommandType, CommandParsingError
 from connections.connection import Connection
 
 COMMAND_SENT_EVENT = Event('command_sent')
 
-# TODO change this section with new Radio protocol comm refactoring
-# TODO ASK Are we going to continue to send single characters according to user commands? If yes, then why not
-#  provide drop down/multiple select??? AND This should not be here anyway, it relates to communication protocol
-#  -> RadioController
-class CommandType(Enum):
-    ARM = 0x41
-    CONFIG = 0x43
-    DISARM = 0x44
-    PING = 0x50
-    BULK = 0x30
-    ACCELX = 0x10
-    ACCELY = 0x11
-    ACCELZ = 0x12
-    BAROPRES = 0x13
-    BAROTEMP = 0x14
-    TEMP = 0x15
-    LAT = 0x19
-    LON = 0x1A
-    GPSALT = 0x1B
-    ALT = 0x1C
-    STATE = 0x1D
-    VOLT = 0x1E
-    GROUND = 0x1F
-    GPS = 0x04
-    ORIENT = 0x06
-
 class SendThread(QtCore.QThread):
 
-    def __init__(self, connections: Dict[str, Connection], device_manager: DeviceManager, parent=None) -> None:
+    def __init__(self, connections: Dict[str, Connection], device_manager: DeviceManager, command_parser: CommandParser, parent=None) -> None:
         """Updates GUI, therefore needs to be a QThread and use signals/slots
 
         :param connections:
@@ -52,6 +27,7 @@ class SendThread(QtCore.QThread):
         QtCore.QThread.__init__(self, parent)
         self.connections = connections
         self.device_manager = device_manager
+        self.command_parser = command_parser
 
         self.commandQueue = queue.Queue()
 
@@ -78,7 +54,7 @@ class SendThread(QtCore.QThread):
         # Starting up, request hello/ha ndshake/identification
         for connection in self.connections.values():
             try:
-                connection.broadcast(bytes([CommandType.CONFIG.value]))
+                connection.broadcast(self.command_parser.broadcast_data(CommandType.CONFIG))
             except Exception as ex:
                 LOGGER.exception("Exception in send thread while sending config requests")
 
@@ -94,18 +70,10 @@ class SendThread(QtCore.QThread):
                         else:
                             continue
 
-                message_parts = message.split('.')
-
-                if len(message_parts) != 2:
-                    LOGGER.error("Bad command format")
-                    continue
-
-                (device_str, command_str) = message_parts
-
                 try:
-                    device = DeviceType[device_str.upper()]
-                except KeyError:
-                    LOGGER.error(f"Unknown device: {device_str}")
+                    (device, command, data) = self.command_parser.pase_command(message)
+                except CommandParsingError as ex:
+                    LOGGER.error(f"Error parsing command: {str(ex)}")
                     continue
 
                 full_address = self.device_manager.get_full_address(device)
@@ -115,15 +83,8 @@ class SendThread(QtCore.QThread):
 
                 connection = self.connections[full_address.connection_name]
 
-                try:
-                    command = CommandType[command_str.upper()]
-                except KeyError:
-                    LOGGER.error(f"Unknown command {command_str}")
-                    continue
+                LOGGER.info(f"Sending command {command.name} to device {device.name} ({full_address})")
 
-                LOGGER.info(f"Sending command {command} to device {device.name} ({full_address})")
-
-                data = bytes([command.value])
                 connection.send(full_address.device_address, data)
 
                 LOGGER.info("Sent command!")

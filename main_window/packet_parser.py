@@ -12,6 +12,7 @@ from main_window.data_entry_id import DataEntryIds, MIN_SINGLE_SENSOR_ID, MAX_SI
 
 SINGLE_SENSOR_EVENT = Event('single_sensor')
 CONFIG_EVENT = Event('config')
+EVENT_EVENT = Event('event')
 
 # Essentially a mini-class, to structure the header data. Doesn't merit its own class due to limited use,
 # can be expanded if necessary elsewhere.
@@ -41,6 +42,7 @@ class SubpacketIds(Enum):
     ORIENTATION_2 = 0x22 # TODO Remove
     ORIENTATION_3 = 0x23 # TODO Remove
     ORIENTATION_4 = 0x24 # TODO Remove
+
 VERSION_ID_LEN = 40
 
 ID_TO_DEVICE_TYPE = {
@@ -49,6 +51,18 @@ ID_TO_DEVICE_TYPE = {
         0x02: DeviceType.CO_PILOT_FLARE,
 }
 DEVICE_TYPE_TO_ID = {y: x for (x, y) in ID_TO_DEVICE_TYPE.items()}
+
+# Matches enum EventId in FLARE: radio.h
+EVENT_IDS = {
+    0x00: "LAUNCH",
+    0x01: "STAGE SEPARATION",
+    0x02: "MACH LOCK ENTER",
+    0x03: "MACH LOCK EXIT",
+    0x04: "APOGEE",
+    0x05: "DROGUE DEPLOY",
+    0x06: "MAIN DEPLOY",
+    0x07: "LANDED"
+}
 
 
 class PacketParser:
@@ -174,18 +188,11 @@ class PacketParser:
         return data
 
     def event(self, byte_stream: BytesIO, header: Header):
-        """
-
-        :param byte_stream:
-        :type byte_stream:
-        :param header:
-        :type header:
-        :return:
-        :rtype:
-        """
         data: Dict = {}
-        # TODO Enumerate event id -> strings, and convert to human readable string here?
         data[DataEntryIds.EVENT] = byte_stream.read(1)[0]
+
+        LOGGER.info("Event: %s", str(EVENT_IDS[DataEntryIds.EVENT]))
+        EVENT_EVENT.increment()
         return data
 
     def config(self, byte_stream: BytesIO, header: Header):

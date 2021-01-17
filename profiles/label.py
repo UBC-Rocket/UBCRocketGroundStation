@@ -58,7 +58,11 @@ def update_gps(rocket_data: RocketData, device: DeviceType) -> str:
 
 
 def update_state(rocket_data: RocketData, device: DeviceType) -> str:
-    return str(rocket_data.last_value_by_device(device, DataEntryIds.STATE))
+    state = rocket_data.last_value_by_device(device, DataEntryIds.STATE)
+    if state is not None:
+        return str(state)
+    else:
+        return VALUE_NOT_AVAILABLE
 
 
 def update_pressure(rocket_data: RocketData, device: DeviceType) -> str:

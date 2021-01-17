@@ -55,6 +55,9 @@ class ComWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         comlist = list(map(lambda x: x.device, serial.tools.list_ports.comports()))
         self.comBox.addItems(comlist)
 
+        self.resize(self.sizeHint())
+        self.setFixedSize(self.size())
+
     def doneButtonPressed(self) -> None:
         """
 

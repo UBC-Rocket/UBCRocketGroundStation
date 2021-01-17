@@ -22,5 +22,6 @@ class MplWidget(QtWidgets.QWidget):
         QtWidgets.QWidget.__init__(self, parent)  # Inherit from QWidget
         self.canvas = MplCanvas()  # Create canvas object
         self.vbl = QtWidgets.QVBoxLayout()  # Set box for plotting
+        self.vbl.setContentsMargins(0, 0, 0, 0)
         self.vbl.addWidget(self.canvas)
         self.setLayout(self.vbl)

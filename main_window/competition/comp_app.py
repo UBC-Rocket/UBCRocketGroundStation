@@ -15,6 +15,7 @@ from profiles.rocket_profile import RocketProfile
 from .mapping import map_data, mapbox_utils
 from .mapping.mapping_thread import MappingThread
 from main_window.main_app import MainApp
+from main_window.mplwidget import MplWidget
 
 qtCreatorFile = os.path.join(BUNDLED_DATA, "qt_files", "comp_app.ui")
 
@@ -41,10 +42,6 @@ class CompApp(MainApp, Ui_MainWindow):
 
         self.map = map_data.MapData()
 
-        # Hook-up Matplotlib callbacks
-        self.plotWidget.canvas.fig.canvas.mpl_connect('resize_event', self.map_resized_event)
-        # TODO: Also have access to click, scroll, keyboard, etc. Would be good to implement map manipulation.
-
         self.im = None  # Plot im
 
         # Attach functions for static buttons
@@ -52,6 +49,7 @@ class CompApp(MainApp, Ui_MainWindow):
         self.commandEdit.returnPressed.connect(self.send_button_pressed)
         self.actionSave.triggered.connect(self.save_file)
         self.actionSave.setShortcut("Ctrl+S")
+        self.actionReset.triggered.connect(self.reset_view)
 
         # Hook-up logger to UI text output
         # Note: Currently doesnt print logs from other processes (e.g. mapping process)
@@ -64,6 +62,14 @@ class CompApp(MainApp, Ui_MainWindow):
 
         self.setup_buttons()
         self.setup_labels()
+        self.setup_subwindow().showMaximized()
+
+        self.setWindowIcon(QtGui.QIcon(mapbox_utils.MARKER_PATH))
+
+        self.original_geometry = self.saveGeometry()
+        self.original_state = self.saveState()
+        self.settings = QtCore.QSettings('UBCRocket', 'UBCRGS')
+        self.restore_view()
 
         # Init and connection of MappingThread
         self.MappingThread = MappingThread(self.connections, self.map, self.rocket_data, self.rocket_profile)
@@ -85,16 +91,14 @@ class CompApp(MainApp, Ui_MainWindow):
             qt_button = QtWidgets.QPushButton(self.centralwidget)
             setattr(self, button + "Button", qt_button)
             sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
-            sizePolicy.setHorizontalStretch(0)
-            sizePolicy.setVerticalStretch(0)
             sizePolicy.setHeightForWidth(getattr(self, button + "Button").sizePolicy().hasHeightForWidth())
             qt_button.setSizePolicy(sizePolicy)
             font = QtGui.QFont()
-            font.setPointSize(35)
+            font.setPointSize(16)
             font.setKerning(True)
             qt_button.setFont(font)
             qt_button.setObjectName(f"{button}Button")
-            self.gridLayout_5.addWidget(qt_button, row, col, 1, 1)
+            self.commandButtonGrid.addWidget(qt_button, row, col, 1, 1)
             if col + 1 < grid_width:
                 col += 1
             else:
@@ -123,30 +127,42 @@ class CompApp(MainApp, Ui_MainWindow):
 
         # Trying to replicate PyQt's generated code from a .ui file as closely as possible. This is why setattr is
         # being used to keep all of the buttons as named labels of MainApp and not elements of a list.
-        row = 0
         for label in self.rocket_profile.labels:
             name = label.name
+
             qt_text = QtWidgets.QLabel(self.centralwidget)
             setattr(self, name + "Text", qt_text)
-            sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
-            sizePolicy.setHorizontalStretch(0)
-            sizePolicy.setVerticalStretch(0)
-            sizePolicy.setHeightForWidth(getattr(self, name + "Text").sizePolicy().hasHeightForWidth())
-            qt_text.setSizePolicy(sizePolicy)
             qt_text.setObjectName(f"{name}Text")
-            self.gridLayout_6.addWidget(qt_text, row, 0, 1, 1)
 
             qt_label = QtWidgets.QLabel(self.centralwidget)
             setattr(self, name + "Label", qt_label)
             qt_label.setObjectName(f"{name}Label")
-            self.gridLayout_6.addWidget(qt_label, row, 1, 1, 1)
-            row += 1
+
+            self.dataLabelFormLayout.addRow(qt_text, qt_label)
+
         # A .py file created from a .ui file will have the labels all defined at the end, for some reason. Two for loops
         # are being used to be consistent with the PyQt5 conventions.
         for label in self.rocket_profile.labels:
             name = label.name
-            getattr(self, name + "Text").setText(QtCore.QCoreApplication.translate("MainWindow", label.display_name))
-            getattr(self, name + "Label").setText(QtCore.QCoreApplication.translate("MainWindow", "0"))
+            getattr(self, name + "Text").setText(QtCore.QCoreApplication.translate("MainWindow", label.display_name + ":"))
+            getattr(self, name + "Label").setText(QtCore.QCoreApplication.translate("MainWindow", ""))
+
+    def setup_subwindow(self):
+        self.plotWidget = MplWidget()
+        # Hook-up Matplotlib callbacks
+        self.plotWidget.canvas.fig.canvas.mpl_connect('resize_event', self.map_resized_event)
+        # TODO: Also have access to click, scroll, keyboard, etc. Would be good to implement map manipulation.
+
+        sub = QtWidgets.QMdiSubWindow()
+        sub.layout().setContentsMargins(0, 0, 0, 0)
+        sub.setWidget(self.plotWidget)
+        sub.setWindowTitle("Data Plot")
+        sub.setWindowIcon(QtGui.QIcon(mapbox_utils.MARKER_PATH))
+
+        self.mdiArea.addSubWindow(sub)
+        sub.show()
+
+        return sub
 
     def receive_data(self) -> None:
         """
@@ -156,9 +172,12 @@ class CompApp(MainApp, Ui_MainWindow):
         """
 
         for label in self.rocket_profile.labels:
-            getattr(self, label.name + "Label").setText(
-                label.update(self.rocket_data)
-            )
+            try:
+                getattr(self, label.name + "Label").setText(
+                    label.update(self.rocket_data)
+                )
+            except:
+                LOGGER.exception(f'Failed to update {label.name}Label:')
 
         LABLES_UPDATED_EVENT.increment()
 
@@ -215,6 +234,35 @@ class CompApp(MainApp, Ui_MainWindow):
 
             self.rocket_data.save(name)
 
+    def reset_view(self) -> None:
+        original_position = self.geometry().center()
+        self.restoreGeometry(self.original_geometry)
+        self.restoreState(self.original_state)
+
+        # Workaround for known Qt issue. See section on X11 in https://doc.qt.io/qt-5/restoring-geometry.html
+        geometry = self.frameGeometry()
+        geometry.moveCenter(original_position)
+        self.move(geometry.topLeft())
+
+        for sub in self.mdiArea.subWindowList():
+            sub.close()
+            sub.deleteLater()  # Required to prevent memory leak. Also deletes window sub-objects (plot widget, etc.)
+
+        self.setup_subwindow().showMaximized()
+
+    def save_view(self):
+        self.settings.setValue('geometry', self.saveGeometry())
+        self.settings.setValue('windowState', self.saveState())
+
+    def restore_view(self):
+        geometry = self.settings.value("geometry")
+        if geometry is not None:
+            self.restoreGeometry(geometry)
+
+        state = self.settings.value("windowState")
+        if state is not None:
+            self.restoreState(state)
+
     def receive_map(self) -> None:
         """
         Updates the UI when a new map is available for display
@@ -224,12 +272,12 @@ class CompApp(MainApp, Ui_MainWindow):
             if isinstance(c, AnnotationBbox):
                 c.remove()
 
-        mapImage = self.map.getMapValue(map_data.IMAGE)
+        zoom, radius, map_image, mark = self.map.get_map_value()
 
         # plotMap UI modification
         self.plotWidget.canvas.ax.set_axis_off()
-        self.plotWidget.canvas.ax.set_ylim(mapImage.shape[0], 0)
-        self.plotWidget.canvas.ax.set_xlim(0, mapImage.shape[1])
+        self.plotWidget.canvas.ax.set_ylim(map_image.shape[0], 0)
+        self.plotWidget.canvas.ax.set_xlim(0, map_image.shape[1])
 
         # Removes pesky white boarder
         self.plotWidget.canvas.fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
@@ -239,12 +287,14 @@ class CompApp(MainApp, Ui_MainWindow):
             # NOTE: im.set_data() can also be used
             self.im.remove()
 
-        self.im = self.plotWidget.canvas.ax.imshow(mapImage)
+        self.im = self.plotWidget.canvas.ax.imshow(map_image)
 
         # updateMark UI modification
-        mark = self.map.getMapValue(map_data.MARK)
         annotation_box = AnnotationBbox(OffsetImage(MAP_MARKER), mark, frameon=False)
         self.plotWidget.canvas.ax.add_artist(annotation_box)
+
+        # For debugging marker position
+        #self.plotWidget.canvas.ax.plot(mark[0], mark[1], marker='o', markersize=3, color="red")
 
         self.plotWidget.canvas.draw()
 
@@ -259,6 +309,7 @@ class CompApp(MainApp, Ui_MainWindow):
         self.MappingThread.setDesiredMapSize(event.width, event.height)
 
     def shutdown(self):
+        self.save_view()
         self.MappingThread.shutdown()
         super().shutdown()
 

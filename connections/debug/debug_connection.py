@@ -51,7 +51,7 @@ class DebugConnection(Connection):
                     continue
 
                 full_arr: bytearray = bytearray()
-                full_arr.extend(self.config_mock_set_values())
+                # full_arr.extend(self.config_mock_set_values())
                 # full_arr.extend(self.message_mock_set_values())
                 full_arr.extend(self.bulk_sensor_mock_random())
                 # full_arr.extend(self.bad_subpacket_id_mock()) # bad id, to see handling of itself and remaining data

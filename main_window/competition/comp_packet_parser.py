@@ -16,9 +16,9 @@ OTHER_STATUS_TYPES = [DataEntryIds.DROGUE_IGNITER_CONTINUITY, DataEntryIds.MAIN_
 
 # Converting bit array status to readable values
 BITARRAY_TO_STATUS = {
-    0b00000000: DataEntryValues.NOMINAL,
-    0b00000001: DataEntryValues.NONCRITICAL_FAILURE,
-    0b00000011: DataEntryValues.CRITICAL_FAILURE,
+    0b00000000: DataEntryValues.STATE_NOMINAL,
+    0b00000001: DataEntryValues.STATE_NONCRITICAL_FAILURE,
+    0b00000011: DataEntryValues.STATE_CRITICAL_FAILURE,
 }
 
 # Parser's subpacket ids, according to spec. NOT DataIds

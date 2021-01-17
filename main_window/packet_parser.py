@@ -8,7 +8,7 @@ from typing import Any, Callable, Dict
 from . import data_entry_id
 from util.detail import LOGGER
 from util.event_stats import Event
-from main_window.data_entry_id import DataEntryIds, MIN_SINGLE_SENSOR_ID, MAX_SINGLE_SENSOR_ID
+from main_window.data_entry_id import DataEntryIds, DataEntryValues, MIN_SINGLE_SENSOR_ID, MAX_SINGLE_SENSOR_ID
 
 SINGLE_SENSOR_EVENT = Event('single_sensor')
 CONFIG_EVENT = Event('config')
@@ -54,14 +54,14 @@ DEVICE_TYPE_TO_ID = {y: x for (x, y) in ID_TO_DEVICE_TYPE.items()}
 
 # Matches enum EventId in FLARE: radio.h
 EVENT_IDS = {
-    0x00: "LAUNCH",
-    0x01: "STAGE SEPARATION",
-    0x02: "MACH LOCK ENTER",
-    0x03: "MACH LOCK EXIT",
-    0x04: "APOGEE",
-    0x05: "DROGUE DEPLOY",
-    0x06: "MAIN DEPLOY",
-    0x07: "LANDED"
+    0x00: DataEntryValues.EVENT_LAUNCH,
+    0x01: DataEntryValues.EVENT_STAGE_SEPARATION,
+    0x02: DataEntryValues.EVENT_MACH_LOCK_ENTER,
+    0x03: DataEntryValues.EVENT_MACH_LOCK_EXIT,
+    0x04: DataEntryValues.EVENT_APOGEE,
+    0x05: DataEntryValues.EVENT_DROGUE_DEPLOY,
+    0x06: DataEntryValues.EVENT_MAIN_DEPLOY,
+    0x07: DataEntryValues.EVENT_LANDED,
 }
 
 
@@ -190,9 +190,10 @@ class PacketParser:
     def event(self, byte_stream: BytesIO, header: Header):
         data: Dict = {}
         event_bytes = byte_stream.read(2);
-        data[DataEntryIds.EVENT] = self.bytestoint(event_bytes)
+        event_int = self.bytestoint(event_bytes)
+        data[DataEntryIds.EVENT] = event_int
 
-        LOGGER.info("Event: %s", str(EVENT_IDS[data[DataEntryIds.EVENT]]))
+        LOGGER.info("Event: %s", str(EVENT_IDS[event_int].name))
         EVENT_EVENT.increment()
         return data
 

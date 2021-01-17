@@ -124,7 +124,7 @@ class DebugConnection(Connection):
         return radio_packets.config(self._current_millis(), False, self.device_id, REQUIRED_FLARE)
 
     def event_mock_set_values(self) -> bytearray:
-        return radio_packets.event(self, 0x00)
+        return radio_packets.event(self._current_millis(), 0x00)
 
 
     def gps_mock_random(self) -> bytearray:

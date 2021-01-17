@@ -161,7 +161,7 @@ class PacketParser:
             raise ValueError("Subpacket id " + str(subpacket_id) + " not valid.")
 
         # Get timestamp
-        timestamp: int = self.fourtoint(byte_stream.read(4))
+        timestamp: int = self.bytestoint(byte_stream.read(4))
 
         return Header(subpacket_id, timestamp)
 
@@ -189,9 +189,10 @@ class PacketParser:
 
     def event(self, byte_stream: BytesIO, header: Header):
         data: Dict = {}
-        data[DataEntryIds.EVENT] = byte_stream.read(1)[0]
+        event_bytes = byte_stream.read(2);
+        data[DataEntryIds.EVENT] = self.bytestoint(event_bytes)
 
-        LOGGER.info("Event: %s", str(EVENT_IDS[DataEntryIds.EVENT]))
+        LOGGER.info("Event: %s", str(EVENT_IDS[data[DataEntryIds.EVENT]]))
         EVENT_EVENT.increment()
         return data
 
@@ -257,19 +258,15 @@ class PacketParser:
         c = struct.unpack('>f' if self.big_endian_floats else '<f', b)
         return c[0]
 
-    def fourtoint(self, byte_list):
+    def bytestoint(self, byte_list: list):
         """
+        Returns the integer representation of a list of bytes.
 
-        :param bytes:
-        :type bytes:
-        :return:
-        :rtype:
+        :param byte_list the bytes list from which to build the integer.
+               Endianness follows config packet.
+        :return: the integer
         """
-        assert len(byte_list) == 4
-        data = byte_list
-        b = struct.pack('4B', *data)
-        c = struct.unpack('>I' if self.big_endian_ints else '<I', b)
-        return c[0]
+        return int.from_bytes(byte_list, 'big' if self.big_endian_ints else 'little')
 
     def bitfrombyte(self, val: int, targetIndex: int):
         """

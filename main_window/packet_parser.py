@@ -1,13 +1,14 @@
 import collections
 import struct
+from enum import Enum
 from .device_manager import DeviceType
 from io import BytesIO
 from typing import Any, Callable, Dict
 
-from . import subpacket_ids
+from . import data_entry_id
 from util.detail import LOGGER
 from util.event_stats import Event
-from main_window.subpacket_ids import SubpacketEnum
+from main_window.data_entry_id import DataEntryIds
 
 SINGLE_SENSOR_EVENT = Event('single_sensor')
 CONFIG_EVENT = Event('config')
@@ -16,16 +17,36 @@ CONFIG_EVENT = Event('config')
 # can be expanded if necessary elsewhere.
 Header = collections.namedtuple('Header', ['subpacket_id', 'timestamp'])
 
-# CONSTANTS
-# TODO Extract
-DEVICE_TYPE = 'ROCKET_TYPE'
-IS_SIM = 'IS_SIM'
-VERSION_ID = 'VERSION_ID'
-VERSION_ID_LEN = 40 # TODO Could instead use passed length parameter, if this is not necessary
-MESSAGE = 'MESSAGE'
+# Parser's subpacket ids. Should not be used elsewhere, NOT DataIds
+class SubpacketIds(Enum):
+    MESSAGE = 0x01
+    EVENT = 0x02
+    CONFIG = 0x03
+    # SINGLE_SENSOR's many values, added dynamically in constructor
+    ACCELERATION_X = 0x10
+    ACCELERATION_Y = 0x11
+    ACCELERATION_Z = 0x12
+    PRESSURE = 0x13
+    BAROMETER_TEMPERATURE = 0x14
+    TEMPERATURE = 0x15
+    LATITUDE = 0x19
+    LONGITUDE = 0x1A
+    GPS_ALTITUDE = 0x1B
+    CALCULATED_ALTITUDE = 0x1C
+    STATE = 0x1D
+    VOLTAGE = 0x1E
+    GROUND_ALTITUDE = 0x1F
+    TIME = 0x20
+    ORIENTATION_1 = 0x21 # TODO Remove once dependencies can be resolved. Relates to https://trello.com/c/uFHtaN51/ https://trello.com/c/bA3RuHUC
+    ORIENTATION_2 = 0x22 # TODO Remove
+    ORIENTATION_3 = 0x23 # TODO Remove
+    ORIENTATION_4 = 0x24 # TODO Remove
+VERSION_ID_LEN = 40
 
-HEADER_SIZE_WITH_LEN = 6
-HEADER_SIZE_NO_LEN = 5
+# Range from spec. single_sensor depends on this
+MIN_SINGLE_SENSOR_ID: int = 0x10
+MAX_SINGLE_SENSOR_ID: int = 0x2F
+
 
 ID_TO_DEVICE_TYPE = {
         0x00: DeviceType.TANTALUS_STAGE_1_FLARE,
@@ -35,8 +56,10 @@ ID_TO_DEVICE_TYPE = {
 DEVICE_TYPE_TO_ID = {y: x for (x, y) in ID_TO_DEVICE_TYPE.items()}
 
 
-# This class takes care of converting subpacket data coming in, according to the specifications.
 class PacketParser:
+    """
+    This class takes care of converting subpacket data coming in, according to the specifications.
+    """
 
     def __init__(self):
         """
@@ -50,14 +73,21 @@ class PacketParser:
         self.big_endian_floats = None
 
         # Dictionary of subpacket id mapped to function to parse that data
-        self.packetTypeToParser: Dict[int, Callable[[BytesIO, Header], Dict[Any, Any]]] = {
-            SubpacketEnum.MESSAGE.value: self.message,
-            SubpacketEnum.EVENT.value: self.event,
-            SubpacketEnum.CONFIG.value: self.config,
-            # SubpacketEnum.SINGLE_SENSOR.value: single_sensor,  # See loop that maps function for range of ids below
+        self.packet_type_to_parser: Dict[int, Callable[[BytesIO, Header], Dict[Any, Any]]] = {
+            SubpacketIds.MESSAGE.value: self.message,
+            SubpacketIds.EVENT.value: self.event,
+            SubpacketIds.CONFIG.value: self.config,
+            # SubpacketIds.SINGLE_SENSOR.value: single_sensor,  # See loop that maps function for range of ids below
         }
-        for i in subpacket_ids.get_list_of_sensor_IDs():
-            self.packetTypeToParser[i] = self.single_sensor
+        for i in range(MIN_SINGLE_SENSOR_ID, MAX_SINGLE_SENSOR_ID + 1):
+            self.packet_type_to_parser[i] = self.single_sensor
+
+    @property
+    def header_size(self):
+        """
+        Essentially a constant field belonging to PacketParser.
+        """
+        return 5
 
     def set_endianness(self, big_endian_ints: bool, big_endian_floats: bool):
         self.big_endian_ints = big_endian_ints
@@ -85,7 +115,7 @@ class PacketParser:
         except Exception as e:
             LOGGER.exception("Error parsing data")  # Automatically grabs and prints exception info
 
-        parsed_data[SubpacketEnum.TIME.value] = header.timestamp
+        parsed_data[DataEntryIds.TIME] = header.timestamp
 
         self.big_endian_ints = None
         self.big_endian_floats = None
@@ -102,7 +132,7 @@ class PacketParser:
         :return:
         :rtype:
         """
-        return self.packetTypeToParser[header.subpacket_id](byte_stream, header)
+        return self.packet_type_to_parser[header.subpacket_id](byte_stream, header)
 
     def header(self, byte_stream: BytesIO) -> Header:
         """
@@ -117,7 +147,7 @@ class PacketParser:
         subpacket_id: int = byte_stream.read(1)[0]
 
         # check that id is valid:
-        if not subpacket_ids.isSubpacketID(subpacket_id):
+        if subpacket_id not in self.packet_type_to_parser:
             LOGGER.error("Subpacket id %d not valid.", subpacket_id)
             raise ValueError("Subpacket id " + str(subpacket_id) + " not valid.")
 
@@ -142,10 +172,10 @@ class PacketParser:
 
         # Two step: immutable int[] -> string
         byte_data = byte_stream.read(length)
-        data[SubpacketEnum.MESSAGE.value] = byte_data.decode('ascii')
+        data[DataEntryIds.MESSAGE] = byte_data.decode('ascii')
 
         # Do something with data
-        LOGGER.info("Incoming message: " + str(data[SubpacketEnum.MESSAGE.value]))
+        LOGGER.info("Incoming message: " + str(data[DataEntryIds.MESSAGE]))
         return data
 
     def event(self, byte_stream: BytesIO, header: Header):
@@ -159,8 +189,8 @@ class PacketParser:
         :rtype:
         """
         data: Dict = {}
-        # TODO Enumerate the list of events mapped to strings somewhere? Then convert to human readable string here. https://trello.com/c/uFHtaN51/ https://trello.com/c/bA3RuHUC
-        data[SubpacketEnum.EVENT.value] = byte_stream.read(1)[0]
+        # TODO Enumerate event id -> strings, and convert to human readable string here?
+        data[DataEntryIds.EVENT] = byte_stream.read(1)[0]
         return data
 
     def config(self, byte_stream: BytesIO, header: Header):
@@ -175,15 +205,15 @@ class PacketParser:
         """
 
         data = {}
-        data[IS_SIM] = bool(byte_stream.read(1)[0])
-        data[DEVICE_TYPE] = ID_TO_DEVICE_TYPE[byte_stream.read(1)[0]]
+        data[DataEntryIds.IS_SIM] = bool(byte_stream.read(1)[0])
+        data[DataEntryIds.DEVICE_TYPE] = ID_TO_DEVICE_TYPE[byte_stream.read(1)[0]]
         version_id = byte_stream.read(VERSION_ID_LEN)
-        data[VERSION_ID] = version_id.decode('ascii')
+        data[DataEntryIds.VERSION_ID] = version_id.decode('ascii')
 
-        LOGGER.info("Config: SIM? %s, Device type = %s, Version ID = %s",
-                    str(data[IS_SIM]),
-                    str(data[DEVICE_TYPE]),
-                    str(data[VERSION_ID]))
+        LOGGER.info("Config: SIM? %s, Rocket type = %s, Version ID = %s",
+                    str(data[DataEntryIds.IS_SIM]),
+                    str(data[DataEntryIds.DEVICE_TYPE]),
+                    str(data[DataEntryIds.VERSION_ID]))
 
         CONFIG_EVENT.increment()
         return data
@@ -198,20 +228,17 @@ class PacketParser:
         :return:
         :rtype:
         """
-        subpacket_id = header.subpacket_id # TODO Review w/ https://trello.com/c/uFHtaN51 https://trello.com/c/bA3RuHUC
-        data = {}
-        # TODO Commented out, since apparently we pass along state, and other non-floats items, as float too??
-        # if subpacket_id == SubpacketEnum.STATE.value:
-        #     data[subpacket_id] = byte_list[0]
-        # else:
-        #     data[subpacket_id] = self.fourtofloat(byte_list[0])
-        data[subpacket_id] = self.fourtofloat(byte_stream.read(4))
+        # Transform int single sensor id to global DataEntryId
+        data_id = DataEntryIds[SubpacketIds(header.subpacket_id).name]
+
+        data: Dict = {}
+        data[data_id] = self.fourtofloat(byte_stream.read(4))
 
         SINGLE_SENSOR_EVENT.increment()
         return data
-        
+
     def register_packet(self, packetType: int, parsing_fn: Callable[[BytesIO, Header], Dict[Any, Any]]):
-        self.packetTypeToParser[packetType] = parsing_fn
+        self.packet_type_to_parser[packetType] = parsing_fn
 
     # TODO Put these in utils folder/file?
     def fourtofloat(self, byte_list):

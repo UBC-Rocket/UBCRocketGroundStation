@@ -8,7 +8,7 @@ from PyQt5.QtCore import pyqtSignal
 import numpy as np
 from PIL import Image
 
-from main_window.subpacket_ids import SubpacketEnum
+from main_window.data_entry_id import DataEntryIds
 from main_window.rocket_data import RocketData
 from profiles.rocket_profile import RocketProfile
 from . import mapbox_utils
@@ -74,8 +74,8 @@ class MappingThread(QtCore.QThread):
         self.map_process.start()
 
         # Must be done last to prevent race condition
-        self.rocket_data.addNewCallback(self.device, SubpacketEnum.LATITUDE.value, self.notify)
-        self.rocket_data.addNewCallback(self.device, SubpacketEnum.LONGITUDE.value, self.notify)  # TODO review, could/should be omitted
+        self.rocket_data.add_new_callback(self.device, DataEntryIds.LATITUDE, self.notify)
+        self.rocket_data.add_new_callback(self.device, DataEntryIds.LONGITUDE, self.notify)  # TODO review, could/should be omitted?
 
     def notify(self) -> None:
         """
@@ -185,8 +185,8 @@ class MappingThread(QtCore.QThread):
                     time.sleep(0.5)
 
                 # copy location values to use, to keep the values consistent in synchronous but adjacent calls
-                latitude = self.rocket_data.last_value_by_device(self.device, SubpacketEnum.LATITUDE.value)
-                longitude = self.rocket_data.last_value_by_device(self.device, SubpacketEnum.LONGITUDE.value)
+                latitude = self.rocket_data.last_value_by_device(self.device, DataEntryIds.LATITUDE)
+                longitude = self.rocket_data.last_value_by_device(self.device, DataEntryIds.LONGITUDE)
                 desired_size = self.getDesiredMapSize()
 
                 # Prevent unnecessary work while no location data is received

@@ -57,7 +57,7 @@ class CommandParser:
         try:
             command = CommandType[command_str.upper()]
         except KeyError:
-            raise CommandParsingError(f"Unknown command {command_str}")
+            raise CommandParsingError(f"Unknown command: {command_str}")
 
         data = bytes([command.value])
 

@@ -112,15 +112,15 @@ class RocketData:
 
         BUNDLE_ADDED_EVENT.increment()
 
-    def last_value_by_device(self, device: DeviceType, sensor_id: DataEntryIds):
+    def last_value_and_time(self, device: DeviceType, sensor_id: DataEntryIds):
         """
-        Gets the most recent value specified by the DataEntryIds (enum object) given
+        Gets the most recent value and its time for the specified DataEntryIds (enum object)
 
         :param device:
         :type device:
         :param sensor_id:
         :type sensor_id:
-        :return:
+        :return: Value, Time
         :rtype:
         """
         with self.data_lock:
@@ -132,10 +132,27 @@ class RocketData:
                 return None
 
             data_entry_key = DataEntryKey(full_address, sensor_id)
-            for i in range(len(times)):
-                if data_entry_key in self.timeset[times[i]]:
-                    return self.timeset[times[i]][data_entry_key]
+            for time in times:
+                if data_entry_key in self.timeset[time]:
+                    return self.timeset[time][data_entry_key], time
             return None
+
+    def last_value_by_device(self, device: DeviceType, sensor_id: DataEntryIds):
+        """
+        Gets the most recent value specified by the DataEntryIds (enum object) given
+
+        :param device:
+        :type device:
+        :param sensor_id:
+        :type sensor_id:
+        :return: Value
+        :rtype:
+        """
+        ret = self.last_value_and_time(device, sensor_id)
+        if ret is None:
+            return None
+        else:
+            return ret[0]
 
     def highest_altitude_by_device(self, device: DeviceType):
         """

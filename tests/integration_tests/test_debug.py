@@ -209,7 +209,7 @@ def test_status_ping_packet(qtbot, single_connection_tantalus):
                                                 DataEntryIds.TIME) == 0xFFFFFFFF
     assert (
             app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1_FLARE, DataEntryIds.OVERALL_STATUS)
-            == DataEntryValues.STATE_CRITICAL_FAILURE
+            == DataEntryValues.STATUS_CRITICAL_FAILURE
     )
     for sensor in SENSOR_TYPES:
         assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1_FLARE, sensor) == 1

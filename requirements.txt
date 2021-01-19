@@ -11,3 +11,4 @@ pytest-mock==3.1.1
 pytest-qt==3.3.0
 coverage==5.1
 setuptools>=50.3.2
+git+https://github.com/SilentSys/orhelper.git@c4dec549387d6376aeaf95536f0371f5e2bf9c67#egg=orhelper

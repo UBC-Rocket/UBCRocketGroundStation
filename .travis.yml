@@ -21,6 +21,10 @@ install:
 - python3.7 -m pip install --upgrade pip setuptools wheel
 - python3.7 --version
 
+# Setup JDK for OpenRocket
+- sudo apt-get install -y openjdk-8-jre
+- export JAVA_HOME="/usr/lib/jvm/[YOUR JDK 1.8 FOLDER HERE]"
+
 # Initial setup of GS and venv
 - echo "$MAPBOX_API_KEY" > apikey.txt
 - python3.7 build.py --only setup

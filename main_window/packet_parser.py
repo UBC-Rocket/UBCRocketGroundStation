@@ -5,10 +5,10 @@ from .device_manager import DeviceType
 from io import BytesIO
 from typing import Any, Callable, Dict
 
-from . import data_entry_id
 from util.detail import LOGGER
 from util.event_stats import Event
-from main_window.data_entry_id import DataEntryIds, DataEntryValues, MIN_SINGLE_SENSOR_ID, MAX_SINGLE_SENSOR_ID
+from main_window.data_entry_id import DataEntryIds, DataEntryValues
+
 
 SINGLE_SENSOR_EVENT = Event('single_sensor')
 CONFIG_EVENT = Event('config')
@@ -44,6 +44,11 @@ class SubpacketIds(Enum):
     ORIENTATION_4 = 0x24 # TODO Remove
 
 VERSION_ID_LEN = 40
+
+# Range from spec. single_sensor depends on this
+MIN_SINGLE_SENSOR_ID: int = 0x10
+MAX_SINGLE_SENSOR_ID: int = 0x2F
+
 
 ID_TO_DEVICE_TYPE = {
         0x00: DeviceType.TANTALUS_STAGE_1_FLARE,

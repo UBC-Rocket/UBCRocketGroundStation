@@ -1,10 +1,5 @@
 from enum import Enum, auto
 
-# Constants. PacketParser.single_sensor depends on this range matching packet IDs in spec
-MIN_SINGLE_SENSOR_ID: int = 0x10
-MAX_SINGLE_SENSOR_ID: int = 0x2F
-
-
 class DataEntryIds(Enum):
     # Single Sensor:
     ACCELERATION_X = auto()

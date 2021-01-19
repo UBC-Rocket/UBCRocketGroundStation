@@ -54,8 +54,8 @@ DEVICE_TYPE_TO_ID = {y: x for (x, y) in ID_TO_DEVICE_TYPE.items()}
 
 # NOTE: Must match enum EventId in FLARE: radio.h
 EVENT_IDS = {
-    0x00: DataEntryValues.EVENT_ARM,
-    0x01: DataEntryValues.EVENT_DISARM,
+    0x00: DataEntryValues.EVENT_ARMED,
+    0x01: DataEntryValues.EVENT_DISARMED,
     0x02: DataEntryValues.EVENT_LAUNCH,
     0x03: DataEntryValues.EVENT_STAGE_SEPARATION,
     0x04: DataEntryValues.EVENT_MACH_LOCK_ENTER,
@@ -65,7 +65,7 @@ EVENT_IDS = {
     0x08: DataEntryValues.EVENT_MAIN_DEPLOY,
     0x09: DataEntryValues.EVENT_LANDED,
     0x0A: DataEntryValues.EVENT_ABORTED,
-    0x0B: DataEntryValues.EVENT_IGNITOR_FIRE,
+    0x0B: DataEntryValues.EVENT_IGNITOR_FIRED,
 }
 
 

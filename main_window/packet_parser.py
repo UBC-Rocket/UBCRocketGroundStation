@@ -52,16 +52,20 @@ ID_TO_DEVICE_TYPE = {
 }
 DEVICE_TYPE_TO_ID = {y: x for (x, y) in ID_TO_DEVICE_TYPE.items()}
 
-# Matches enum EventId in FLARE: radio.h
+# NOTE: Must match enum EventId in FLARE: radio.h
 EVENT_IDS = {
-    0x00: DataEntryValues.EVENT_LAUNCH,
-    0x01: DataEntryValues.EVENT_STAGE_SEPARATION,
-    0x02: DataEntryValues.EVENT_MACH_LOCK_ENTER,
-    0x03: DataEntryValues.EVENT_MACH_LOCK_EXIT,
-    0x04: DataEntryValues.EVENT_APOGEE,
-    0x05: DataEntryValues.EVENT_DROGUE_DEPLOY,
-    0x06: DataEntryValues.EVENT_MAIN_DEPLOY,
-    0x07: DataEntryValues.EVENT_LANDED,
+    0x00: DataEntryValues.EVENT_ARM,
+    0x01: DataEntryValues.EVENT_DISARM,
+    0x02: DataEntryValues.EVENT_LAUNCH,
+    0x03: DataEntryValues.EVENT_STAGE_SEPARATION,
+    0x04: DataEntryValues.EVENT_MACH_LOCK_ENTER,
+    0x05: DataEntryValues.EVENT_MACH_LOCK_EXIT,
+    0x06: DataEntryValues.EVENT_APOGEE,
+    0x07: DataEntryValues.EVENT_DROGUE_DEPLOY,
+    0x08: DataEntryValues.EVENT_MAIN_DEPLOY,
+    0x09: DataEntryValues.EVENT_LANDED,
+    0x0A: DataEntryValues.EVENT_ABORTED,
+    0x0B: DataEntryValues.EVENT_IGNITOR_FIRE,
 }
 
 
@@ -191,9 +195,10 @@ class PacketParser:
         data: Dict = {}
         event_bytes = byte_stream.read(2);
         event_int = self.bytestoint(event_bytes)
-        data[DataEntryIds.EVENT] = event_int
+        data_entry_value = EVENT_IDS[event_int]
+        data[DataEntryIds.EVENT] = data_entry_value.value
 
-        LOGGER.info("Event: %s", str(EVENT_IDS[event_int].name))
+        LOGGER.info("Event: %s", str(data_entry_value.name))
         EVENT_EVENT.increment()
         return data
 

@@ -4,7 +4,7 @@ from .integration_utils import test_app, valid_paramitrization, all_devices, all
 from connections.sim.sim_connection import FirmwareNotFound
 from connections.sim.hw_sim import HWSim, SensorType
 from main_window.competition.comp_app import CompApp
-from main_window.data_entry_id import DataEntryIds
+from main_window.data_entry_id import DataEntryIds, DataEntryValues
 from main_window.device_manager import DeviceType
 from main_window.packet_parser import (
     SINGLE_SENSOR_EVENT,
@@ -52,11 +52,13 @@ class TestFlare:
         flush_packets(sim_app, device_type)
 
         assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.STATE) == 1
+        assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.EVENT) == DataEntryValues.EVENT_ARM.value
 
         sim_app.send_command(device_type.name + ".disarm")
         flush_packets(sim_app, device_type)
 
         assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.STATE) == 0
+        assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.EVENT) == DataEntryValues.EVENT_DISARM.value
 
     def test_config_hello(self, qtbot, sim_app, device_type):
         flush_packets(sim_app, device_type)

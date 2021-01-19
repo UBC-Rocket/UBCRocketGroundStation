@@ -11,7 +11,10 @@ from ..rocket_profile import RocketProfile
 from connections.serial.serial_connection import SerialConnection
 from connections.debug.debug_connection import DebugConnection
 from connections.sim.sim_connection import SimConnection
-from connections.sim.hw_sim import HWSim, DummySensor, SensorType, Ignitor, IgnitorType
+from connections.sim.hw.hw_sim import HWSim
+from connections.sim.hw.sensors.sensor import SensorType
+from connections.sim.hw.sensors.dummy_sensor import DummySensor
+from connections.sim.hw.ignitor_sim import Ignitor, IgnitorType
 from main_window.competition.comp_app import CompApp
 from main_window.competition.comp_packet_parser import CompPacketParser
 from main_window.device_manager import DeviceType

@@ -5,10 +5,10 @@ import struct
 from enum import Enum
 from pathlib import Path
 
-from .hw_sim import SensorType
+from connections.sim.hw.hw_sim import SensorType
 from ..connection import Connection, ConnectionMessage
 from .stream_filter import ReadFilter, WriteFilter
-from .xbee_module_sim import XBeeModuleSim
+from connections.sim.hw.xbee_module_sim import XBeeModuleSim
 from util.detail import LOGGER, LOCAL, EXECUTABLE_FILE_EXTENSION
 
 

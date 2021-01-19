@@ -1,5 +1,7 @@
-from connections.sim.hw_sim import HWSim, Ignitor, IgnitorType, DummySensor, SensorType
-
+from connections.sim.hw.hw_sim import HWSim
+from connections.sim.hw.sensors.sensor import SensorType
+from connections.sim.hw.sensors.dummy_sensor import DummySensor
+from connections.sim.hw.ignitor_sim import Ignitor, IgnitorType
 
 def ignitor_test(hw, test, read):
     """Utility function - does continuity check like FW would"""

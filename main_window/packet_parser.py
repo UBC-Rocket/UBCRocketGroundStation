@@ -201,7 +201,7 @@ class PacketParser:
         event_bytes = byte_stream.read(2);
         event_int = self.bytestoint(event_bytes)
         data_entry_value = EVENT_IDS[event_int]
-        data[DataEntryIds.EVENT] = data_entry_value.value
+        data[DataEntryIds.EVENT] = data_entry_value
 
         LOGGER.info("Event: %s", str(data_entry_value.name))
         EVENT_EVENT.increment()

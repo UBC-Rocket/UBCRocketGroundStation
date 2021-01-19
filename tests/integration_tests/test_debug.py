@@ -145,7 +145,7 @@ def test_event_packet(qtbot, single_connection_tantalus):
     assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1_FLARE,
                                                 DataEntryIds.TIME) == 0xFFFFFFFF
     assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1_FLARE,
-                                                DataEntryIds.EVENT) == DataEntryValues.EVENT_ARMED.value
+                                                DataEntryIds.EVENT) == DataEntryValues.EVENT_ARMED
 
 
 def test_message_packet(qtbot, single_connection_tantalus, caplog):

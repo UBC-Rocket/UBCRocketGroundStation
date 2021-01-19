@@ -54,7 +54,7 @@ class DebugConnection(Connection):
                 # full_arr.extend(self.config_mock_set_values())
                 # full_arr.extend(self.message_mock_set_values())
                 full_arr.extend(self.bulk_sensor_mock_random())
-                full_arr.extend(self.event_mock_set_values())
+                # full_arr.extend(self.event_mock_set_values())
                 # full_arr.extend(self.bad_subpacket_id_mock()) # bad id, to see handling of itself and remaining data
                 full_arr.extend(self.gps_mock_random())
                 full_arr.extend(self.orientation_mock_random())

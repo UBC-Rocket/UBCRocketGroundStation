@@ -45,9 +45,9 @@ class DataEntryIds(Enum):
 
 
 class DataEntryValues(Enum):
-    STATE_NOMINAL = auto()
-    STATE_NONCRITICAL_FAILURE = auto()
-    STATE_CRITICAL_FAILURE = auto()
+    STATUS_NOMINAL = auto()
+    STATUS_NONCRITICAL_FAILURE = auto()
+    STATUS_CRITICAL_FAILURE = auto()
 
     STATE_STANDBY = auto()
     STATE_ARMED = auto()

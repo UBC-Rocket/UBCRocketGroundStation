@@ -42,7 +42,7 @@ def set_dummy_sensor_values(sim_app, device_type: DeviceType, sensor_type: Senso
 @pytest.mark.parametrize(
     "sim_app, device_type", valid_paramitrization(
         all_profiles(excluding=['WbProfile', 'CoPilotProfile']),
-        only_flare(all_devices())),
+        only_flare(all_devices(excluding=[]))),
     indirect=['sim_app'])
 class TestFlare:
     def test_arming(self, qtbot, sim_app, device_type):

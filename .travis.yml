@@ -27,7 +27,10 @@ install:
 
 # Clone and build FW for SIM based integration tests
 - cd ..
-- git clone https://github.com/UBC-Rocket/FLARE.git
+- git clone --depth=50 https://github.com/UBC-Rocket/FLARE.git 
+- cd FLARE
+- git submodule update --init --recursive
+- cd ..
 - mkdir FLARE/avionics/build
 - cd FLARE/avionics/build
 - cat ../../../UBCRocketGroundStation/required_flare.txt | xargs git checkout

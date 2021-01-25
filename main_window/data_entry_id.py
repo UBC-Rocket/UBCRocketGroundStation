@@ -51,13 +51,17 @@ class DataEntryValues(Enum):
 
     STATE_STANDBY = auto()
     STATE_ARMED = auto()
-    STATE_ASCENT = auto()
+    STATE_ASCENT_TO_APOGEE = auto()
+    STATE_POWERED_ASCENT = auto()
     STATE_MACH_LOCK = auto()
     STATE_PRESSURE_DELAY = auto()
-    STATE_INITIAL_DESCENT = auto()
-    STATE_FINAL_DESCENT = auto()
+    STATE_DROGUE_DESCENT = auto()
+    STATE_MAIN_DESCENT = auto()
     STATE_LANDED = auto()
     STATE_WINTER_CONTINGENCY = auto()
+    # STATE_ASCENT = auto() # TODO Remove in this PR
+    # STATE_INITIAL_DESCENT = auto() # TODO Remove in this PR
+    # STATE_FINAL_DESCENT = auto() # TODO Remove in this PR
 
     # TODO Add other info stored
 

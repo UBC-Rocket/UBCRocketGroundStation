@@ -8,7 +8,7 @@ from PIL import Image
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
 from connections.connection import Connection
-from util.detail import LOCAL, BUNDLED_DATA, LOGGER, qtSignalLogHandler, GIT_HASH
+from util.detail import LOCAL, BUNDLED_DATA, LOGGER, qtSignalLogHandler, qtHook, GIT_HASH
 from util.event_stats import Event
 from profiles.rocket_profile import RocketProfile
 
@@ -33,26 +33,30 @@ class CompApp(MainApp, Ui_MainWindow):
     def __init__(self, connections: Dict[str, Connection], rocket_profile: RocketProfile) -> None:
         """
 
-        :param connection:
-        :type connection: Connection
+        :param connections:
         :param rocket_profile:
-        :type rocket_profile: RocketProfile
         """
         super().__init__(connections, rocket_profile)
 
-        self.map = map_data.MapData()
-
+        self.map_data = map_data.MapData()
         self.im = None  # Plot im
+
+        self.command_history = []
+        self.command_history_index = None
 
         # Attach functions for static buttons
         self.sendButton.clicked.connect(self.send_button_pressed)
-        self.commandEdit.returnPressed.connect(self.send_button_pressed)
         self.actionSave.triggered.connect(self.save_file)
         self.actionSave.setShortcut("Ctrl+S")
         self.actionReset.triggered.connect(self.reset_view)
 
+        # Hook into some of commandEdit's events
+        qtHook(self.commandEdit, 'focusNextPrevChild', lambda _: False, override_return=True)  # Prevents tab from changing focus
+        qtHook(self.commandEdit, 'keyPressEvent', self.command_edit_key_pressed)
+        qtHook(self.commandEdit, 'showPopup', self.command_edit_show_popup)
+
         # Hook-up logger to UI text output
-        # Note: Currently doesnt print logs from other processes (e.g. mapping process)
+        # Note: Currently doesn't print logs from other processes (e.g. mapping process)
         log_format = logging.Formatter("[%(asctime)s] (%(levelname)s) %(message)s")
         log_handler = qtSignalLogHandler(exception_traces=False)
         log_handler.setLevel(logging.INFO)
@@ -60,19 +64,21 @@ class CompApp(MainApp, Ui_MainWindow):
         log_handler.qt_signal.connect(self.print_to_ui)
         LOGGER.addHandler(log_handler)
 
+        # Setup dynamic UI elements
         self.setup_buttons()
         self.setup_labels()
         self.setup_subwindow().showMaximized()
 
         self.setWindowIcon(QtGui.QIcon(mapbox_utils.MARKER_PATH))
 
+        # Setup user window preferences
         self.original_geometry = self.saveGeometry()
         self.original_state = self.saveState()
         self.settings = QtCore.QSettings('UBCRocket', 'UBCRGS')
         self.restore_view()
 
         # Init and connection of MappingThread
-        self.MappingThread = MappingThread(self.connections, self.map, self.rocket_data, self.rocket_profile)
+        self.MappingThread = MappingThread(self.connections, self.map_data, self.rocket_data, self.rocket_profile)
         self.MappingThread.sig_received.connect(self.receive_map)
         self.MappingThread.start()
 
@@ -185,9 +191,107 @@ class CompApp(MainApp, Ui_MainWindow):
         """
 
         """
-        word = self.commandEdit.text()
-        self.send_command(word)
-        self.commandEdit.setText("")
+        command = self.commandEdit.currentText()
+        self.send_command(command)
+        self.commandEdit.setCurrentText("")
+
+        # Reset index to reflect that we are no longer viewing history
+        self.command_history_index = None
+
+        # Update command history (if command isn't a repeat)
+        if len(self.command_history) == 0 or command != self.command_history[-1]:
+            self.command_history.append(command)
+            self.command_history = self.command_history[-50:]  # Limit history to 50
+
+    def command_edit_show_popup(self):
+        """
+        :return: True to suppress the event
+        """
+
+        # Update list of commands
+        self.commandEdit.clear()
+        self.commandEdit.addItems(sorted(self.command_parser.available_commands()))
+
+        # Doesn't behave as expected if there's still text in the edit box
+        self.commandEdit.setCurrentText('')
+        return False
+
+    def command_edit_key_pressed(self, event):
+        """
+        :return: True to suppress the event
+        """
+        # Switch based on key
+        if event.key() in (QtCore.Qt.Key_Enter, QtCore.Qt.Key_Return):  # Enter -- Send command
+            self.send_button_pressed()
+
+        elif event.key() == QtCore.Qt.Key_Up:  # Up arrow key -- Go back in history
+            if self.commandEdit.view().isVisible():  # Do not handle if user is browsing popup list
+                return False
+
+            # Calculate next index in history
+            if self.command_history_index is not None:
+                # Currently browsing history, go back one
+                self.command_history_index = max(self.command_history_index - 1, 0)
+            elif len(self.command_history) > 0:
+                # Was not browsing history, but history is available. Go to first item in history.
+                self.command_history_index = len(self.command_history) - 1
+            else:
+                # End of history, do nothing
+                return True
+
+            # Set text based on index in history
+            self.commandEdit.setCurrentText(self.command_history[self.command_history_index])
+            return True
+
+        elif event.key() == QtCore.Qt.Key_Down:  # Down arrow key -- Go forward in history
+            if self.commandEdit.view().isVisible():  # Do not handle if user is browsing popup list
+                return False
+
+            if self.command_history_index is not None:
+                if self.command_history_index == len(self.command_history) - 1:
+                    # Reached present command
+                    self.command_history_index = None
+                    self.commandEdit.setCurrentText('')
+                else:
+                    # Go forward one item in history
+                    self.command_history_index = min(self.command_history_index + 1, len(self.command_history) - 1)
+                    self.commandEdit.setCurrentText(self.command_history[self.command_history_index])
+            return True
+
+        elif event.key() == QtCore.Qt.Key_Tab:  # Tab -- Autocomplete command
+            input = self.commandEdit.currentText().upper()
+
+            # Find commands that match input
+            common_commands = [command for command in self.command_parser.available_commands()
+                               if command.upper()[0:len(input)] == input]
+
+            if len(common_commands) > 0:  # Check that we found at lest one command that matches
+
+                # Figure out how many characters are common between all matching commands
+                common_index = 0
+                while all(x[common_index] == common_commands[0][common_index] if len(x) > common_index else False
+                          for x in common_commands):
+                    common_index += 1
+                common_portion = common_commands[0][0:common_index]
+
+                if len(common_portion) > len(input) or len(common_commands) == 1:
+                    # Found match, autocomplete
+                    self.commandEdit.setCurrentText(common_portion)
+                elif len(common_commands) > 10:
+                    # Too many branching possibilities
+                    self.print_to_ui(f"Too many possibilities to show... ({len(common_commands)})")
+                elif len(common_commands) > 0:
+                    # Print branching possibilities
+                    self.print_to_ui('\n'.join(common_commands))
+
+            return True
+
+        else:  # All other keys
+            # To avoid qComboBox's shitty "autocomplete"
+            self.commandEdit.clear()
+            return False
+
+        return False
 
     def print_to_ui(self, text) -> None:
         """
@@ -198,16 +302,16 @@ class CompApp(MainApp, Ui_MainWindow):
         current_text = self.consoleText.toPlainText()
 
         if len(current_text) == 0:
-            new_text = text
-
+            lines = []  # prevents empty first line
         else:
             lines = current_text.split('\n')
-            lines.append(text)
 
-            # Limit to 100 lines
-            lines = lines[-100:]
+        lines += text.split('\n')
 
-            new_text = "\n".join(lines)
+        # Limit to 100 lines
+        lines = lines[-100:]
+
+        new_text = "\n".join(lines)
 
         self.consoleText.setPlainText(new_text)
         self.consoleText.moveCursor(QtGui.QTextCursor.End)
@@ -218,7 +322,7 @@ class CompApp(MainApp, Ui_MainWindow):
         :param command:
         :type command:
         """
-        self.print_to_ui(command)
+        self.print_to_ui(f">>> {command}")
         super().send_command(command)
 
     def save_file(self) -> None:
@@ -272,7 +376,7 @@ class CompApp(MainApp, Ui_MainWindow):
             if isinstance(c, AnnotationBbox):
                 c.remove()
 
-        zoom, radius, map_image, mark = self.map.get_map_value()
+        zoom, radius, map_image, mark = self.map_data.get_map_value()
 
         # plotMap UI modification
         self.plotWidget.canvas.ax.set_axis_off()

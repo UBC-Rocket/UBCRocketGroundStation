@@ -62,15 +62,16 @@ class DataEntryValues(Enum):
     # TODO Add other info stored
 
     # Events
+    EVENT_STANDBY = auto()
     EVENT_ARMED = auto()
-    EVENT_DISARMED = auto()
-    EVENT_LAUNCH = auto()
-    EVENT_STAGE_SEPARATION = auto()
-    EVENT_MACH_LOCK_ENTER = auto()
-    EVENT_MACH_LOCK_EXIT = auto()
-    EVENT_APOGEE = auto()
-    EVENT_DROGUE_DEPLOY = auto()
-    EVENT_MAIN_DEPLOY = auto()
+    EVENT_POWERED_ASCENT = auto()
+    EVENT_PRE_AIR_START_COAST_TIMED = auto()
+    EVENT_ASCENT_TO_APOGEE = auto()
+    EVENT_MACH_LOCK = auto()
+    EVENT_PRESSURE_DELAY = auto()
+    EVENT_DROGUE_DESCENT = auto()
+    EVENT_MAIN_DESCENT = auto()
     EVENT_LANDED = auto()
-    EVENT_ABORTED = auto()
+    EVENT_WINTER_CONTINGENCY = auto()
+
     EVENT_IGNITOR_FIRED = auto()

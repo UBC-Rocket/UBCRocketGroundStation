@@ -58,7 +58,7 @@ class TestFlare:
         flush_packets(sim_app, device_type)
 
         assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.STATE) == 0
-        assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.EVENT) == DataEntryValues.EVENT_DISARMED
+        assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.EVENT) == DataEntryValues.EVENT_STANDBY
 
     def test_config_hello(self, qtbot, sim_app, device_type):
         flush_packets(sim_app, device_type)

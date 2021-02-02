@@ -59,19 +59,7 @@ DEVICE_TYPE_TO_ID = {y: x for (x, y) in ID_TO_DEVICE_TYPE.items()}
 
 # NOTE: Must match enum EventId in FLARE: radio.h
 EVENT_IDS = {
-    0x00: DataEntryValues.EVENT_STANDBY,
-    0x01: DataEntryValues.EVENT_ARMED,
-    0x02: DataEntryValues.EVENT_POWERED_ASCENT,
-    0x03: DataEntryValues.EVENT_PRE_AIR_START_COAST_TIMED,
-    0x04: DataEntryValues.EVENT_ASCENT_TO_APOGEE,
-    0x05: DataEntryValues.EVENT_MACH_LOCK,
-    0x06: DataEntryValues.EVENT_PRESSURE_DELAY,
-    0x07: DataEntryValues.EVENT_DROGUE_DESCENT,
-    0x08: DataEntryValues.EVENT_MAIN_DESCENT,
-    0x09: DataEntryValues.EVENT_LANDED,
-    0x0A: DataEntryValues.EVENT_WINTER_CONTINGENCY,
-
-    0x0B: DataEntryValues.EVENT_IGNITOR_FIRED,
+    0x00: DataEntryValues.EVENT_IGNITOR_FIRED,
 }
 
 
@@ -199,7 +187,7 @@ class PacketParser:
 
     def event(self, byte_stream: BytesIO, header: Header):
         data: Dict = {}
-        event_bytes = byte_stream.read(2);
+        event_bytes = byte_stream.read(2)
         event_int = self.bytestoint(event_bytes)
         data_entry_value = EVENT_IDS[event_int]
         data[DataEntryIds.EVENT] = data_entry_value

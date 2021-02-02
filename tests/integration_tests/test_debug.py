@@ -13,7 +13,6 @@ from main_window.packet_parser import (
     VERSION_ID_LEN,
     SINGLE_SENSOR_EVENT,
     EVENT_EVENT,
-    STATE_EVENT,
     CONFIG_EVENT,
     DEVICE_TYPE_TO_ID,
     SubpacketIds)
@@ -146,20 +145,7 @@ def test_event_packet(qtbot, single_connection_tantalus):
     assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1_FLARE,
                                                 DataEntryIds.TIME) == 0xFFFFFFFF
     assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1_FLARE,
-                                                DataEntryIds.EVENT) == DataEntryValues.EVENT_IGNITOR_FIRED
-
-def test_state_packet(qtbot, single_connection_tantalus):
-    app = single_connection_tantalus
-    connection = app.connections['DEBUG_CONNECTION']
-    packet = radio_packets.state(0xFFFFFFFF, 0x02)
-    snapshot = get_event_stats_snapshot()
-    connection.receive(packet)
-
-    assert STATE_EVENT.wait(snapshot) == 1
-    assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1_FLARE,
-                                                DataEntryIds.TIME) == 0xFFFFFFFF
-    assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1_FLARE,
-                                                DataEntryIds.STATE) == DataEntryValues.STATE_POWERED_ASCENT
+                                                DataEntryIds.EVENT) == DataEntryValues.EVENT_ARMED
 
 
 def test_message_packet(qtbot, single_connection_tantalus, caplog):

@@ -51,17 +51,27 @@ class DataEntryValues(Enum):
 
     STATE_STANDBY = auto()
     STATE_ARMED = auto()
-    STATE_POWERED_ASCENT = auto()
-    STATE_PRE_AIR_START_COAST_TIMED = auto()
-    STATE_ASCENT_TO_APOGEE = auto()
+    STATE_ASCENT = auto()
     STATE_MACH_LOCK = auto()
     STATE_PRESSURE_DELAY = auto()
-    STATE_DROGUE_DESCENT = auto()
-    STATE_MAIN_DESCENT = auto()
+    STATE_INITIAL_DESCENT = auto()
+    STATE_FINAL_DESCENT = auto()
     STATE_LANDED = auto()
     STATE_WINTER_CONTINGENCY = auto()
 
     # TODO Add other info stored
 
     # Events
+    EVENT_STANDBY = auto()
+    EVENT_ARMED = auto()
+    EVENT_POWERED_ASCENT = auto()
+    EVENT_PRE_AIR_START_COAST_TIMED = auto()
+    EVENT_ASCENT_TO_APOGEE = auto()
+    EVENT_MACH_LOCK = auto()
+    EVENT_PRESSURE_DELAY = auto()
+    EVENT_DROGUE_DESCENT = auto()
+    EVENT_MAIN_DESCENT = auto()
+    EVENT_LANDED = auto()
+    EVENT_WINTER_CONTINGENCY = auto()
+
     EVENT_IGNITOR_FIRED = auto()

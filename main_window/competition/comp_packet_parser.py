@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 from util.detail import LOGGER
 from util.event_stats import Event
 from main_window.data_entry_id import DataEntryIds, DataEntryValues
-from main_window.packet_parser import PacketParser, Header, STATE_IDS
+from main_window.packet_parser import PacketParser, Header
 
 BULK_SENSOR_EVENT = Event('bulk_sensor')
 
@@ -104,9 +104,7 @@ class CompPacketParser(PacketParser):
         data[DataEntryIds.ORIENTATION_3] = self.fourtofloat(byte_stream.read(4))  # TODO Remove soon?
         data[DataEntryIds.LATITUDE] = self.fourtofloat(byte_stream.read(4))
         data[DataEntryIds.LONGITUDE] = self.fourtofloat(byte_stream.read(4))
-
-        state_read = int.from_bytes(byte_stream.read(2), "big")
-        data[DataEntryIds.STATE] = STATE_IDS[state_read]
+        data[DataEntryIds.STATE] = int.from_bytes(byte_stream.read(1), "big")
 
         BULK_SENSOR_EVENT.increment()
         return data

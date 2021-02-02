@@ -26,8 +26,7 @@ def bulk_sensor(time: int, barometer_altitude: float, acceleration_x: float, acc
     bulk_sensor_arr.extend(struct.pack(">f", orientation_3))  # Orientation
     bulk_sensor_arr.extend(struct.pack(">f", latitude))  # Latitude
     bulk_sensor_arr.extend(struct.pack(">f", longitude))  # Longitude
-    bulk_sensor_arr.extend(state.to_bytes(length=2, byteorder='big'))  # State
-
+    bulk_sensor_arr.extend(state.to_bytes(length=1, byteorder='big'))  # State
     return bulk_sensor_arr
 
 def single_sensor(time: int, sensor_id: SubpacketIds, value: float) -> bytearray:
@@ -111,14 +110,6 @@ def event(time: int, event: int) -> bytearray:
     data_arr.append(SubpacketIds.EVENT.value)
     data_arr.extend((int(time)).to_bytes(length=4, byteorder='big'))
     data_arr.extend((int(event)).to_bytes(length=2, byteorder='big'))
-    return data_arr
-
-
-def state(time: int, state: int) -> bytearray:
-    data_arr: bytearray = bytearray()
-    data_arr.append(SubpacketIds.STATE.value)
-    data_arr.extend((int(time)).to_bytes(length=4, byteorder='big'))
-    data_arr.extend((int(state)).to_bytes(length=2, byteorder='big'))
     return data_arr
 
 

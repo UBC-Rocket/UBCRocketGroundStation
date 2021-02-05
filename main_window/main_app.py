@@ -13,6 +13,7 @@ from main_window.read_thread import ReadThread
 from main_window.rocket_data import RocketData
 from main_window.send_thread import SendThread
 from main_window.device_manager import DeviceManager
+from main_window.command_parser import CommandParser
 
 
 class MainApp(QtWidgets.QMainWindow):
@@ -39,6 +40,7 @@ class MainApp(QtWidgets.QMainWindow):
         self.rocket_profile = rocket_profile
         self.device_manager = DeviceManager(self.rocket_profile.expected_devices, self.rocket_profile.required_device_versions, strict_versions=False)
         self.rocket_data = RocketData(self.device_manager)
+        self.command_parser = CommandParser(self.device_manager)
 
         packet_parser = self.rocket_profile.construct_packet_parser()
 
@@ -48,7 +50,7 @@ class MainApp(QtWidgets.QMainWindow):
         self.ReadThread.start()
 
         # Init and connection of SendThread
-        self.SendThread = SendThread(self.connections, self.device_manager)
+        self.SendThread = SendThread(self.connections, self.device_manager, self.command_parser)
         self.sig_send.connect(self.SendThread.queueMessage)
         self.SendThread.start()
 

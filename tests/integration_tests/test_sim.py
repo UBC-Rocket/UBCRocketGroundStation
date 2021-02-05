@@ -4,7 +4,7 @@ from .integration_utils import test_app, valid_paramitrization, all_devices, all
 from connections.sim.sim_connection import FirmwareNotFound
 from connections.sim.hw_sim import HWSim, SensorType
 from main_window.competition.comp_app import CompApp
-from main_window.data_entry_id import DataEntryIds
+from main_window.data_entry_id import DataEntryIds, DataEntryValues
 from main_window.device_manager import DeviceType
 from main_window.packet_parser import (
     SINGLE_SENSOR_EVENT,

@@ -45,18 +45,21 @@ class DataEntryIds(Enum):
 
 
 class DataEntryValues(Enum):
-    NOMINAL = auto()
-    NONCRITICAL_FAILURE = auto()
-    CRITICAL_FAILURE = auto()
+    STATUS_NOMINAL = auto()
+    STATUS_NONCRITICAL_FAILURE = auto()
+    STATUS_CRITICAL_FAILURE = auto()
 
-    STANDBY = auto()
-    ARMED = auto()
-    ASCENT = auto()
-    MACH_LOCK = auto()
-    PRESSURE_DELAY = auto()
-    INITIAL_DESCENT = auto()
-    FINAL_DESCENT = auto()
-    LANDED = auto()
-    WINTER_CONTINGENCY = auto()
+    STATE_STANDBY = auto()
+    STATE_ARMED = auto()
+    STATE_ASCENT = auto()
+    STATE_MACH_LOCK = auto()
+    STATE_PRESSURE_DELAY = auto()
+    STATE_INITIAL_DESCENT = auto()
+    STATE_FINAL_DESCENT = auto()
+    STATE_LANDED = auto()
+    STATE_WINTER_CONTINGENCY = auto()
 
-    # TODO Add Events, other info stored
+    # TODO Add other info stored
+
+    # Events
+    EVENT_IGNITOR_FIRED = auto()

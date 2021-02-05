@@ -12,6 +12,7 @@ from main_window.send_thread import COMMAND_SENT_EVENT
 from main_window.packet_parser import (
     VERSION_ID_LEN,
     SINGLE_SENSOR_EVENT,
+    EVENT_EVENT,
     CONFIG_EVENT,
     DEVICE_TYPE_TO_ID,
     SubpacketIds)
@@ -133,6 +134,19 @@ def test_single_sensor_packet(qtbot, single_connection_tantalus):
                                                     DataEntryIds.TIME) == 0xFFFFFFFF
         assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1_FLARE, data_entry_id) == val
 
+def test_event_packet(qtbot, single_connection_tantalus):
+    app = single_connection_tantalus
+    connection = app.connections['DEBUG_CONNECTION']
+    packet = radio_packets.event(0xFFFFFFFF, 0x00)
+    snapshot = get_event_stats_snapshot()
+    connection.receive(packet)
+
+    assert EVENT_EVENT.wait(snapshot) == 1
+    assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1_FLARE,
+                                                DataEntryIds.TIME) == 0xFFFFFFFF
+    assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1_FLARE,
+                                                DataEntryIds.EVENT) == DataEntryValues.EVENT_IGNITOR_FIRED
+
 
 def test_message_packet(qtbot, single_connection_tantalus, caplog):
     app = single_connection_tantalus
@@ -195,7 +209,7 @@ def test_status_ping_packet(qtbot, single_connection_tantalus):
                                                 DataEntryIds.TIME) == 0xFFFFFFFF
     assert (
             app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1_FLARE, DataEntryIds.OVERALL_STATUS)
-            == DataEntryValues.CRITICAL_FAILURE
+            == DataEntryValues.STATUS_CRITICAL_FAILURE
     )
     for sensor in SENSOR_TYPES:
         assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1_FLARE, sensor) == 1

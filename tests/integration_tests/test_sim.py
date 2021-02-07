@@ -52,13 +52,11 @@ class TestFlare:
         flush_packets(sim_app, device_type)
 
         assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.STATE) == 1
-        assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.EVENT) == DataEntryValues.EVENT_ARMED
 
         sim_app.send_command(device_type.name + ".disarm")
         flush_packets(sim_app, device_type)
 
         assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.STATE) == 0
-        assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.EVENT) == DataEntryValues.EVENT_STANDBY
 
     def test_config_hello(self, qtbot, sim_app, device_type):
         flush_packets(sim_app, device_type)

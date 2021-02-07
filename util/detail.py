@@ -6,6 +6,7 @@ import time
 import logging
 import subprocess
 from copy import copy
+from typing import Callable
 
 from PyQt5.QtCore import pyqtSignal, QObject
 
@@ -14,7 +15,7 @@ if getattr(sys, 'frozen', False):
     # Running in pyinstaller
     IS_PYINSTALLER = True
     LOCAL = os.path.dirname(sys.executable)
-    BUNDLED_DATA = sys._MEIPASS # Files that we bundle with the final file (e.g .ui files, images, etc.)
+    BUNDLED_DATA = sys._MEIPASS  # Files that we bundle with the final file (e.g .ui files, images, etc.)
     with open(os.path.join(BUNDLED_DATA, '.git_hash'), 'r') as _git_hash_file:
         GIT_HASH = _git_hash_file.readline().strip()
 
@@ -58,6 +59,7 @@ LOGGER.addHandler(_stdout_handler)
 
 LOGGER.info(f"Starting session ID: {SESSION_ID}")
 
+
 class qtSignalLogHandler(logging.Handler, QObject):
     """
     Logging handler that passes logs to a Qt signal
@@ -85,6 +87,30 @@ class qtSignalLogHandler(logging.Handler, QObject):
         self.qt_signal.emit(log_entry)
 
 
+def qtHook(obj, fn_name: str, handler: Callable, override_return: bool = False) -> None:
+    """
+    Adds a hook function before an event/method.
+
+    If hook function returns True, obj's event/method will be suppressed (not called).
+
+    :param obj: Object owning event/method
+    :param fn_name: Name of event/method belonging to obj
+    :param handler: Hook function to call before event/method
+    :param override_return: (Optional) True if hook function result should be used instead of event/method
+    :return:
+    """
+    fn = getattr(obj, fn_name)
+
+    def new_fn(*args, **kwargs):
+        ret = handler(*args, **kwargs)
+        if override_return:
+            return ret
+        elif ret is False:
+            return fn(*args, **kwargs)
+
+    setattr(obj, fn_name, new_fn)
+
+
 EXECUTABLE_FILE_EXTENSION = {
     'linux': '',
     'win32': '.exe',
@@ -93,6 +119,7 @@ EXECUTABLE_FILE_EXTENSION = {
 
 with open(os.path.join(BUNDLED_DATA, 'required_flare.txt'), 'r') as _required_flare_file:
     REQUIRED_FLARE = _required_flare_file.readline().strip()
+
 
 # Helper class. python way of doing ++ (unlimited incrementing)
 class Count:

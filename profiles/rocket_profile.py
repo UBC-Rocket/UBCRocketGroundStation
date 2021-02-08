@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from typing import Dict, List
 from connections.connection import Connection
 from main_window.packet_parser import PacketParser
-from connections.sim.hw_sim import HWSim
 from main_window.device_manager import DeviceType
 from .label import Label
 
@@ -36,16 +35,19 @@ class RocketProfile(ABC):
     @property
     @abstractmethod
     def required_device_versions(self) -> Dict[DeviceType, str]:
-        '''
+        """
         :return: Optional restrictions on device versions
-        '''
+        """
         pass
 
-    '''
+    """
     Factory pattern for objects that should only be constructed if needed
-    '''
+    """
+
     @abstractmethod
-    def construct_serial_connection(self, com_port: str, baud_rate: int) -> Dict[str, Connection]:
+    def construct_serial_connection(
+        self, com_port: str, baud_rate: int
+    ) -> Dict[str, Connection]:
         pass
 
     @abstractmethod

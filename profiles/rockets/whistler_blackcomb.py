@@ -8,7 +8,6 @@ from main_window.device_manager import DeviceType
 
 
 class WbProfile(RocketProfile):
-
     @property
     def rocket_name(self):
         return "Whistler Blackcomb"
@@ -38,9 +37,11 @@ class WbProfile(RocketProfile):
 
     def construct_debug_connection(self):
         return {
-            'TANTALUS_STAGE_1_CONNECTION': DebugConnection('TANTALUS_STAGE_1_RADIO_ADDRESS',
-                                                           DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1_FLARE],
-                                                           generate_radio_packets=False)
+            "TANTALUS_STAGE_1_CONNECTION": DebugConnection(
+                "TANTALUS_STAGE_1_RADIO_ADDRESS",
+                DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1_FLARE],
+                generate_radio_packets=False,
+            )
         }
 
     def construct_sim_connection(self):
@@ -51,4 +52,4 @@ class WbProfile(RocketProfile):
 
     def construct_packet_parser(self):
         return CompPacketParser()  # TODO : Use WbPacketParser once its set up
-        #return WbPacketParser()
+        # return WbPacketParser()

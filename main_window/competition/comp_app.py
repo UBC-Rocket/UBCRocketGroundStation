@@ -3,11 +3,11 @@ import os
 from typing import Callable, Dict
 import logging
 
-from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 from PIL import Image
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
 from connections.connection import Connection
+from profiles.label import Label
 from util.detail import LOCAL, BUNDLED_DATA, LOGGER, qtSignalLogHandler, qtHook, GIT_HASH
 from util.event_stats import Event
 from profiles.rocket_profile import RocketProfile
@@ -51,7 +51,8 @@ class CompApp(MainApp, Ui_MainWindow):
         self.actionReset.triggered.connect(self.reset_view)
 
         # Hook into some of commandEdit's events
-        qtHook(self.commandEdit, 'focusNextPrevChild', lambda _: False, override_return=True)  # Prevents tab from changing focus
+        qtHook(self.commandEdit, 'focusNextPrevChild', lambda _: False,
+               override_return=True)  # Prevents tab from changing focus
         qtHook(self.commandEdit, 'keyPressEvent', self.command_edit_key_pressed)
         qtHook(self.commandEdit, 'showPopup', self.command_edit_show_popup)
 
@@ -79,7 +80,7 @@ class CompApp(MainApp, Ui_MainWindow):
 
         # Init and connection of MappingThread
         self.MappingThread = MappingThread(self.connections, self.map_data, self.rocket_data, self.rocket_profile)
-        self.MappingThread.sig_received.connect(self.receive_map)
+        self.MappingThread.sig_received.connect(self.map_callback)
         self.MappingThread.start()
 
         LOGGER.info(f"Successfully started app (version = {GIT_HASH})")
@@ -131,6 +132,13 @@ class CompApp(MainApp, Ui_MainWindow):
     def setup_labels(self):
         """Create all of the data labels for the loaded rocket profile."""
 
+        def gen_clicked_callback(label: Label):
+            def mousePressEvent(QMouseEvent):
+                self.selected_label = label
+            return mousePressEvent
+
+        self.selected_label = None
+
         # Trying to replicate PyQt's generated code from a .ui file as closely as possible. This is why setattr is
         # being used to keep all of the buttons as named labels of MainApp and not elements of a list.
         for label in self.rocket_profile.labels:
@@ -146,12 +154,27 @@ class CompApp(MainApp, Ui_MainWindow):
 
             self.dataLabelFormLayout.addRow(qt_text, qt_label)
 
+            if label.map_fn is not None:
+                qt_text.mousePressEvent = gen_clicked_callback(label)
+
+            if label.name == "GPS":
+                self.selected_label = label
+
+        if self.selected_label is None:
+            self.selected_label = self.rocket_profile.labels[0]
+
         # A .py file created from a .ui file will have the labels all defined at the end, for some reason. Two for loops
         # are being used to be consistent with the PyQt5 conventions.
         for label in self.rocket_profile.labels:
             name = label.name
-            getattr(self, name + "Text").setText(QtCore.QCoreApplication.translate("MainWindow", label.display_name + ":"))
+            getattr(self, name + "Text").setText(
+                QtCore.QCoreApplication.translate("MainWindow", label.display_name + ":"))
             getattr(self, name + "Label").setText(QtCore.QCoreApplication.translate("MainWindow", ""))
+
+    def map_callback(self):
+        self.selected_label.map_fn(self)
+        if self.selected_label.name == "GPS":
+            MAP_UPDATED_EVENT.increment()
 
     def setup_subwindow(self):
         self.plotWidget = MplWidget()
@@ -367,43 +390,6 @@ class CompApp(MainApp, Ui_MainWindow):
         if state is not None:
             self.restoreState(state)
 
-    def receive_map(self) -> None:
-        """
-        Updates the UI when a new map is available for display
-        """
-        children = self.plotWidget.canvas.ax.get_children()
-        for c in children:
-            if isinstance(c, AnnotationBbox):
-                c.remove()
-
-        zoom, radius, map_image, mark = self.map_data.get_map_value()
-
-        # plotMap UI modification
-        self.plotWidget.canvas.ax.set_axis_off()
-        self.plotWidget.canvas.ax.set_ylim(map_image.shape[0], 0)
-        self.plotWidget.canvas.ax.set_xlim(0, map_image.shape[1])
-
-        # Removes pesky white boarder
-        self.plotWidget.canvas.fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
-
-        if self.im:
-            # Required because plotting images over old ones creates memory leak
-            # NOTE: im.set_data() can also be used
-            self.im.remove()
-
-        self.im = self.plotWidget.canvas.ax.imshow(map_image)
-
-        # updateMark UI modification
-        annotation_box = AnnotationBbox(OffsetImage(MAP_MARKER), mark, frameon=False)
-        self.plotWidget.canvas.ax.add_artist(annotation_box)
-
-        # For debugging marker position
-        #self.plotWidget.canvas.ax.plot(mark[0], mark[1], marker='o', markersize=3, color="red")
-
-        self.plotWidget.canvas.draw()
-
-        MAP_UPDATED_EVENT.increment()
-
     def map_resized_event(self, event) -> None:
         """
         Called whenever the map plot is resized, also is called once at the start
@@ -416,5 +402,3 @@ class CompApp(MainApp, Ui_MainWindow):
         self.save_view()
         self.MappingThread.shutdown()
         super().shutdown()
-
-

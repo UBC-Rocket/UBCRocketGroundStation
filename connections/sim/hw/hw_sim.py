@@ -1,8 +1,8 @@
 from typing import Iterable
 
-from .clock_sim import Clock
 from .ignitor_sim import Ignitor
 from .sensors.sensor import Sensor, SensorType, REQUIRED_SENSOR_FLOATS
+from .rocket_sim import RocketSim
 from util.detail import LOGGER
 from util.event_stats import Event
 from threading import RLock
@@ -11,7 +11,7 @@ SENSOR_READ_EVENT = Event('sensor_read')
 
 class HWSim:
     def __init__(
-            self, sensors: Iterable[Sensor], ignitors: Iterable[Ignitor]
+            self, rocket_sim: RocketSim, sensors: Iterable[Sensor], ignitors: Iterable[Ignitor]
     ):
         """
         :param sensors: Iterable of all the sensors that the HW contains
@@ -21,7 +21,7 @@ class HWSim:
         # To protect all HW as SIM is in a different thread from tests, etc.
         self.lock = RLock()
 
-        self.clock = Clock()
+        self._rocket_sim = rocket_sim
 
         self._sensors = {s.get_type(): s for s in sensors}
 
@@ -78,10 +78,22 @@ class HWSim:
         assert delta_us >= 0
 
         with self.lock:
-            self.clock.add_time(delta_us)
-            time_ms = self.clock.get_time_ms()
+            self._rocket_sim.get_clock().add_time(delta_us)
+            time_ms = self._rocket_sim.get_clock().get_time_ms()
 
             return time_ms
+
+    def launch(self) -> None:
+        with self.lock:
+            self._rocket_sim.launch()
+
+    def deploy_recovery(self) -> None:
+        with self.lock:
+            self._rocket_sim.deploy_recovery()
+
+    def replace_sensor(self, new_sensor: Sensor):
+        with self.lock:
+            self._sensors[new_sensor.get_type()] = new_sensor
 
     def shutdown(self):
         '''

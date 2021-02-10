@@ -16,7 +16,7 @@ class Ignitor:
     DISCONNECTED = 600  # Discontinuous
     OFF = 0
 
-    def __init__(self, ignitor_type: IgnitorType, test_pin: int, read_pin: int, fire_pin: int, broken=False):
+    def __init__(self, ignitor_type: IgnitorType, test_pin: int, read_pin: int, fire_pin: int, broken=False, action_fn=None):
         """
         In firmware's usage, to test continuity, the test pin is set high, and the voltage level at the read pin is used
         to determine whether the pin is continuous. To fire the pin, the fire pin is set high.
@@ -32,6 +32,7 @@ class Ignitor:
         self.test_pin = test_pin
         self.read_pin = read_pin
         self.fire_pin = fire_pin
+        self.action_fn = action_fn
 
         self._on = False
         if broken:
@@ -60,4 +61,7 @@ class Ignitor:
             return self.OFF
 
     def fire(self):
+        if self.action_fn and self._on_level == self.CONNECTED:
+            self.action_fn()
+
         self._on_level = self.DISCONNECTED

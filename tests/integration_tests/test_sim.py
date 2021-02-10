@@ -1,9 +1,12 @@
 import pytest
 from pytest import approx
+from profiles.rockets.hollyburn import HollyburnProfile
 from .integration_utils import test_app, valid_paramitrization, all_devices, all_profiles, only_flare, flush_packets
 from connections.sim.sim_connection import FirmwareNotFound
 from connections.sim.hw.hw_sim import HWSim
 from connections.sim.hw.sensors.sensor import SensorType
+from connections.sim.hw.sensors.dummy_sensor import DummySensor
+from connections.sim.hw.rocket_sim import FlightEvent, FlightDataType
 from main_window.competition.comp_app import CompApp
 from main_window.data_entry_id import DataEntryIds, DataEntryValues
 from main_window.device_manager import DeviceType
@@ -35,8 +38,7 @@ def get_hw_sim(sim_app, device_type: DeviceType) -> HWSim:
 
 def set_dummy_sensor_values(sim_app, device_type: DeviceType, sensor_type: SensorType, *vals):
     hw = get_hw_sim(sim_app, device_type)
-    with hw.lock:
-        hw._sensors[sensor_type].set_value(tuple(vals))
+    hw.replace_sensor(DummySensor(sensor_type, tuple(vals)))
 
 
 @pytest.mark.parametrize(
@@ -199,6 +201,36 @@ class TestFlare:
         final = sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.TIME)
         delta = final - initial
         assert delta >= 1000
+
+
+@pytest.mark.parametrize(
+    "sim_app, device_type", valid_paramitrization(
+        [HollyburnProfile()],
+        only_flare(all_devices(excluding=[]))),
+    indirect=['sim_app'])
+def test_full_flight(qtbot, sim_app, device_type):
+    hw = get_hw_sim(sim_app, device_type)
+
+    flush_packets(sim_app, device_type)
+    assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.STATE) == 0
+
+    sim_app.send_command(device_type.name + ".arm")
+    flush_packets(sim_app, device_type)
+
+    assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.STATE) == 1
+    assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.EVENT) == DataEntryValues.EVENT_ARMED
+
+    hw.launch()
+
+    # TODO: ALL OF THE CODE BELOW IS NOT ELEGANT AT ALL
+    import time
+    while True:
+        time.sleep(1)
+        with hw.lock:
+            if FlightEvent.GROUND_HIT in hw._rocket_sim.get_flight_events():
+                break
+            else:
+                print(f"FLIGHT RUNNING: t = {hw._rocket_sim.get_time()}, alt = {hw._rocket_sim.get_data(FlightDataType.TYPE_ALTITUDE)}")
 
 
 @pytest.mark.parametrize("sim_app", valid_paramitrization(all_profiles(excluding=['WbProfile', 'CoPilotProfile'])),

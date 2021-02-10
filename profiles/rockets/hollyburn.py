@@ -11,10 +11,13 @@ from ..rocket_profile import RocketProfile
 from connections.serial.serial_connection import SerialConnection
 from connections.debug.debug_connection import DebugConnection
 from connections.sim.sim_connection import SimConnection
+from connections.sim.hw.clock_sim import Clock
 from connections.sim.hw.hw_sim import HWSim
 from connections.sim.hw.sensors.sensor import SensorType
 from connections.sim.hw.sensors.dummy_sensor import DummySensor
 from connections.sim.hw.ignitor_sim import Ignitor, IgnitorType
+from connections.sim.hw.sensors.sensor_sim import SensorSim
+from connections.sim.hw.rocket_sim import RocketSim, FlightDataType
 from main_window.competition.comp_app import CompApp
 from main_window.competition.comp_packet_parser import CompPacketParser
 from main_window.device_manager import DeviceType
@@ -90,8 +93,10 @@ class HollyburnProfile(RocketProfile):
         '''
         Body
         '''
+        rocket_sim_body = RocketSim('Hollyburn CanSat Jan 20.ork')
+
         hw_sim_sensors_body = [
-            DummySensor(SensorType.BAROMETER, (1000, 25)),
+            SensorSim(SensorType.BAROMETER, rocket_sim_body, (FlightDataType.TYPE_AIR_PRESSURE, FlightDataType.TYPE_AIR_TEMPERATURE)),
             DummySensor(SensorType.GPS, (12.6, 13.2, 175)),
             DummySensor(SensorType.ACCELEROMETER, (1, 0, 0)),
             DummySensor(SensorType.IMU, (1, 0, 0, 0)),
@@ -99,17 +104,22 @@ class HollyburnProfile(RocketProfile):
         ]
 
         hw_sim_ignitors_body = [
-            Ignitor(IgnitorType.MAIN, 4, 14, 16),
-            Ignitor(IgnitorType.DROGUE, 17, 34, 35),
+            Ignitor(IgnitorType.MAIN, 4, 14, 16, action_fn=rocket_sim_body.deploy_main),
+            Ignitor(IgnitorType.DROGUE, 17, 34, 35, action_fn=rocket_sim_body.deploy_drogue),
         ]
 
-        hwsim_body = HWSim(hw_sim_sensors_body, hw_sim_ignitors_body)
+        hwsim_body = HWSim(rocket_sim_body, hw_sim_sensors_body, hw_sim_ignitors_body)
 
         '''
         Nose
         '''
+
+        # TODO: Enable this once possible
+        '''
+        rocket_sim_nose = RocketSim('Hollyburn CanSat Jan 20.ork')
+
         hw_sim_sensors_nose = [
-            DummySensor(SensorType.BAROMETER, (1000, 25)),
+            SensorSim(SensorType.BAROMETER, rocket_sim_nose, (FlightDataType.TYPE_AIR_PRESSURE, FlightDataType.TYPE_AIR_TEMPERATURE)),
             DummySensor(SensorType.GPS, (12.6, 13.2, 175)),
             DummySensor(SensorType.ACCELEROMETER, (1, 0, 0)),
             DummySensor(SensorType.IMU, (1, 0, 0, 0)),
@@ -117,11 +127,12 @@ class HollyburnProfile(RocketProfile):
         ]
 
         hw_sim_ignitors_nose = [
-            Ignitor(IgnitorType.MAIN, 4, 14, 16),
-            Ignitor(IgnitorType.DROGUE, 17, 34, 35),
+            Ignitor(IgnitorType.MAIN, 4, 14, 16, action_fn=rocket_sim_body.deploy_main),
+            Ignitor(IgnitorType.DROGUE, 17, 34, 35, action_fn=rocket_sim_body.deploy_drogue),
         ]
 
-        hwsim_nose = HWSim(hw_sim_sensors_nose, hw_sim_ignitors_nose)
+        hwsim_nose = HWSim(rocket_sim_nose, hw_sim_sensors_nose, hw_sim_ignitors_nose)
+        '''
 
         return {
             'HOLLYBURN_BODY_CONNECTION': SimConnection("Hollyburn", "0013A20041678FC0", hwsim_body),

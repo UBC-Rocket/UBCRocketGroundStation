@@ -14,13 +14,16 @@ sudo apt-get install -y xvfb libxkbcommon-x11-0
 sudo Xvfb :1 -screen 0 1024x768x24 </dev/null &
 export DISPLAY=":1"
 
+# Setup JDK for OpenRocket
+sudo apt-get install -y openjdk-8-jre
+export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
+
 # Start setting up Python for GS
 sudo apt-get install -y tk-dev
 env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.7.9
 pyenv global 3.7.9
 python --version
 python -m pip install --upgrade pip setuptools wheel
-
 
 # Initial setup of GS and venv
 echo "$MAPBOX_API_KEY" > apikey.txt

@@ -102,7 +102,7 @@ class TestFlare:
         R = 8.3144598
         g0 = 9.80665
         M = 0.0289644
-        altitude = lambda pres: Tb / Lb * ((Pb / pres) ** (R * Lb / (g0 * M)) - 1)
+        altitude = lambda pres: Tb / Lb * ((Pb / (pres * 100)) ** (R * Lb / (g0 * M)) - 1)
 
         hw = get_hw_sim(sim_app, device_type)
 
@@ -216,7 +216,6 @@ def test_full_flight(qtbot, sim_app, device_type):
     flush_packets(sim_app, device_type)
 
     assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.STATE) == 1
-    assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.EVENT) == DataEntryValues.EVENT_ARMED
 
     hw.launch()
 

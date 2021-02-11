@@ -169,6 +169,9 @@ class RocketSim:
         assert abs(data[FlightDataType.TYPE_TIME][-1] - events[FlightEvent.SIMULATION_END][0]) < 0.1
         return data, events
 
+    def shutdown(self):
+        pass # TODO: Ensure that process is closed
+
 
 def _process_simulation(
         ork_file,

@@ -1,3 +1,4 @@
+import time
 import pytest
 from pytest import approx
 from profiles.rockets.hollyburn import HollyburnProfile
@@ -228,11 +229,9 @@ def test_full_flight(qtbot, sim_app, device_type):
 
     hw.launch()
 
-    # TODO: ALL OF THE CODE BELOW IS NOT ELEGANT AT ALL
-    import time
     while True:
         time.sleep(1)
-        with hw.lock:
+        with hw:
             if FlightEvent.GROUND_HIT in hw._rocket_sim.get_flight_events():
                 break
             else:

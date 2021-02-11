@@ -19,7 +19,7 @@ class HWSim:
         """
 
         # To protect all HW as SIM is in a different thread from tests, etc.
-        self.lock = RLock()
+        self._lock = RLock()
 
         self._rocket_sim = rocket_sim
 
@@ -30,12 +30,14 @@ class HWSim:
         self._ignitor_reads = {i.read_pin: i for i in ignitors}
         self._ignitor_fires = {i.fire_pin: i for i in ignitors}
 
+        self._paused = False
+
     def digital_write(self, pin, val):
         """
         :param pin: Should be a test pin.
         :param val: True to set high, False to set low
         """
-        with self.lock:
+        with self._lock:
             LOGGER.debug(f"Digital write to pin={pin} with value value={val}")
             if pin in self._ignitor_tests:
                 self._ignitor_tests[pin].write(val)
@@ -46,7 +48,7 @@ class HWSim:
         """
         :param pin: Should be a read pin. Don't rely on behaviour if the pin isn't a readable pin.
         """
-        with self.lock:
+        with self._lock:
             val = 0
             if pin in self._ignitor_reads:
                 val = self._ignitor_reads[pin].read()
@@ -59,7 +61,7 @@ class HWSim:
         :param sensor_type: the sensor to read from
         :return: the sensor data
         """
-        with self.lock:
+        with self._lock:
             val = self._sensors[sensor_type].read()
 
             if len(val) != REQUIRED_SENSOR_FLOATS[sensor_type]:
@@ -77,26 +79,48 @@ class HWSim:
         """
         assert delta_us >= 0
 
-        with self.lock:
+        with self._lock:
             self._rocket_sim.get_clock().add_time(delta_us)
             time_ms = self._rocket_sim.get_clock().get_time_ms()
 
             return time_ms
 
     def launch(self) -> None:
-        with self.lock:
+        with self._lock:
             self._rocket_sim.launch()
 
     def deploy_recovery(self) -> None:
-        with self.lock:
+        with self._lock:
             self._rocket_sim.deploy_recovery()
 
     def replace_sensor(self, new_sensor: Sensor):
-        with self.lock:
+        with self._lock:
             self._sensors[new_sensor.get_type()] = new_sensor
+
+    def pause(self):
+        with self._lock:
+            if self._paused:
+                raise Exception("HW already paused")
+
+        self._lock.acquire()
+        self._paused = True
+
+    def resume(self):
+        with self._lock:
+            if not self._paused:
+                raise Exception("HW is not paused")
+
+        self._lock.release()
+        self._paused = False
+
+    def __enter__(self):
+        self.pause()
+
+    def __exit__(self, ex, value, tb):
+        self.resume()
 
     def shutdown(self):
         '''
         Shut down any threads and clean-up
         '''
-        pass
+        self._rocket_sim.shutdown()

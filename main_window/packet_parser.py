@@ -65,14 +65,15 @@ EVENT_IDS = {
 STATE_IDS = {
     0x00: DataEntryValues.STATE_STANDBY,
     0x01: DataEntryValues.STATE_ARMED,
-    0x02: DataEntryValues.STATE_ASCENT_TO_APOGEE,
-    0x03: DataEntryValues.STATE_POWERED_ASCENT,
-    0x04: DataEntryValues.STATE_MACH_LOCK,
-    0x05: DataEntryValues.STATE_PRESSURE_DELAY,
-    0x06: DataEntryValues.STATE_DROGUE_DESCENT,
-    0x07: DataEntryValues.STATE_MAIN_DESCENT,
-    0x08: DataEntryValues.STATE_LANDED,
-    0x09: DataEntryValues.STATE_WINTER_CONTINGENCY,
+    0x02: DataEntryValues.STATE_POWERED_ASCENT,
+    0x03: DataEntryValues.STATE_PRE_AIR_START_COAST_TIMED,
+    0x04: DataEntryValues.STATE_ASCENT_TO_APOGEE,
+    0x05: DataEntryValues.STATE_MACH_LOCK,
+    0x06: DataEntryValues.STATE_PRESSURE_DELAY,
+    0x07: DataEntryValues.STATE_DROGUE_DESCENT,
+    0x08: DataEntryValues.STATE_MAIN_DESCENT,
+    0x09: DataEntryValues.STATE_LANDED,
+    0x0A: DataEntryValues.STATE_WINTER_CONTINGENCY,
 }
 
 

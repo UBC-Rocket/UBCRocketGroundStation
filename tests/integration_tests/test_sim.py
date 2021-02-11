@@ -9,6 +9,7 @@ from main_window.device_manager import DeviceType
 from main_window.packet_parser import (
     SINGLE_SENSOR_EVENT,
     CONFIG_EVENT,
+    STATE_IDS,
 )
 
 from util.event_stats import get_event_stats_snapshot
@@ -46,17 +47,17 @@ def set_dummy_sensor_values(sim_app, device_type: DeviceType, sensor_type: Senso
 class TestFlare:
     def test_arming(self, qtbot, sim_app, device_type):
         flush_packets(sim_app, device_type)
-        assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.STATE) == 0
+        assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.STATE) == STATE_IDS[0x00]
 
         sim_app.send_command(device_type.name + ".arm")
         flush_packets(sim_app, device_type)
 
-        assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.STATE) == 1
+        assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.STATE) == STATE_IDS[0x01]
 
         sim_app.send_command(device_type.name + ".disarm")
         flush_packets(sim_app, device_type)
 
-        assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.STATE) == 0
+        assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.STATE) == STATE_IDS[0x00]
 
     def test_config_hello(self, qtbot, sim_app, device_type):
         flush_packets(sim_app, device_type)

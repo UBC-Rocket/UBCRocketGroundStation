@@ -53,6 +53,7 @@ class DataEntryValues(Enum):
     STATE_ARMED = auto()
     STATE_ASCENT_TO_APOGEE = auto()
     STATE_POWERED_ASCENT = auto()
+    STATE_PRE_AIR_START_COAST_TIMED = auto()
     STATE_MACH_LOCK = auto()
     STATE_PRESSURE_DELAY = auto()
     STATE_DROGUE_DESCENT = auto()

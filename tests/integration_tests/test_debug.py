@@ -16,7 +16,7 @@ from main_window.packet_parser import (
     CONFIG_EVENT,
     STATE_EVENT,
     DEVICE_TYPE_TO_ID,
-    SubpacketIds, STATE_IDS)
+    SubpacketIds, STATE_IDS, EVENT_IDS)
 from main_window.competition.comp_packet_parser import (
     SENSOR_TYPES,
     OTHER_STATUS_TYPES,
@@ -144,7 +144,8 @@ def test_single_sensor_packet(qtbot, single_connection_tantalus):
 def test_event_packet(qtbot, single_connection_tantalus):
     app = single_connection_tantalus
     connection = app.connections['DEBUG_CONNECTION']
-    packet = radio_packets.event(0xFFFFFFFF, 0x00)
+    event_to_test = 0x00
+    packet = radio_packets.event(0xFFFFFFFF, event_to_test)
     snapshot = get_event_stats_snapshot()
     connection.receive(packet)
 
@@ -152,7 +153,7 @@ def test_event_packet(qtbot, single_connection_tantalus):
     assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1_FLARE,
                                                 DataEntryIds.TIME) == 0xFFFFFFFF
     assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1_FLARE,
-                                                DataEntryIds.EVENT) == DataEntryValues.EVENT_IGNITOR_FIRED
+                                                DataEntryIds.EVENT) == EVENT_IDS[event_to_test]
 
 def test_state_packet(qtbot, single_connection_tantalus):
     app = single_connection_tantalus

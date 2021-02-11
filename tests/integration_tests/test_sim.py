@@ -200,6 +200,15 @@ class TestFlare:
         delta = final - initial
         assert delta >= 1000
 
+    def test_command_response_reliability(self, qtbot, sim_app, device_type):
+        CYCLES = 100
+
+        recv = 0
+
+        for i in range(CYCLES):
+            snapshot = get_event_stats_snapshot()
+            sim_app.send_command(device_type.name + ".baropres")
+            assert SINGLE_SENSOR_EVENT.wait(snapshot, num_expected=1) == 1
 
 @pytest.mark.parametrize(
     "sim_app, device_type", valid_paramitrization(

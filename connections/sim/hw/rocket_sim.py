@@ -3,7 +3,7 @@ from os import path
 from typing import Dict, List
 from enum import Enum, auto
 from numpy import interp
-from orhelper import OpenRocketInstance, Helper, FlightDataType, FlightEvent, OrLogLevel
+from orhelper import OpenRocketInstance, Helper, FlightDataType, FlightEvent
 from multiprocessing import Process, Queue
 
 from .clock_sim import Clock

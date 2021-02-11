@@ -183,38 +183,43 @@ def _process_simulation(
         result_queue):
     try:
         with OpenRocketInstance(jar_path=OPEN_ROCKET_PATH) as instance:
-            orh = Helper(instance)
+            try:
+                orh = Helper(instance)
 
-            doc = orh.load_doc(ork_file)
-            sim = doc.getSimulation(0)
+                doc = orh.load_doc(ork_file)
+                sim = doc.getSimulation(0)
 
-            # Configure
-            sim.getOptions().setRandomSeed(seed)
-            opts = sim.getOptions()
-            opts.setGeodeticComputation(orh.openrocket.util.GeodeticComputationStrategy.FLAT)
+                # Configure
+                sim.getOptions().setRandomSeed(seed)
+                opts = sim.getOptions()
+                opts.setGeodeticComputation(orh.openrocket.util.GeodeticComputationStrategy.FLAT)
 
-            # Setup drogue
-            _setup_recover_device(orh, opts, drogue_component_name, drogue_deployment_time)
+                # Setup drogue
+                _setup_recovery_device(orh, opts, drogue_component_name, drogue_deployment_time)
 
-            # Setup main
-            _setup_recover_device(orh, opts, main_component_name, main_deployment_time)
+                # Setup main
+                _setup_recovery_device(orh, opts, main_component_name, main_deployment_time)
 
-            orh.run_simulation(sim)
-            data = orh.get_timeseries(sim, list(FlightDataType))
+                orh.run_simulation(sim)
+                data = orh.get_timeseries(sim, list(FlightDataType))
 
-            events = orh.get_events(sim)
+                events = orh.get_events(sim)
 
-        # JVM shut down on `while` statement exit
-        result_queue.put((data, events))
+            except Exception as ex: # Must convert exception java string to regular string before leaving JVM
+                result_queue.put(Exception(f"Error inside JVM: {ex}"))
+                return
 
-    except Exception as ex:
-        result_queue.put(Exception())  # Apparently cant put java related exception in queue as-is
+    except Exception:
+        result_queue.put(Exception("Error starting OpenRocket"))
+        return
 
-def _setup_recover_device(orh, opts, component_name, time):
+    # JVM shut down on `while` statement exit
+    result_queue.put((data, events))
+
+def _setup_recovery_device(orh, opts, component_name, time):
 
     rocket = opts.getRocket()
     id = rocket.getDefaultConfiguration().getFlightConfigurationID()
-
     try:
         parachute = orh.get_component_named(rocket, component_name)
     except ValueError:

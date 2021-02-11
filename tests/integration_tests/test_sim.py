@@ -229,13 +229,24 @@ def test_full_flight(qtbot, sim_app, device_type):
 
     hw.launch()
 
+    stuck_count = 0
+    last_time = None
     while True:
         time.sleep(1)
         with hw:
             if FlightEvent.GROUND_HIT in hw._rocket_sim.get_flight_events():
                 break
+
+            print(f"FLIGHT RUNNING: t = {hw._rocket_sim.get_time()}, alt = {hw._rocket_sim.get_data(FlightDataType.TYPE_ALTITUDE)}")
+
+            if hw._rocket_sim.get_time() != last_time or last_time is None:
+                stuck_count = 0
             else:
-                print(f"FLIGHT RUNNING: t = {hw._rocket_sim.get_time()}, alt = {hw._rocket_sim.get_data(FlightDataType.TYPE_ALTITUDE)}")
+                stuck_count += 1
+                if stuck_count >= 5:
+                    assert False  # Flight sim stuck
+
+            last_time = hw._rocket_sim.get_time()
 
 
 @pytest.mark.parametrize("sim_app", valid_paramitrization(all_profiles(excluding=['WbProfile', 'CoPilotProfile'])),

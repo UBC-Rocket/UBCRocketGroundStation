@@ -1,4 +1,5 @@
 from typing import Iterable
+import numpy as np
 
 from connections.sim.hw.sensors.sensor import Sensor, SensorType, REQUIRED_SENSOR_FLOATS
 from connections.sim.hw.rocket_sim import RocketSim, FlightDataType
@@ -15,20 +16,29 @@ class SensorSim(Sensor):
     Simulates a generic sensor on rocket.
     """
 
-    def __init__(self, sensor_type: SensorType, rocket_sim: RocketSim, data_types: Iterable[FlightDataType]) -> None:
+    def __init__(self, sensor_type: SensorType, rocket_sim: RocketSim, data_types: Iterable[FlightDataType], error_stdev: Iterable[float]=None) -> None:
+        if len(data_types) != REQUIRED_SENSOR_FLOATS[sensor_type]:
+            raise Exception("Length of data_types does not correspond to required number of floats.")
+
+        if error_stdev is not None and len(error_stdev) != REQUIRED_SENSOR_FLOATS[sensor_type]:
+            raise Exception("Length of error_std does not correspond to required number of floats.")
+
         self.sensor_type = sensor_type
         self.rocket_sim = rocket_sim
         self._data_types = data_types
-
-        if len(data_types) != REQUIRED_SENSOR_FLOATS[self.sensor_type]:
-            raise Exception("Given values do not correspond to required number of floats.")
+        self._error_stdev = error_stdev
 
     def read(self) -> tuple:
         """
         :brief: return data for sensor
         :return: the sensor data
         """
-        return tuple(CONVERT_FROM_SI_UNITS[x](self.rocket_sim.get_data(x)) for x in self._data_types)
+        data = [CONVERT_FROM_SI_UNITS[x](self.rocket_sim.get_data(x)) for x in self._data_types]
+
+        if self._error_stdev is not None:
+            data = [np.random.normal(data[i], self._error_stdev[i]) for i in range(len(data))]
+
+        return tuple(data)
 
     def get_type(self) -> SensorType:
         return self.sensor_type

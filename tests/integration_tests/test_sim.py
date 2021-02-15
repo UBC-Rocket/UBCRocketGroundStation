@@ -31,7 +31,6 @@ def sim_app(test_app, request) -> CompApp:
     return test_app(profile, connections)
 
 
-
 def get_hw_sim(sim_app, device_type: DeviceType) -> HWSim:
     connection_name = sim_app.device_manager.get_full_address(device_type).connection_name
     return sim_app.connections[connection_name]._hw_sim
@@ -105,13 +104,11 @@ class TestFlare:
         M = 0.0289644
         altitude = lambda pres: Tb / Lb * ((Pb / (pres * 100)) ** (R * Lb / (g0 * M)) - 1)
 
-        hw = get_hw_sim(sim_app, device_type)
-
         # Set base/ground altitude
-        ground_pres = hw.sensor_read(SensorType.BAROMETER)[0]
-        set_dummy_sensor_values(sim_app, device_type, SensorType.BAROMETER, ground_pres, 25)
+        initial_pres = 1000
+        set_dummy_sensor_values(sim_app, device_type, SensorType.BAROMETER, initial_pres, 25)
         flush_packets(sim_app, device_type)
-        assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.CALCULATED_ALTITUDE) == 0
+        initial_altitude = sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.CALCULATED_ALTITUDE)
 
         # Note: Kind of a hack because ground altitude is only solidified once rocket launches. Here we are abusing the
         # fact that we dont update the ground altitude if the pressure change is too large. This allows us to run these
@@ -137,8 +134,8 @@ class TestFlare:
             assert sim_app.rocket_data.last_value_by_device(device_type,
                                                             DataEntryIds.BAROMETER_TEMPERATURE) == vals[1]
             assert sim_app.rocket_data.last_value_by_device(device_type,
-                                                            DataEntryIds.CALCULATED_ALTITUDE) == approx(
-                altitude(vals[0]) - altitude(ground_pres), 0.1)
+                                                            DataEntryIds.CALCULATED_ALTITUDE) - initial_altitude == \
+                                                                approx(altitude(vals[0]) - altitude(initial_pres), 0.1)
             assert sim_app.rocket_data.last_value_by_device(device_type,
                                                             DataEntryIds.BAROMETER_TEMPERATURE) == vals[1]
 
@@ -211,6 +208,7 @@ class TestFlare:
             sim_app.send_command(device_type.name + ".baropres")
             assert SINGLE_SENSOR_EVENT.wait(snapshot, num_expected=1) == 1
 
+
 @pytest.mark.parametrize(
     "sim_app, device_type", valid_paramitrization(
         [HollyburnProfile()],
@@ -237,7 +235,8 @@ def test_full_flight(qtbot, sim_app, device_type):
             if FlightEvent.GROUND_HIT in hw._rocket_sim.get_flight_events():
                 break
 
-            print(f"FLIGHT RUNNING: t = {hw._rocket_sim.get_time()}, alt = {hw._rocket_sim.get_data(FlightDataType.TYPE_ALTITUDE)}")
+            print(
+                f"FLIGHT RUNNING: t = {hw._rocket_sim.get_time()}, alt = {hw._rocket_sim.get_data(FlightDataType.TYPE_ALTITUDE)}")
 
             if hw._rocket_sim.get_time() != last_time or last_time is None:
                 stuck_count = 0

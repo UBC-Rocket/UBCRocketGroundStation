@@ -94,7 +94,7 @@ def test_bulk_sensor_packet(qtbot, single_connection_tantalus):
 
     assert app.AltitudeLabel.text() == '2.00 m'
     assert app.GPSLabel.text() == '9.00000\xb0, 10.00000\xb0'
-    assert app.StateLabel.text() == 'DataEntryValues.' + STATE_IDS[state_input].name
+    assert app.StateLabel.text() == STATE_IDS[state_input].name
 
 
 def test_single_sensor_packet(qtbot, single_connection_tantalus):

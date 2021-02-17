@@ -111,50 +111,82 @@ class RocketData:
                 self._notify_callbacks_of_id(key)
 
         BUNDLE_ADDED_EVENT.increment()
-
-    def last_value_and_time(self, device: DeviceType, sensor_id: DataEntryIds):
+        
+    def time_series_by_device(self, device: DeviceType, data_entry_id: DataEntryIds):
         """
-        Gets the most recent value and its time for the specified DataEntryIds (enum object)
+        Get a time series list and a value series list for the specified DataEntryIds (enum object)
 
         :param device:
         :type device:
-        :param sensor_id:
-        :type sensor_id:
-        :return: Value, Time
+        :param data_entry_id:
+        :type data_entry_id:
+        :return: [times], [values]
         :rtype:
         """
+        t = []
+        y = []
+
         with self.data_lock:
-            times = list(self.timeset.keys())
-            times.sort(reverse=True) # TODO : Should probably use OrderedDict to improve performance
+            all_times = list(self.timeset.keys())
+            all_times.sort() # TODO : Should probably use OrderedDict to improve performance
 
             full_address = self.device_manager.get_full_address(device)
             if full_address is None:
                 return None
 
-            data_entry_key = DataEntryKey(full_address, sensor_id)
-            for time in times:
+            data_entry_key = DataEntryKey(full_address, data_entry_id)
+            for time in all_times:
                 if data_entry_key in self.timeset[time]:
-                    return self.timeset[time][data_entry_key], time
+                    t.append(time)
+                    y.append(self.timeset[time][data_entry_key])
+
+            if len(t) == 0:
+                return None
+
+            return t, y
+
+    def last_value_and_time(self, device: DeviceType, data_entry_id: DataEntryIds) -> tuple:
+        """
+        Gets the most recent value and its time for the specified DataEntryIds (enum object)
+
+        :param device:
+        :type device:
+        :param data_entry_id:
+        :type data_entry_id:
+        :return: Value, Time
+        :rtype:
+        """
+        ret = self.time_series_by_device(device, data_entry_id)
+
+        if ret is None:
             return None
 
-    def last_value_by_device(self, device: DeviceType, sensor_id: DataEntryIds):
+        t, y = ret
+
+        if len(t) > 0:
+            return y[-1], t[-1]
+
+        return None
+
+    def last_value_by_device(self, device: DeviceType, data_entry_id: DataEntryIds) -> float:
         """
         Gets the most recent value specified by the DataEntryIds (enum object) given
 
         :param device:
         :type device:
-        :param sensor_id:
-        :type sensor_id:
+        :param data_entry_id:
+        :type data_entry_id:
         :return: Value
         :rtype:
         """
-        ret = self.last_value_and_time(device, sensor_id)
+        ret = self.last_value_and_time(device, data_entry_id)
+
         if ret is None:
             return None
-        else:
-            return ret[0]
 
-    def highest_altitude_by_device(self, device: DeviceType):
+        return ret[0]
+
+    def highest_altitude_by_device(self, device: DeviceType) -> float:
         """
         Gets the max altitude for the device specified
 

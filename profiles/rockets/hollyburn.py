@@ -74,16 +74,16 @@ class HollyburnProfile(RocketProfile):
     @property
     def expected_apogee_point(self):
         return FlightPoint(
-            time=15.6,
+            time=15.96,
             time_tolerance=5,
             altitude=944,
-            altitude_tolerance=50
+            altitude_tolerance=30
         )
 
     @property
     def expected_main_deploy_point(self):
         return FlightPoint(
-            time=92.0,
+            time=89.29,
             time_tolerance=5,
             altitude=488,
             altitude_tolerance=50

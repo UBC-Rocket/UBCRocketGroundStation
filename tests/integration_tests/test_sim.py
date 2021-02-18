@@ -117,6 +117,12 @@ class TestFlare:
         flush_packets(sim_app, device_type)
         initial_altitude = sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.CALCULATED_ALTITUDE)
 
+        # Disable ignitors to prevent sim from launching
+        # TODO: This is not clean, fix this hack
+        hw = get_hw_sim(sim_app, device_type)
+        for ign in hw._ignitors.values():
+            ign.action_fn = None
+
         # Note: Kind of a hack because ground altitude is only solidified once rocket launches. Here we are abusing the
         # fact that we dont update the ground altitude if the pressure change is too large. This allows us to run these
         # tests in the standby state
@@ -142,7 +148,7 @@ class TestFlare:
                                                             DataEntryIds.BAROMETER_TEMPERATURE) == vals[1]
             assert sim_app.rocket_data.last_value_by_device(device_type,
                                                             DataEntryIds.CALCULATED_ALTITUDE) - initial_altitude == \
-                                                                approx(altitude(vals[0]) - altitude(initial_pres), 0.1)
+                                                                approx(altitude(vals[0]) - altitude(initial_pres), abs=0.01)
             assert sim_app.rocket_data.last_value_by_device(device_type,
                                                             DataEntryIds.BAROMETER_TEMPERATURE) == vals[1]
 

@@ -1,5 +1,6 @@
 import os
 import threading
+from enum import Enum
 from typing import Dict, Union, Set, Callable, List
 from collections import namedtuple
 
@@ -242,7 +243,8 @@ class RocketData:
                         data[ix, iy] = times[iy - 1]
                     else:
                         if keys[ix] in self.timeset[times[iy - 1]]:
-                            data[ix, iy] = self.timeset[times[iy - 1]][keys[ix]]
+                            value = self.timeset[times[iy - 1]][keys[ix]]
+                            data[ix, iy] = value if not isinstance(value, Enum) else value.name
                         else:
                             data[ix, iy] = ""
 

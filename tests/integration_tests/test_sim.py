@@ -299,8 +299,8 @@ def test_full_flight(qtbot, sim_app, device_type):
         assert_flight_point(profile.expected_apogee_point, FlightEvent.APOGEE, DataEntryValues.STATE_ASCENT_TO_APOGEE, DataEntryValues.STATE_PRESSURE_DELAY)
         assert abs(hw._rocket_sim.get_drogue_deployment_time() - profile.expected_apogee_point.time) < profile.expected_apogee_point.time_tolerance
 
-        assert_flight_point(profile.expected_apogee_point, FlightEvent.RECOVERY_DEVICE_DEPLOYMENT, DataEntryValues.STATE_DROGUE_DESCENT, DataEntryValues.STATE_MAIN_DESCENT)
-        assert abs(hw._rocket_sim.get_drogue_deployment_time() - profile.expected_apogee_point.time) < profile.expected_apogee_point.time_tolerance
+        assert_flight_point(profile.expected_main_deploy_point, FlightEvent.RECOVERY_DEVICE_DEPLOYMENT, DataEntryValues.STATE_DROGUE_DESCENT, DataEntryValues.STATE_MAIN_DESCENT)
+        assert abs(hw._rocket_sim.get_main_deployment_time() - profile.expected_main_deploy_point.time) < profile.expected_main_deploy_point.time_tolerance
 
 
 @pytest.mark.parametrize("sim_app", valid_paramitrization(all_profiles(excluding=['WbProfile', 'CoPilotProfile'])),

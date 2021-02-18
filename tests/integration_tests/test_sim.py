@@ -261,11 +261,21 @@ def test_full_flight(qtbot, sim_app, device_type):
 
             last_time = hw._rocket_sim.get_time()
 
+    profile = get_profile(sim_app)
+
     # Define helper function
-    def assert_flight_point(flight_point, sim_event, initial_state, final_state):
-        # Assert simulation is at expected altitude
+    def assert_flight_point(name, flight_point, deployment_time, sim_event, initial_state, final_state):
         times, alts =  hw._rocket_sim.get_time_series(FlightDataType.TYPE_ALTITUDE)
-        assert abs(np.interp(flight_point.time, times, alts) - flight_point.altitude) < flight_point.altitude_tolerance
+        deployment_altitude = np.interp(deployment_time, times, alts)
+
+        # Print some stats
+        deploy_id = f"STATS_{profile.rocket_name.replace(' ', '_').upper()}_{name}"
+        print(f"{deploy_id}_TIME = {deployment_time}")
+        print(f"{deploy_id}_ALTITUDE = {deployment_altitude}")
+
+        # Assert deployment is at expected time and altitude
+        assert abs(deployment_time - flight_point.time) < flight_point.time_tolerance
+        assert abs(deployment_altitude - flight_point.altitude) < flight_point.altitude_tolerance
 
         # Assert that received igniter fired event at expected time
         (times, events) = sim_app.rocket_data.time_series_by_device(device_type, DataEntryIds.EVENT)
@@ -296,17 +306,21 @@ def test_full_flight(qtbot, sim_app, device_type):
                     break
         assert transitioned
 
-
-
-    profile = get_profile(sim_app)
-
     # Start asserting based on simulation results
     with hw:
-        assert_flight_point(profile.expected_apogee_point, FlightEvent.APOGEE, DataEntryValues.STATE_ASCENT_TO_APOGEE, DataEntryValues.STATE_PRESSURE_DELAY)
-        assert abs(hw._rocket_sim.get_drogue_deployment_time() - profile.expected_apogee_point.time) < profile.expected_apogee_point.time_tolerance
+        assert_flight_point('DROGUE_DEPLOY',
+                            profile.expected_apogee_point,
+                            hw._rocket_sim.get_drogue_deployment_time(),
+                            FlightEvent.APOGEE,
+                            DataEntryValues.STATE_ASCENT_TO_APOGEE,
+                            DataEntryValues.STATE_PRESSURE_DELAY)
 
-        assert_flight_point(profile.expected_main_deploy_point, FlightEvent.RECOVERY_DEVICE_DEPLOYMENT, DataEntryValues.STATE_DROGUE_DESCENT, DataEntryValues.STATE_MAIN_DESCENT)
-        assert abs(hw._rocket_sim.get_main_deployment_time() - profile.expected_main_deploy_point.time) < profile.expected_main_deploy_point.time_tolerance
+        assert_flight_point('MAIN_DEPLOY',
+                            profile.expected_main_deploy_point,
+                            hw._rocket_sim.get_main_deployment_time(),
+                            FlightEvent.RECOVERY_DEVICE_DEPLOYMENT,
+                            DataEntryValues.STATE_DROGUE_DESCENT,
+                            DataEntryValues.STATE_MAIN_DESCENT)
 
 
 @pytest.mark.parametrize("sim_app", valid_paramitrization(all_profiles(excluding=['WbProfile', 'CoPilotProfile'])),

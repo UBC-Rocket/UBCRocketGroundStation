@@ -246,7 +246,7 @@ class PacketParser:
         CONFIG_EVENT.increment()
         return data
 
-    def state(self, byte_stream: BytesIO, header: Header):
+    def state(self, byte_stream: BytesIO, header: Header, print_state=True):
         """
 
         :param byte_stream:
@@ -258,7 +258,9 @@ class PacketParser:
         data_entry_value = STATE_IDS[state_id]
         data[DataEntryIds.STATE] = data_entry_value
 
-        LOGGER.info("State: %s", str(data_entry_value.name))
+        if print_state:
+            LOGGER.info("State: %s", str(data_entry_value.name))
+
         STATE_EVENT.increment()
         return data
 

@@ -21,7 +21,7 @@ from main_window.packet_parser import (
 
 from util.event_stats import get_event_stats_snapshot
 
-S_TO_US = int(1e3)
+S_TO_MS = int(1e3)
 
 @pytest.fixture(scope="function")
 def sim_app(test_app, request) -> CompApp:
@@ -272,7 +272,7 @@ def test_full_flight(qtbot, sim_app, device_type):
         fired = False
         for i in range(len(times)):
             if events[i] is DataEntryValues.EVENT_IGNITOR_FIRED and \
-                    abs(times[i] / S_TO_US - hw._rocket_sim.get_launch_time() - flight_point.time) < flight_point.time_tolerance:
+                    abs(times[i] / S_TO_MS - hw._rocket_sim.get_launch_time() - flight_point.time) < flight_point.time_tolerance:
                 fired = True
                 break
         assert fired
@@ -290,7 +290,7 @@ def test_full_flight(qtbot, sim_app, device_type):
         (times, states) = sim_app.rocket_data.time_series_by_device(device_type, DataEntryIds.STATE)
         transitioned = False
         for i in range(len(times)):
-            if flight_point.time - flight_point.time_tolerance < times[i] / S_TO_US - hw._rocket_sim.get_launch_time() < flight_point.time + flight_point.time_tolerance:
+            if flight_point.time - flight_point.time_tolerance < times[i] / S_TO_MS - hw._rocket_sim.get_launch_time() < flight_point.time + flight_point.time_tolerance:
                 if states[i] == initial_state and states[i+1] == final_state:
                     transitioned = True
                     break

@@ -1,6 +1,8 @@
 import time
 import pytest
+import numpy as np
 from pytest import approx
+from profiles.rocket_profile import RocketProfile
 from profiles.rockets.hollyburn import HollyburnProfile
 from .integration_utils import test_app, valid_paramitrization, all_devices, all_profiles, only_flare, flush_packets
 from connections.sim.sim_connection import FirmwareNotFound
@@ -18,6 +20,7 @@ from main_window.packet_parser import (
 
 from util.event_stats import get_event_stats_snapshot
 
+S_TO_US = int(1e3)
 
 @pytest.fixture(scope="function")
 def sim_app(test_app, request) -> CompApp:
@@ -34,6 +37,9 @@ def sim_app(test_app, request) -> CompApp:
 def get_hw_sim(sim_app, device_type: DeviceType) -> HWSim:
     connection_name = sim_app.device_manager.get_full_address(device_type).connection_name
     return sim_app.connections[connection_name]._hw_sim
+
+def get_profile(sim_app) -> RocketProfile:
+    return sim_app.rocket_profile
 
 
 def set_dummy_sensor_values(sim_app, device_type: DeviceType, sensor_type: SensorType, *vals):
@@ -227,6 +233,7 @@ def test_full_flight(qtbot, sim_app, device_type):
 
     hw.launch()
 
+    # Run simulation until complete
     stuck_count = 0
     last_time = None
     while True:
@@ -246,6 +253,59 @@ def test_full_flight(qtbot, sim_app, device_type):
                     assert False  # Flight sim stuck
 
             last_time = hw._rocket_sim.get_time()
+
+    # Define helper function
+    def assert_flight_point(flight_point, sim_event, initial_state, final_state):
+        try:
+            # Assert simulation is at expected altitude
+            times, alts =  hw._rocket_sim.get_time_series(FlightDataType.TYPE_ALTITUDE)
+            assert abs(np.interp(flight_point.time, times, alts) - flight_point.altitude) < flight_point.altitude_tolerance
+
+            # Assert that received igniter fired event at expected time
+            (times, events) = sim_app.rocket_data.time_series_by_device(device_type, DataEntryIds.EVENT)
+            fired = False
+            for i in range(len(times)):
+                if events[i] is DataEntryValues.EVENT_IGNITOR_FIRED and \
+                        abs(times[i] / S_TO_US - hw._rocket_sim.get_launch_time() - flight_point.time) < flight_point.time_tolerance:
+                    fired = True
+                    break
+            assert fired
+
+            # Assert that simulation event happened at expected time
+            sim_event_times = hw._rocket_sim.get_flight_events()[sim_event]
+            found_event = False
+            for t in sim_event_times:
+                if abs(t - flight_point.time) < flight_point.time_tolerance:
+                    found_event = True
+                    break
+            assert found_event
+        except Exception as ex:
+            print("FAIL")
+
+        '''
+        # Assert states transition at expected time
+        (times, states) = sim_app.rocket_data.time_series_by_device(device_type, DataEntryIds.STATE)
+        transitioned = False
+        for i in range(len(times)):
+            if flight_point.time - flight_point.time_tolerance < times[i] / S_TO_US - hw._rocket_sim.get_launch_time() < flight_point.time + flight_point.time_tolerance:
+                if states[i] != initial_state or states[i] != final_state:
+                    assert False # Unexpected state
+                elif states[i] == initial_state or states[i+1] == final_state:
+                    transitioned = True
+                    # Dont break, continue checking rest of states for unexpected values
+        assert transitioned
+        '''
+
+
+    profile = get_profile(sim_app)
+
+    # Start asserting based on simulation results
+    with hw:
+        assert_flight_point(profile.expected_apogee_point, FlightEvent.APOGEE, DataEntryValues.STATE_ASCENT, DataEntryValues.STATE_INITIAL_DESCENT)
+        assert abs(hw._rocket_sim.get_drogue_deployment_time() - profile.expected_apogee_point.time) < profile.expected_apogee_point.time_tolerance
+
+        assert_flight_point(profile.expected_apogee_point, FlightEvent.RECOVERY_DEVICE_DEPLOYMENT, DataEntryValues.STATE_INITIAL_DESCENT, DataEntryValues.STATE_FINAL_DESCENT)
+        assert abs(hw._rocket_sim.get_drogue_deployment_time() - profile.expected_apogee_point.time) < profile.expected_apogee_point.time_tolerance
 
 
 @pytest.mark.parametrize("sim_app", valid_paramitrization(all_profiles(excluding=['WbProfile', 'CoPilotProfile'])),

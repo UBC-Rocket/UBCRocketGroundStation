@@ -8,6 +8,7 @@ from pathlib import Path
 from connections.sim.hw.hw_sim import SensorType
 from ..connection import Connection, ConnectionMessage
 from .stream_filter import ReadFilter, WriteFilter
+from connections.sim.hw.hw_sim import HWSim
 from connections.sim.hw.xbee_module_sim import XBeeModuleSim
 from util.detail import LOGGER, LOCAL, EXECUTABLE_FILE_EXTENSION
 
@@ -42,7 +43,7 @@ ID_TO_SENSOR = {
 
 
 class SimConnection(Connection):
-    def __init__(self, executable_name: str, gs_address: str, hw_sim):
+    def __init__(self, executable_name: str, gs_address: str, hw_sim: HWSim):
         self._find_executable(executable_name)
 
         self.device_address = executable_name + '_SIM_DEVICE_ADDR'

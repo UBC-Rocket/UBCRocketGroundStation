@@ -2,7 +2,7 @@ from ..label import (Label, update_acceleration, update_altitude,
                      update_chamber_pressure, update_chamber_temp, update_gps,
                      update_max_altitude, update_pressure, update_state,
                      update_tank_pressure)
-from ..rocket_profile import RocketProfile
+from ..rocket_profile import RocketProfile, FlightPoint
 from connections.debug.debug_connection import DebugConnection
 from main_window.competition.comp_app import CompApp
 from main_window.competition.comp_packet_parser import CompPacketParser
@@ -51,6 +51,14 @@ class CoPilotProfile(RocketProfile):
     @property
     def required_device_versions(self):
         return {DeviceType.CO_PILOT_FLARE: REQUIRED_FLARE}
+
+    @property
+    def expected_apogee_point(self):
+        return None
+
+    @property
+    def expected_main_deploy_point(self):
+        return None
 
     def construct_serial_connection(self, com_port, baud_rate):
         return None

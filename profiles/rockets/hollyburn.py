@@ -7,7 +7,7 @@ from ..label import (
     update_pressure,
     update_state,
 )
-from ..rocket_profile import RocketProfile
+from ..rocket_profile import RocketProfile, FlightPoint
 from connections.serial.serial_connection import SerialConnection
 from connections.debug.debug_connection import DebugConnection
 from connections.sim.sim_connection import SimConnection
@@ -70,6 +70,24 @@ class HollyburnProfile(RocketProfile):
             DeviceType.HOLLYBURN_BODY_FLARE: REQUIRED_FLARE,
             DeviceType.HOLLYBURN_NOSE_FLARE: REQUIRED_FLARE,
         }
+
+    @property
+    def expected_apogee_point(self):
+        return FlightPoint(
+            time=15.6,
+            time_tolerance=5,
+            altitude=944,
+            altitude_tolerance=50
+        )
+
+    @property
+    def expected_main_deploy_point(self):
+        return FlightPoint(
+            time=92.0,
+            time_tolerance=5,
+            altitude=488,
+            altitude_tolerance=50
+        )
 
     def construct_serial_connection(self, com_port, baud_rate):
         return {

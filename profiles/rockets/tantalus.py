@@ -7,7 +7,7 @@ from ..label import (
     update_pressure,
     update_state,
 )
-from ..rocket_profile import RocketProfile
+from ..rocket_profile import RocketProfile, FlightPoint
 from connections.serial.serial_connection import SerialConnection
 from connections.debug.debug_connection import DebugConnection
 from connections.sim.sim_connection import SimConnection
@@ -69,6 +69,14 @@ class TantalusProfile(RocketProfile):
             DeviceType.TANTALUS_STAGE_1_FLARE: REQUIRED_FLARE,
             DeviceType.TANTALUS_STAGE_2_FLARE: REQUIRED_FLARE,
         }
+
+    @property
+    def expected_apogee_point(self):
+        return None
+
+    @property
+    def expected_main_deploy_point(self):
+        return None
 
     def construct_serial_connection(self, com_port, baud_rate):
         return {

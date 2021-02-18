@@ -1,8 +1,8 @@
 import multiprocessing
+import numpy as np
 from os import path
-from typing import Dict, List
+from typing import Dict, List, Union, Tuple, Iterable
 from enum import Enum, auto
-from numpy import interp
 from orhelper import OpenRocketInstance, Helper, FlightDataType, FlightEvent
 from multiprocessing import Process, Queue
 
@@ -129,14 +129,37 @@ class RocketSim:
         assert self._launch_time is not None
         return self.get_time() - self._launch_time
 
+    def get_time_series(self, data_type: FlightDataType) -> Tuple[Iterable[float], Iterable[float]]:
+        times = self._data[FlightDataType.TYPE_TIME]
+        data = self._data[data_type]
+        current_time = self.get_time_since_launch()
+
+        end_index = 0
+        for i in range(len(times)):
+            if times[i] < current_time:
+                end_index = i
+            else:
+                break
+
+        return np.copy(times[:end_index+1]), np.copy(data[:end_index+1])
+
     def get_data(self, data_type: FlightDataType) -> float:
         if self.get_flight_state() == FlightState.STANDBY:
             return self._data[data_type][0]
         else:
-            return interp(self.get_time_since_launch(), self._data[FlightDataType.TYPE_TIME], self._data[data_type])
+            return np.interp(self.get_time_since_launch(), self._data[FlightDataType.TYPE_TIME], self._data[data_type])
 
     def get_clock(self) -> Clock:
         return self._clock
+
+    def get_launch_time(self) -> Union[float, None]:
+        return self._launch_time
+
+    def get_drogue_deployment_time(self) -> Union[float, None]:
+        return self._drogue_deployment_time
+
+    def get_main_deployment_time(self) -> Union[float, None]:
+        return self._main_deployment_time
 
     def _run_simulation(self):
         # Due to JPype limitations, the JVM cannot be restarted by the same process.

@@ -225,12 +225,12 @@ def test_full_flight(qtbot, sim_app, device_type):
     hw = get_hw_sim(sim_app, device_type)
 
     flush_packets(sim_app, device_type)
-    assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.STATE) == 0
+    assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.STATE) == DataEntryValues.STATE_STANDBY
 
     sim_app.send_command(device_type.name + ".arm")
     flush_packets(sim_app, device_type)
 
-    assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.STATE) == 1
+    assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.STATE) == DataEntryValues.STATE_ARMED
 
     hw.launch()
 
@@ -257,55 +257,49 @@ def test_full_flight(qtbot, sim_app, device_type):
 
     # Define helper function
     def assert_flight_point(flight_point, sim_event, initial_state, final_state):
-        try:
-            # Assert simulation is at expected altitude
-            times, alts =  hw._rocket_sim.get_time_series(FlightDataType.TYPE_ALTITUDE)
-            assert abs(np.interp(flight_point.time, times, alts) - flight_point.altitude) < flight_point.altitude_tolerance
+        # Assert simulation is at expected altitude
+        times, alts =  hw._rocket_sim.get_time_series(FlightDataType.TYPE_ALTITUDE)
+        assert abs(np.interp(flight_point.time, times, alts) - flight_point.altitude) < flight_point.altitude_tolerance
 
-            # Assert that received igniter fired event at expected time
-            (times, events) = sim_app.rocket_data.time_series_by_device(device_type, DataEntryIds.EVENT)
-            fired = False
-            for i in range(len(times)):
-                if events[i] is DataEntryValues.EVENT_IGNITOR_FIRED and \
-                        abs(times[i] / S_TO_US - hw._rocket_sim.get_launch_time() - flight_point.time) < flight_point.time_tolerance:
-                    fired = True
-                    break
-            assert fired
+        # Assert that received igniter fired event at expected time
+        (times, events) = sim_app.rocket_data.time_series_by_device(device_type, DataEntryIds.EVENT)
+        fired = False
+        for i in range(len(times)):
+            if events[i] is DataEntryValues.EVENT_IGNITOR_FIRED and \
+                    abs(times[i] / S_TO_US - hw._rocket_sim.get_launch_time() - flight_point.time) < flight_point.time_tolerance:
+                fired = True
+                break
+        assert fired
 
-            # Assert that simulation event happened at expected time
-            sim_event_times = hw._rocket_sim.get_flight_events()[sim_event]
-            found_event = False
-            for t in sim_event_times:
-                if abs(t - flight_point.time) < flight_point.time_tolerance:
-                    found_event = True
-                    break
-            assert found_event
-        except Exception as ex:
-            print("FAIL")
+        # Assert that simulation event happened at expected time
+        sim_event_times = hw._rocket_sim.get_flight_events()[sim_event]
+        found_event = False
+        for t in sim_event_times:
+            if abs(t - flight_point.time) < flight_point.time_tolerance:
+                found_event = True
+                break
+        assert found_event
 
-        '''
         # Assert states transition at expected time
         (times, states) = sim_app.rocket_data.time_series_by_device(device_type, DataEntryIds.STATE)
         transitioned = False
         for i in range(len(times)):
             if flight_point.time - flight_point.time_tolerance < times[i] / S_TO_US - hw._rocket_sim.get_launch_time() < flight_point.time + flight_point.time_tolerance:
-                if states[i] != initial_state or states[i] != final_state:
-                    assert False # Unexpected state
-                elif states[i] == initial_state or states[i+1] == final_state:
+                if states[i] == initial_state and states[i+1] == final_state:
                     transitioned = True
-                    # Dont break, continue checking rest of states for unexpected values
+                    break
         assert transitioned
-        '''
+
 
 
     profile = get_profile(sim_app)
 
     # Start asserting based on simulation results
     with hw:
-        assert_flight_point(profile.expected_apogee_point, FlightEvent.APOGEE, DataEntryValues.STATE_ASCENT, DataEntryValues.STATE_INITIAL_DESCENT)
+        assert_flight_point(profile.expected_apogee_point, FlightEvent.APOGEE, DataEntryValues.STATE_ASCENT_TO_APOGEE, DataEntryValues.STATE_PRESSURE_DELAY)
         assert abs(hw._rocket_sim.get_drogue_deployment_time() - profile.expected_apogee_point.time) < profile.expected_apogee_point.time_tolerance
 
-        assert_flight_point(profile.expected_apogee_point, FlightEvent.RECOVERY_DEVICE_DEPLOYMENT, DataEntryValues.STATE_INITIAL_DESCENT, DataEntryValues.STATE_FINAL_DESCENT)
+        assert_flight_point(profile.expected_apogee_point, FlightEvent.RECOVERY_DEVICE_DEPLOYMENT, DataEntryValues.STATE_DROGUE_DESCENT, DataEntryValues.STATE_MAIN_DESCENT)
         assert abs(hw._rocket_sim.get_drogue_deployment_time() - profile.expected_apogee_point.time) < profile.expected_apogee_point.time_tolerance
 
 

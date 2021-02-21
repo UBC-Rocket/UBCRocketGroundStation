@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 
-from connections.sim.xbee_module_sim import XBeeModuleSim, FRAME_PARSED_EVENT, SENT_TO_ROCKET_EVENT
+from connections.sim.hw.xbee_module_sim import XBeeModuleSim, FRAME_PARSED_EVENT, SENT_TO_ROCKET_EVENT
 from util.event_stats import get_event_stats_snapshot
 
 TEST_GS_ADDR = bytes.fromhex('0013A200400A0127')

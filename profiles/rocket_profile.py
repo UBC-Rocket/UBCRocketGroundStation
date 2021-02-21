@@ -1,11 +1,18 @@
 from abc import ABC, abstractmethod
 from typing import Dict, List
+from collections import namedtuple
+
 from connections.connection import Connection
 from main_window.packet_parser import PacketParser
-from connections.sim.hw_sim import HWSim
 from main_window.device_manager import DeviceType
 from .label import Label
 
+FlightPoint = namedtuple('FlightPoint', (
+    'time',
+    'time_tolerance',
+    'altitude',
+    'altitude_tolerance'
+))
 
 class RocketProfile(ABC):
     @property
@@ -36,9 +43,25 @@ class RocketProfile(ABC):
     @property
     @abstractmethod
     def required_device_versions(self) -> Dict[DeviceType, str]:
-        '''
+        """
         :return: Optional restrictions on device versions
-        '''
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def expected_apogee_point(self) -> FlightPoint:
+        """
+        :return: Point in flight where apogee/drogue is expected to occur
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def expected_main_deploy_point(self) -> FlightPoint:
+        """
+        :return: Point in flight where main parachute deployment is expected to occur
+        """
         pass
 
     '''

@@ -15,12 +15,16 @@ class DeviceType(Enum):
     TANTALUS_STAGE_1_FLARE = auto()
     TANTALUS_STAGE_2_FLARE = auto()
     CO_PILOT_FLARE = auto()
+    HOLLYBURN_BODY_FLARE = auto()
+    HOLLYBURN_NOSE_FLARE = auto()
 
 
 _FLARE_DEVICE_TYPES = [
     DeviceType.TANTALUS_STAGE_1_FLARE,
     DeviceType.TANTALUS_STAGE_2_FLARE,
     DeviceType.CO_PILOT_FLARE,
+    DeviceType.HOLLYBURN_BODY_FLARE,
+    DeviceType.HOLLYBURN_NOSE_FLARE,
 ]
 
 

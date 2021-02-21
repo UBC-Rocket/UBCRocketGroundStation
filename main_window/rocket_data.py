@@ -2,6 +2,7 @@ import os
 import threading
 from typing import Dict, Union, Set, Callable, List
 from collections import namedtuple
+from sortedcontainers import SortedDict
 
 import numpy as np
 
@@ -25,7 +26,7 @@ class RocketData:
         self.device_manager = device_manager
 
         self.data_lock = threading.RLock()  # create lock ASAP since self.lock needs to be defined when autosave starts
-        self.timeset: Dict[int, Dict[DataEntryKey, Union[int, float, str]]] = {}
+        self.timeset: SortedDict[int, Dict[DataEntryKey, Union[int, float, str]]] = SortedDict()
         self.last_time = 0  # TODO REVIEW/CHANGE THIS, once all subpackets have their own timestamp.
         self.highest_altitude: Dict[FullAddress, float] = dict()
         self.session_name = os.path.join(LOGS_DIR, "autosave_" + SESSION_ID + ".csv")
@@ -125,14 +126,14 @@ class RocketData:
         """
         with self.data_lock:
             times = list(self.timeset.keys())
-            times.sort(reverse=True) # TODO : Should probably use OrderedDict to improve performance
 
             full_address = self.device_manager.get_full_address(device)
             if full_address is None:
                 return None
 
             data_entry_key = DataEntryKey(full_address, sensor_id)
-            for i in range(len(times)):
+            # iterate in reverse time order to get most recent entry
+            for i in range(len(times)-1, -1, -1):
                 if data_entry_key in self.timeset[times[i]]:
                     return self.timeset[times[i]][data_entry_key]
             return None
@@ -176,16 +177,13 @@ class RocketData:
 
             data = np.empty((len(keys), len(self.timeset) + 1), dtype=object)
             times = list(self.timeset.keys())
-            times.sort(reverse=False)
             for ix, iy in np.ndindex(data.shape):
                 # Make the first row a list of sensor names. Use the enum's name property
                 if iy == 0:
                     data_name = keys[ix].data_id.name if isinstance(keys[ix].data_id, DataEntryIds) else str(keys[ix].data_id)
                     device = self.device_manager.get_device_type(keys[ix].full_address)
-                    if device:
-                        device_name = device.name
-                    else:
-                        device_name = f"{keys[ix].full_address.connection_name}_{keys[ix].full_address.device_address}"
+                    device_name = device.name if device else \
+                        f"{keys[ix].full_address.connection_name}_{keys[ix].full_address.device_address}"
 
                     data[ix, iy] = data_name + '_' + device_name
                 else:

@@ -40,16 +40,15 @@ class SensorSim(Sensor):
         return self.sensor_type
 
     def _read_barometer(self):
-        pressure = self.rocket_sim.get_data(FlightDataType.TYPE_AIR_PRESSURE)
-        temperature = self.rocket_sim.get_data(FlightDataType.TYPE_AIR_TEMPERATURE)
+        pressure = self.rocket_sim.get_data(FlightDataType.TYPE_AIR_PRESSURE)  # Pa
+        temperature = self.rocket_sim.get_data(FlightDataType.TYPE_AIR_TEMPERATURE)  # K
 
-        pressure /= 100  # Pa to mbar
         temperature -= 273.15  # K to C
 
         return (pressure, temperature)
 
     def _read_accelerometer(self):
-        acceleration_vertical = self.rocket_sim.get_data(FlightDataType.TYPE_ACCELERATION_Z)
+        acceleration_vertical = self.rocket_sim.get_data(FlightDataType.TYPE_ACCELERATION_Z)  # m/s^2
 
         # TODO: Need to calculate accel based on IMU & rocket orientation
         acceleration_vertical /= 9.81  # m/s^2 to g

@@ -114,7 +114,7 @@ class HollyburnProfile(RocketProfile):
         rocket_sim_body = RocketSim('Hollyburn CanSat Jan 20.ork')
 
         hw_sim_sensors_body = [
-            SensorSim(SensorType.BAROMETER, rocket_sim_body, error_stdev=(0.5, 0.005)),
+            SensorSim(SensorType.BAROMETER, rocket_sim_body, error_stdev=(50, 0.005)),
             DummySensor(SensorType.GPS, (12.6, 13.2, 175)),
             SensorSim(SensorType.ACCELEROMETER, rocket_sim_body),
             DummySensor(SensorType.IMU, (1, 0, 0, 0)),
@@ -137,7 +137,7 @@ class HollyburnProfile(RocketProfile):
         rocket_sim_nose = RocketSim('Hollyburn CanSat Jan 20.ork')
 
         hw_sim_sensors_nose = [
-            SensorSim(SensorType.BAROMETER, rocket_sim_nose, error_stdev=(0.5, 0.005)),
+            SensorSim(SensorType.BAROMETER, rocket_sim_nose, error_stdev=(50, 0.005)),
             DummySensor(SensorType.GPS, (12.6, 13.2, 175)),
             SensorSim(SensorType.ACCELEROMETER, rocket_sim_nose),
             DummySensor(SensorType.IMU, (1, 0, 0, 0)),

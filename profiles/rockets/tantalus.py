@@ -123,7 +123,7 @@ class TantalusProfile(RocketProfile):
         rocket_sim_stage_2 = RocketSim('simple.ork') # TODO: Update ORK file once possible
 
         hw_sim_sensors_stage_2 = [
-            DummySensor(SensorType.BAROMETER, (1000, 25)),
+            DummySensor(SensorType.BAROMETER, (100000, 25)),
             DummySensor(SensorType.GPS, (12.6, 13.2, 175)),
             DummySensor(SensorType.ACCELEROMETER, (1, 0, 0)),
             DummySensor(SensorType.IMU, (1, 0, 0, 0)),

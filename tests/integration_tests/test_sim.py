@@ -109,7 +109,7 @@ class TestFlare:
         R = 8.3144598
         g0 = 9.80665
         M = 0.0289644
-        altitude = lambda pres: Tb / Lb * ((Pb / (pres * 100)) ** (R * Lb / (g0 * M)) - 1)
+        altitude = lambda pres: Tb / Lb * ((Pb / pres) ** (R * Lb / (g0 * M)) - 1)
 
         # Set base/ground altitude
         initial_pres = 1000
@@ -128,10 +128,10 @@ class TestFlare:
         # tests in the standby state
 
         test_vals = [
-            (1500, 25),
-            (1000, 25),
-            (500, 25),
-            (250, 32),
+            (150000, 25),
+            (100000, 25),
+            (50000, 25),
+            (25000, 32),
         ]
 
         for vals in test_vals:

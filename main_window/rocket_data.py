@@ -137,7 +137,7 @@ class RocketData:
 
             data_entry_key = DataEntryKey(full_address, data_entry_id)
             # iterate in reverse time order to get most recent entry
-            for time in reversed(all_times):
+            for time in all_times:
                 if data_entry_key in self.timeset[time]:
                     t.append(time)
                     y.append(self.timeset[time][data_entry_key])

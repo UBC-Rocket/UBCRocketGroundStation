@@ -33,7 +33,7 @@ mkdir FLARE/avionics/build
 cd FLARE/avionics/build
 cat ../../../UBCRocketGroundStation/required_flare.txt | xargs git checkout
 cmake ..
-cmake --build .
+cmake --build . -j 2
 cd ../../..
 
 

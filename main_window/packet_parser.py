@@ -55,6 +55,8 @@ ID_TO_DEVICE_TYPE = {
         0x00: DeviceType.TANTALUS_STAGE_1_FLARE,
         0x01: DeviceType.TANTALUS_STAGE_2_FLARE,
         0x02: DeviceType.CO_PILOT_FLARE,
+        0x03: DeviceType.HOLLYBURN_BODY_FLARE,
+        0x04: DeviceType.HOLLYBURN_NOSE_FLARE,
 }
 DEVICE_TYPE_TO_ID = {y: x for (x, y) in ID_TO_DEVICE_TYPE.items()}
 
@@ -244,7 +246,7 @@ class PacketParser:
         CONFIG_EVENT.increment()
         return data
 
-    def state(self, byte_stream: BytesIO, header: Header):
+    def state(self, byte_stream: BytesIO, header: Header, print_state=True):
         """
 
         :param byte_stream:
@@ -256,7 +258,9 @@ class PacketParser:
         data_entry_value = STATE_IDS[state_id]
         data[DataEntryIds.STATE] = data_entry_value
 
-        LOGGER.info("State: %s", str(data_entry_value.name))
+        if print_state:
+            LOGGER.info("State: %s", str(data_entry_value.name))
+
         STATE_EVENT.increment()
         return data
 

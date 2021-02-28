@@ -56,4 +56,3 @@ if __name__ == "__main__":
     main_window.show()
     return_code = app.exec_()
     sys.exit(return_code)
-

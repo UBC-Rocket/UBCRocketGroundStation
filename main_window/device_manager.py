@@ -15,6 +15,7 @@ class DeviceType(Enum):
     TANTALUS_STAGE_1_FLARE = auto()
     TANTALUS_STAGE_2_FLARE = auto()
     CO_PILOT_FLARE = auto()
+    WB_FIRMWARE = auto()
 
 
 _FLARE_DEVICE_TYPES = [

@@ -1,7 +1,7 @@
 import os
 import threading
 from enum import Enum
-from typing import Dict, Union, Set, Callable, List
+from typing import Dict, Union, Set, Callable, List, Optional
 from collections import namedtuple
 from sortedcontainers import SortedDict
 
@@ -136,7 +136,6 @@ class RocketData:
                 return None
 
             data_entry_key = DataEntryKey(full_address, data_entry_id)
-            # iterate in reverse time order to get most recent entry
             for time in all_times:
                 if data_entry_key in self.timeset[time]:
                     t.append(time)
@@ -147,7 +146,7 @@ class RocketData:
 
             return t, y
 
-    def last_value_and_time(self, device: DeviceType, data_entry_id: DataEntryIds) -> tuple:
+    def last_value_and_time(self, device: DeviceType, data_entry_id: DataEntryIds) -> Optional[tuple]:
         """
         Gets the most recent value and its time for the specified DataEntryIds (enum object)
 
@@ -158,19 +157,22 @@ class RocketData:
         :return: Value, Time
         :rtype:
         """
-        ret = self.time_series_by_device(device, data_entry_id)
+        with self.data_lock:
+            all_times = list(self.timeset.keys())
 
-        if ret is None:
+            full_address = self.device_manager.get_full_address(device)
+            if full_address is None:
+                return None
+
+            data_entry_key = DataEntryKey(full_address, data_entry_id)
+            # iterate in reverse time order to get most recent entry
+            for time in reversed(all_times):
+                if data_entry_key in self.timeset[time]:
+                    return self.timeset[time][data_entry_key], time
+
             return None
 
-        t, y = ret
-
-        if len(t) > 0:
-            return y[-1], t[-1]
-
-        return None
-
-    def last_value_by_device(self, device: DeviceType, data_entry_id: DataEntryIds) -> float:
+    def last_value_by_device(self, device: DeviceType, data_entry_id: DataEntryIds) -> Optional[float]:
         """
         Gets the most recent value specified by the DataEntryIds (enum object) given
 
@@ -188,7 +190,7 @@ class RocketData:
 
         return ret[0]
 
-    def highest_altitude_by_device(self, device: DeviceType) -> float:
+    def highest_altitude_by_device(self, device: DeviceType) -> Optional[float]:
         """
         Gets the max altitude for the device specified
 

@@ -55,6 +55,7 @@ class DebugConnection(Connection):
                 # full_arr.extend(self.message_mock_set_values())
                 full_arr.extend(self.bulk_sensor_mock_random())
                 # full_arr.extend(self.event_mock_set_values())
+                # full_arr.extend(self.state_mock_set_values())
                 # full_arr.extend(self.bad_subpacket_id_mock()) # bad id, to see handling of itself and remaining data
                 full_arr.extend(self.gps_mock_random())
                 full_arr.extend(self.orientation_mock_random())
@@ -89,7 +90,7 @@ class DebugConnection(Connection):
                                          random.uniform(0, 1e6),
                                          random.uniform(49.260565, 49.263859),
                                          random.uniform(-123.250990, -123.246956),
-                                         random.randint(0, 100))
+                                         random.randint(0, 0x09))
 
     def status_ping_mock_set_values(self) -> bytearray:
         """
@@ -126,6 +127,8 @@ class DebugConnection(Connection):
     def event_mock_set_values(self) -> bytearray:
         return radio_packets.event(self._current_millis(), 0x00)
 
+    def state_mock_set_values(self) -> bytearray:
+        return radio_packets.state(self._current_millis(), 0x05)
 
     def gps_mock_random(self) -> bytearray:
         """

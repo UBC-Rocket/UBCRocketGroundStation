@@ -35,6 +35,18 @@ if not os.path.exists(LOGS_DIR):
 
 SESSION_ID = str(int(time.time()))
 
+EXECUTABLE_FILE_EXTENSION = {
+    'linux': '',
+    'win32': '.exe',
+    'darwin': ''
+}[sys.platform]
+
+with open(os.path.join(BUNDLED_DATA, 'required_flare.txt'), 'r') as _required_flare_file:
+    REQUIRED_FLARE = _required_flare_file.readline().strip()
+
+OPEN_ROCKET_PATH = os.path.join(LOCAL, 'OpenRocket-15.03.jar')
+ORK_FILES_PATH = os.path.join(LOCAL, 'ork/')
+
 # DEBUG      Informational log, useful only to developers
 # INFO       Informational log, useful to users
 # WARNING    Warning of unusual events
@@ -109,16 +121,6 @@ def qtHook(obj, fn_name: str, handler: Callable, override_return: bool = False) 
             return fn(*args, **kwargs)
 
     setattr(obj, fn_name, new_fn)
-
-
-EXECUTABLE_FILE_EXTENSION = {
-    'linux': '',
-    'win32': '.exe',
-    'darwin': ''
-}[sys.platform]
-
-with open(os.path.join(BUNDLED_DATA, 'required_flare.txt'), 'r') as _required_flare_file:
-    REQUIRED_FLARE = _required_flare_file.readline().strip()
 
 
 # Helper class. python way of doing ++ (unlimited incrementing)

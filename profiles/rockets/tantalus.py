@@ -7,11 +7,17 @@ from ..label import (
     update_pressure,
     update_state,
 )
-from ..rocket_profile import RocketProfile
+from ..rocket_profile import RocketProfile, FlightPoint
 from connections.serial.serial_connection import SerialConnection
 from connections.debug.debug_connection import DebugConnection
 from connections.sim.sim_connection import SimConnection
-from connections.sim.hw_sim import HWSim, DummySensor, SensorType, Ignitor, IgnitorType
+from connections.sim.hw.clock_sim import Clock
+from connections.sim.hw.hw_sim import HWSim
+from connections.sim.hw.sensors.sensor import SensorType
+from connections.sim.hw.sensors.dummy_sensor import DummySensor
+from connections.sim.hw.ignitor_sim import Ignitor, IgnitorType
+from connections.sim.hw.sensors.sensor_sim import SensorSim
+from connections.sim.hw.rocket_sim import RocketSim, FlightDataType
 from main_window.competition.comp_app import CompApp
 from main_window.competition.comp_packet_parser import CompPacketParser
 from main_window.device_manager import DeviceType
@@ -64,6 +70,14 @@ class TantalusProfile(RocketProfile):
             DeviceType.TANTALUS_STAGE_2_FLARE: REQUIRED_FLARE,
         }
 
+    @property
+    def expected_apogee_point(self):
+        return None
+
+    @property
+    def expected_main_deploy_point(self):
+        return None
+
     def construct_serial_connection(self, com_port, baud_rate):
         return {
             'XBEE_RADIO': SerialConnection(com_port, baud_rate),
@@ -86,6 +100,8 @@ class TantalusProfile(RocketProfile):
         '''
         Stage 1
         '''
+        rocket_sim_stage_1 = RocketSim('simple.ork') # TODO: Update ORK file once possible
+
         hw_sim_sensors_stage_1 = [
             DummySensor(SensorType.BAROMETER, (1000, 25)),
             DummySensor(SensorType.GPS, (12.6, 13.2, 175)),
@@ -99,13 +115,15 @@ class TantalusProfile(RocketProfile):
             Ignitor(IgnitorType.DROGUE, 17, 34, 35),
         ]
 
-        hwsim_stage_1 = HWSim(hw_sim_sensors_stage_1, hw_sim_ignitors_stage_1)
+        hwsim_stage_1 = HWSim(rocket_sim_stage_1, hw_sim_sensors_stage_1, hw_sim_ignitors_stage_1)
 
         '''
         Stage 2
         '''
+        rocket_sim_stage_2 = RocketSim('simple.ork') # TODO: Update ORK file once possible
+
         hw_sim_sensors_stage_2 = [
-            DummySensor(SensorType.BAROMETER, (1000, 25)),
+            DummySensor(SensorType.BAROMETER, (100000, 25)),
             DummySensor(SensorType.GPS, (12.6, 13.2, 175)),
             DummySensor(SensorType.ACCELEROMETER, (1, 0, 0)),
             DummySensor(SensorType.IMU, (1, 0, 0, 0)),
@@ -117,7 +135,7 @@ class TantalusProfile(RocketProfile):
             Ignitor(IgnitorType.DROGUE, 17, 34, 35),
         ]
 
-        hwsim_stage_2 = HWSim(hw_sim_sensors_stage_2, hw_sim_ignitors_stage_2)
+        hwsim_stage_2 = HWSim(rocket_sim_stage_2, hw_sim_sensors_stage_2, hw_sim_ignitors_stage_2)
 
         return {
             'TANTALUS_STAGE_1_CONNECTION': SimConnection("TantalusStage1", "0013A20041678FC0", hwsim_stage_1),

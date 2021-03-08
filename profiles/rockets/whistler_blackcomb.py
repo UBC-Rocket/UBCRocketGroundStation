@@ -24,7 +24,7 @@ class WbProfile(RocketProfile):
     def buttons(self):
         return {
             "Ping": "TANTALUS_STAGE_1_FLARE.ARM",
-            "Abort": "TANTALUS_STAGE_1_FLARE.PING",
+            "Abort": "WB_FIRMWARE.PING",
             "Next Ground State": "TANTALUS_STAGE_2_FLARE.ARM",
             "Actuate MOV": "TANTALUS_STAGE_2_FLARE.PING",
             "Actuate MFV": "TANTALUS_STAGE_2_FLARE.PING",
@@ -39,20 +39,20 @@ class WbProfile(RocketProfile):
     @property
     def labels(self):
         return [
-            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Altitude", update_altitude),
+            Label(DeviceType.WB_FIRMWARE, "Altitude", update_altitude),
         ]
 
     @property
     def expected_devices(self):
-        return [DeviceType.CO_PILOT_FLARE]
+        return [DeviceType.WB_FIRMWARE]
 
     @property
     def mapping_device(self):
-        return DeviceType.TANTALUS_STAGE_1_FLARE
+        return DeviceType.WB_FIRMWARE
 
     @property
     def required_device_versions(self):
-        return {DeviceType.CO_PILOT_FLARE: REQUIRED_FLARE}
+        return {DeviceType.WB_FIRMWARE: REQUIRED_FLARE}
 
     @property
     def expected_apogee_point(self):
@@ -69,8 +69,8 @@ class WbProfile(RocketProfile):
 
     def construct_debug_connection(self):
         return {
-            'TANTALUS_STAGE_1_CONNECTION': DebugConnection('TANTALUS_STAGE_1_RADIO_ADDRESS',
-                                                           DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1_FLARE],
+            'WB_CONNECTION': DebugConnection('TANTALUS_STAGE_1_RADIO_ADDRESS',
+                                                           DEVICE_TYPE_TO_ID[DeviceType.WB_FIRMWARE],
                                                            generate_radio_packets=False)
         }
 

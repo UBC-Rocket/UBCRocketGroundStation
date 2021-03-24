@@ -44,6 +44,9 @@ EXECUTABLE_FILE_EXTENSION = {
 with open(os.path.join(BUNDLED_DATA, 'required_flare.txt'), 'r') as _required_flare_file:
     REQUIRED_FLARE = _required_flare_file.readline().strip()
 
+with open(os.path.join(BUNDLED_DATA, 'required_wb_firmware.txt'), 'r') as _required_wb_firmware_file:
+    REQUIRED_WB_FIRMWARE = _required_wb_firmware_file.readline().strip()
+
 OPEN_ROCKET_PATH = os.path.join(LOCAL, 'OpenRocket-15.03.jar')
 ORK_FILES_PATH = os.path.join(LOCAL, 'ork/')
 

@@ -27,11 +27,15 @@ class RocketData:
         self.device_manager = device_manager
 
         self.data_lock = threading.RLock()  # create lock ASAP since self.lock needs to be defined when autosave starts
-        self.timeset: SortedDict[int, Dict[DataEntryKey, Union[int, float, str]]] = SortedDict()
-        self.last_time = 0  # TODO REVIEW/CHANGE THIS, once all subpackets have their own timestamp.
+        # Map: Time -> key-indexed list of data
+        self.timeset: SortedDict[int, Dict[DataEntryKey, Union[int, float, str, Enum]]] = SortedDict()
+        # Map: Key -> time-indexed list of data
+        self.keyset: Dict[DataEntryKey, SortedDict[int, Union[int, float, str, Enum]]] = dict()
+        self.last_time = 0
         self.highest_altitude: Dict[FullAddress, float] = dict()
+        self.existing_entry_keys: Set[DataEntryKey] = set()  # Set of entry keys actually recorded. Used for csv header
+
         self.session_name = os.path.join(LOGS_DIR, "autosave_" + SESSION_ID + ".csv")
-        self.existing_entry_keys: Set[DataEntryKey] = set() # Set of entry keys that have actually been recorded. Used for creating csv header
 
         self.callback_lock = threading.RLock()  # Only for callback dict
         self.callbacks: Dict[CallBackKey, List[Callable]] = {}
@@ -101,8 +105,12 @@ class RocketData:
             # write the data
             for data_id in incoming_data:
                 key = DataEntryKey(full_address, data_id)
+
+                if key not in self.existing_entry_keys:
+                    self.keyset[key] = SortedDict()
                 self.existing_entry_keys.add(key)
                 self.timeset[self.last_time][key] = incoming_data[data_id]
+                self.keyset[key][self.last_time] = incoming_data[data_id]
 
         device = self.device_manager.get_device_type(full_address)
         if device is not None:
@@ -149,6 +157,7 @@ class RocketData:
     def last_value_and_time(self, device: DeviceType, data_entry_id: DataEntryIds) -> Optional[tuple]:
         """
         Gets the most recent value and its time for the specified DataEntryIds (enum object)
+        Returns None if requested address not available or if requested value not found.
 
         :param device:
         :type device:
@@ -158,18 +167,15 @@ class RocketData:
         :rtype:
         """
         with self.data_lock:
-            all_times = list(self.timeset.keys())
-
             full_address = self.device_manager.get_full_address(device)
             if full_address is None:
                 return None
 
             data_entry_key = DataEntryKey(full_address, data_entry_id)
-            # iterate in reverse time order to get most recent entry
-            for time in reversed(all_times):
-                if data_entry_key in self.timeset[time]:
-                    return self.timeset[time][data_entry_key], time
 
+            if data_entry_key in self.keyset:
+                time, val = self.keyset[data_entry_key].peekitem()
+                return val, time
             return None
 
     def last_value_by_device(self, device: DeviceType, data_entry_id: DataEntryIds) -> Optional[float]:
@@ -238,15 +244,16 @@ class RocketData:
                         f"{keys[ix].full_address.connection_name}_{keys[ix].full_address.device_address}"
 
                     data[ix, iy] = data_name + '_' + device_name
+                # For a time entry, copy over from time list
+                elif keys[ix].data_id == DataEntryIds.TIME:
+                    data[ix, iy] = times[iy - 1]
+                # Otherwise as long as it exists, copy it over, trying to stringify from enum
+                elif keys[ix] in self.timeset[times[iy - 1]]:
+                    value = self.timeset[times[iy - 1]][keys[ix]]
+                    data[ix, iy] = value if not isinstance(value, Enum) else value.name
+                # Empty entry if this row of data doesn't have a val in this column
                 else:
-                    if keys[ix].data_id == DataEntryIds.TIME:
-                        data[ix, iy] = times[iy - 1]
-                    else:
-                        if keys[ix] in self.timeset[times[iy - 1]]:
-                            value = self.timeset[times[iy - 1]][keys[ix]]
-                            data[ix, iy] = value if not isinstance(value, Enum) else value.name
-                        else:
-                            data[ix, iy] = ""
+                    data[ix, iy] = ""
 
         np.savetxt(csv_path, np.transpose(data), delimiter=',',
                    fmt="%s")  # Can free up the lock while we save since were no longer accessing the original data

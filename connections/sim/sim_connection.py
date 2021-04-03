@@ -16,6 +16,7 @@ from util.detail import LOGGER, LOCAL, EXECUTABLE_FILE_EXTENSION
 class SimRxId(Enum):
     CONFIG = 0x01
     BUZZER = 0x07
+    PIN_MODE = 0x4D
     DIGITAL_PIN_WRITE = 0x50
     RADIO = 0x52
     ANALOG_READ = 0x61
@@ -80,7 +81,7 @@ class SimConnection(Connection):
     def _rocket_handshake(self):
         assert self.rocket.stdout.read(3) == b"SYN"
         # Uncomment for FW debuggers, for a chance to attach debugger
-        # input(f"Received rocket SYN; press enter to respond with ACK and continue. PID={self.rocket.pid}\n")
+        #  input(f"Received rocket SYN; press enter to respond with ACK and continue. PID={self.rocket.pid}\n")
         with self.stdin_lock:
             self.rocket.stdin.write(b"ACK")
             self.rocket.stdin.flush()
@@ -169,6 +170,15 @@ class SimConnection(Connection):
 
         self._hw_sim.digital_write(pin, value)
         LOGGER.info(f"SIM: Pin {pin} set to {value} (device_address={self.device_address})")
+
+    def _handlePinMode(self):
+        length = self._getLength()
+        assert length == 2
+        pin, mode = self.stdout.read(2)
+
+        #self._hw_sim.pin_mode(pin, mode) #Note: this function needs to be implemented, will set pin and mode
+
+        LOGGER.info(f"SIM: Pin {pin} set to {mode} (device_address={self.device_address})")
 
     def _handleRadio(self):
         length = self._getLength()

@@ -11,17 +11,20 @@ SENSOR_READ_EVENT = Event('sensor_read')
 
 class HWSim:
     def __init__(
-            self, rocket_sim: RocketSim, sensors: Iterable[Sensor], ignitors: Iterable[Ignitor]
+            self, rocket_sim: RocketSim, sensors: Iterable[Sensor], ignitors: Iterable[Ignitor], modes: dict
     ):
         """
         :param sensors: Iterable of all the sensors that the HW contains
         :param ignitors: Iterable of all the ignitors that the HW contains
+        :param modes: Dictionary containing pin numbers as keys and associated pin modes as values
         """
 
         # To protect all HW as SIM is in a different thread from tests, etc.
         self._lock = RLock()
 
         self._rocket_sim = rocket_sim
+
+        self._pin_modes = modes
 
         self._sensors = {s.get_type(): s for s in sensors}
 
@@ -31,6 +34,16 @@ class HWSim:
         self._ignitor_fires = {i.fire_pin: i for i in ignitors}
 
         self._paused = False
+
+    def pin_mode(self, pin):
+        """
+        :param pin: Should be a test pin
+        """
+        with self._lock:
+            val = self._pin_modes[pin]
+
+            LOGGER.debug(f"Pin mode read from pin={pin} returned value={val}")
+            return val
 
     def digital_write(self, pin, val):
         """
@@ -43,6 +56,7 @@ class HWSim:
                 self._ignitor_tests[pin].write(val)
             elif pin in self._ignitor_fires and val:
                 self._ignitor_fires[pin].fire()
+
 
     def analog_read(self, pin):
         """

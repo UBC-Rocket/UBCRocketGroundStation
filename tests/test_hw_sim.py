@@ -15,6 +15,15 @@ def ignitor_test(hw, test, read):
 
 
 class TestHWSim:
+    def test_pin_mode(self):
+        hw = HWSim(None, [], [], {1: 1, 2: 0, 7: 1, 5: 1})
+
+        assert hw.pin_mode(1) == 1
+        assert hw.pin_mode(2) == 0
+        assert hw.pin_mode(7) == 1
+        assert hw.pin_mode(5) == 1
+
+
     def test_ignitor_readwrite(self):
         hw = HWSim(None, [], [Ignitor(IgnitorType.MAIN, 1, 2, 3), Ignitor(IgnitorType.DROGUE, 5, 9, 10)])
 
@@ -66,6 +75,8 @@ class TestHWSim:
 
         hw.digital_write(6, True)
         assert ignitor_test(hw, 4, 5) == Ignitor.DISCONNECTED
+
+
 
     def test_sensor_read(self):
         GPS_DATA = (1, 2, 3)

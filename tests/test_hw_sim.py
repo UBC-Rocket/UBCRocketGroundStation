@@ -16,7 +16,8 @@ def ignitor_test(hw, test, read):
 
 class TestHWSim:
     def test_pin_mode(self):
-        hw = HWSim(None, [], [], {1: 1, 2: 0, 7: 1, 5: 1})
+        hw = HWSim(None, [], [])
+        hw.set_pin_mode({1: 1, 2: 0, 7: 1, 5: 1})
 
         assert hw.pin_mode(1) == 1
         assert hw.pin_mode(2) == 0

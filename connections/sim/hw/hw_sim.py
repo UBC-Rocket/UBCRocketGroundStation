@@ -11,7 +11,7 @@ SENSOR_READ_EVENT = Event('sensor_read')
 
 class HWSim:
     def __init__(
-            self, rocket_sim: RocketSim, sensors: Iterable[Sensor], ignitors: Iterable[Ignitor], modes: dict
+            self, rocket_sim: RocketSim, sensors: Iterable[Sensor], ignitors: Iterable[Ignitor]
     ):
         """
         :param sensors: Iterable of all the sensors that the HW contains
@@ -24,7 +24,7 @@ class HWSim:
 
         self._rocket_sim = rocket_sim
 
-        self._pin_modes = modes
+        self._pin_modes = {}
 
         self._sensors = {s.get_type(): s for s in sensors}
 
@@ -34,6 +34,9 @@ class HWSim:
         self._ignitor_fires = {i.fire_pin: i for i in ignitors}
 
         self._paused = False
+
+    def set_pin_mode(self, modes: dict):
+        self._pin_modes = modes
 
     def pin_mode(self, pin):
         """

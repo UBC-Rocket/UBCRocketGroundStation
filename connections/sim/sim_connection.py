@@ -221,6 +221,7 @@ class SimConnection(Connection):
         SimRxId.ANALOG_READ.value: _handleAnalogRead,
         SimRxId.SENSOR_READ.value: _handleSensorRead,
         SimRxId.TIME_UPDATE.value: _handleTimeUpdate,
+        SimRxId.PIN_MODE.value: _handlePinMode
     }
 
     def _run(self):

@@ -176,8 +176,7 @@ class SimConnection(Connection):
         assert length == 2
         pin, mode = self.stdout.read(2)
 
-        #self._hw_sim.pin_mode(pin, mode) #Note: this function needs to be implemented, will set pin and mode
-
+        self._hw_sim.set_pin_mode(pin, mode)
         LOGGER.info(f"SIM: Pin {pin} set to {mode} (device_address={self.device_address})")
 
     def _handleRadio(self):

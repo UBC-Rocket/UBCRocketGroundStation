@@ -35,16 +35,17 @@ class HWSim:
 
         self._paused = False
 
-    def set_pin_mode(self, modes: dict):
-        self._pin_modes = modes
+    def set_pin_mode(self, pin, mode):
+        with self._lock:
+            self._pin_modes[pin] = mode
+            LOGGER.debug(f"Pin mode of pin={pin} set to={mode}")
 
-    def pin_mode(self, pin):
+    def get_pin_mode(self, pin):
         """
         :param pin: Should be a test pin
         """
         with self._lock:
             val = self._pin_modes[pin]
-
             LOGGER.debug(f"Pin mode read from pin={pin} returned value={val}")
             return val
 

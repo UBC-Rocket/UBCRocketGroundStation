@@ -17,12 +17,14 @@ def ignitor_test(hw, test, read):
 class TestHWSim:
     def test_pin_mode(self):
         hw = HWSim(None, [], [])
-        hw.set_pin_mode({1: 1, 2: 0, 7: 1, 5: 1})
+        hw.set_pin_mode(1, 1)
+        hw.set_pin_mode(3, 0)
+        hw.set_pin_mode(2, 1)
 
-        assert hw.pin_mode(1) == 1
-        assert hw.pin_mode(2) == 0
-        assert hw.pin_mode(7) == 1
-        assert hw.pin_mode(5) == 1
+        assert hw.get_pin_mode(1) == 1
+        assert hw.get_pin_mode(3) == 0
+        assert hw.get_pin_mode(2) == 1
+
 
 
     def test_ignitor_readwrite(self):

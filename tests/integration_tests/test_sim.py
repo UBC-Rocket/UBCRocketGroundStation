@@ -102,6 +102,23 @@ class TestFlare:
             assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.LONGITUDE) == vals[1]
             assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.GPS_ALTITUDE) == vals[2]
 
+    def test_pin_mode(self, qtbot, sim_app, device_type):
+        test_vals = [
+            (1, 1),
+            (12, 0),
+            (5, 0),
+            (1, 0),
+            (2, 1),
+        ]
+
+        hw = get_hw_sim(sim_app, device_type)
+        for vals in test_vals:
+            hw.set_pin_mode(vals[0], vals[1])
+            flush_packets(sim_app, device_type)
+
+            assert hw.get_pin_mode(vals[0]) == vals[1]
+
+
     def test_baro_altitude(self, qtbot, sim_app, device_type):
         Pb = 101325
         Tb = 288.15

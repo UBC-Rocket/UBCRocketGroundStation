@@ -177,7 +177,7 @@ class SimConnection(Connection):
         pin, mode = self.stdout.read(2)
 
         self._hw_sim.set_pin_mode(pin, mode)
-        LOGGER.info(f"SIM: Pin {pin} set to {mode} (device_address={self.device_address})")
+        LOGGER.info(f"SIM: Mode for pin {pin} set to {mode} (device_address={self.device_address})")
 
     def _handleRadio(self):
         length = self._getLength()

@@ -36,6 +36,10 @@ class HWSim:
         self._paused = False
 
     def set_pin_mode(self, pin, mode):
+        """
+        :param pin: Should be a test pin
+        :param mode: The mode you want to set the pin to -> 0 for INPUT and 1 for OUTPUT
+        """
         with self._lock:
             self._pin_modes[pin] = mode
             LOGGER.debug(f"Pin mode of pin={pin} set to={mode}")
@@ -56,10 +60,13 @@ class HWSim:
         """
         with self._lock:
             LOGGER.debug(f"Digital write to pin={pin} with value value={val}")
-            if pin in self._ignitor_tests:
+            if pin in self._ignitor_tests and (self._pin_modes[pin] == 0):
                 self._ignitor_tests[pin].write(val)
-            elif pin in self._ignitor_fires and val:
+            elif pin in self._ignitor_fires and val and (self._pin_modes[pin] == 0):
                 self._ignitor_fires[pin].fire()
+            else:
+                LOGGER.debug(f"Pin={pin} is not set to correct mode for digital write")
+                # what behaviour should be added if pin is not in correct mode?
 
 
     def analog_read(self, pin):
@@ -68,8 +75,12 @@ class HWSim:
         """
         with self._lock:
             val = 0
-            if pin in self._ignitor_reads:
+            if pin in self._ignitor_reads and self._pin_modes[pin]:
                 val = self._ignitor_reads[pin].read()
+            else:
+                LOGGER.debug(f"Pin={pin} is not set to correct mode for analog read")
+                # what behaviour should be added if pin is not in correct mode?
+                return
 
             LOGGER.debug(f"Analog read from pin={pin} returned value={val}")
             return val

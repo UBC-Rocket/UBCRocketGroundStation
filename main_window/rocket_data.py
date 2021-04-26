@@ -82,6 +82,8 @@ class RocketData:
         Adding a bundle of data points and trigger callbacks according to id.
         Current implementation: adds to time given, otherwise will add to the last time received.
 
+        :param full_address:
+        :type full_address:
         :param incoming_data:
         :type incoming_data:
         """

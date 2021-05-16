@@ -46,6 +46,7 @@ class RocketData:
         self.autosave_thread = threading.Thread(target=self.timer, daemon=True, name="AutosaveThread")
         self.autosave_thread.start()
 
+    # TODO Missing unit test
     def timer(self):
         """
 
@@ -67,6 +68,7 @@ class RocketData:
 
         LOGGER.warning("Auto save thread shut down")
 
+    # TODO Missing unit test
     def shutdown(self):
         with self.as_cv:
             self._as_is_shutting_down = True
@@ -123,7 +125,8 @@ class RocketData:
                 self._notify_callbacks_of_id(key)
 
         BUNDLE_ADDED_EVENT.increment()
-        
+
+    # TODO Missing unit test
     def time_series_by_device(self, device: DeviceType, data_entry_id: DataEntryIds):
         """
         Get a time series list and a value series list for the specified DataEntryIds (enum object)
@@ -156,10 +159,11 @@ class RocketData:
 
             return t, y
 
+    # TODO Missing unit test
     def last_value_and_time(self, device: DeviceType, data_entry_id: DataEntryIds) -> Optional[tuple]:
         """
         Gets the most recent value and its time for the specified DataEntryIds (enum object)
-        Returns None if requested address not available or if requested value not found.
+        Returns None if requested device address not available or if requested value not found.
 
         :param device:
         :type device:
@@ -183,6 +187,7 @@ class RocketData:
     def last_value_by_device(self, device: DeviceType, data_entry_id: DataEntryIds) -> Optional[float]:
         """
         Gets the most recent value specified by the DataEntryIds (enum object) given
+        Returns None if requested device address not available or if requested value not found.
 
         :param device:
         :type device:
@@ -200,7 +205,8 @@ class RocketData:
 
     def highest_altitude_by_device(self, device: DeviceType) -> Optional[float]:
         """
-        Gets the max altitude for the device specified
+        Gets the max altitude for the device specified.
+        Returns None if requested device address not available or if no altitude available.
 
         :param device:
         :type device:
@@ -217,6 +223,7 @@ class RocketData:
 
             return None
 
+    # TODO Missing unit test
     def save(self, csv_path):
         """
         Data saving function that creates csv
@@ -260,6 +267,7 @@ class RocketData:
         np.savetxt(csv_path, np.transpose(data), delimiter=',',
                    fmt="%s")  # Can free up the lock while we save since were no longer accessing the original data
 
+    # TODO Missing unit test
     def add_new_callback(self, device: DeviceType, data_id: DataEntryIds, callback_fn: Callable):
         """
         Add a new callback for its associated ID
@@ -278,6 +286,7 @@ class RocketData:
             else:
                 self.callbacks[key].append(callback_fn)
 
+    # TODO Missing unit test
     def _notify_callbacks_of_id(self, key: CallBackKey):
         """
 
@@ -289,6 +298,7 @@ class RocketData:
                 for fn in self.callbacks[key]:
                     fn()
 
+    # TODO Missing unit test
     def _notify_all_callbacks(self):
         """
 

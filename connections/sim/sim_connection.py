@@ -167,6 +167,7 @@ class SimConnection(Connection):
         length = self._getLength()
         assert length == 2
         pin, value = self.stdout.read(2)
+        self._hw_sim.set_pin_mode(pin, 0)
 
         self._hw_sim.digital_write(pin, value)
         LOGGER.info(f"SIM: Pin {pin} set to {value} (device_address={self.device_address})")

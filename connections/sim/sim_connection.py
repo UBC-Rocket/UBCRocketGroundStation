@@ -192,6 +192,7 @@ class SimConnection(Connection):
         length = self._getLength()
         assert length == 1
         pin = self.stdout.read(length)[0]
+        self._hw_sim.set_pin_mode(pin, 1)
         result = self._hw_sim.analog_read(pin).to_bytes(2, "big")
         self._send_sim_packet(SimTxId.ANALOG_READ.value, result)
 

@@ -66,14 +66,13 @@ class HWSim:
         :param val: True to set high, False to set low
         """
         with self._lock:
+            assert self._pin_modes[pin] == PinModes.INPUT
             LOGGER.debug(f"Digital write to pin={pin} with value value={val}")
-            if pin in self._ignitor_tests and (self._pin_modes[pin] == 0):
+            if pin in self._ignitor_tests:
                 self._ignitor_tests[pin].write(val)
-            elif pin in self._ignitor_fires and val and (self._pin_modes[pin] == 0):
+            elif pin in self._ignitor_fires and val:
                 self._ignitor_fires[pin].fire()
-            else:
-                LOGGER.debug(f"Pin={pin} is not set to correct mode for digital write")
-                # what behaviour should be added if pin is not in correct mode?
+
 
 
     def analog_read(self, pin):
@@ -81,13 +80,10 @@ class HWSim:
         :param pin: Should be a read pin. Don't rely on behaviour if the pin isn't a readable pin.
         """
         with self._lock:
+            assert self._pin_modes[pin] == PinModes.OUTPUT
             val = 0
-            if pin in self._ignitor_reads and self._pin_modes[pin]:
+            if pin in self._ignitor_reads:
                 val = self._ignitor_reads[pin].read()
-            else:
-                LOGGER.debug(f"Pin={pin} is not set to correct mode for analog read")
-                # what behaviour should be added if pin is not in correct mode?
-                return
 
             LOGGER.debug(f"Analog read from pin={pin} returned value={val}")
             return val

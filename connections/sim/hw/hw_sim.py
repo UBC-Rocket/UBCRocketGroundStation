@@ -1,4 +1,5 @@
 from typing import Iterable
+from enum import Enum
 
 from .ignitor_sim import Ignitor
 from .sensors.sensor import Sensor, SensorType, REQUIRED_SENSOR_FLOATS
@@ -8,6 +9,12 @@ from util.event_stats import Event
 from threading import RLock
 
 SENSOR_READ_EVENT = Event('sensor_read')
+
+
+class PinModes(Enum):
+    INPUT = 0
+    OUTPUT = 1
+
 
 class HWSim:
     def __init__(

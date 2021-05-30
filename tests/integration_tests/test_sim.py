@@ -6,7 +6,7 @@ from profiles.rocket_profile import RocketProfile
 from profiles.rockets.hollyburn import HollyburnProfile
 from .integration_utils import test_app, valid_paramitrization, all_devices, all_profiles, only_flare, flush_packets
 from connections.sim.sim_connection import FirmwareNotFound
-from connections.sim.hw.hw_sim import HWSim
+from connections.sim.hw.hw_sim import HWSim, PinModes
 from connections.sim.hw.sensors.sensor import SensorType
 from connections.sim.hw.sensors.dummy_sensor import DummySensor
 from connections.sim.hw.rocket_sim import FlightEvent, FlightDataType
@@ -103,21 +103,18 @@ class TestFlare:
             assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.GPS_ALTITUDE) == vals[2]
 
     def test_pin_mode(self, qtbot, sim_app, device_type):
-        test_vals = [
-            (1, 1),
-            (12, 0),
-            (5, 0),
-            (1, 0),
-            (2, 1),
-        ]
-
         hw = get_hw_sim(sim_app, device_type)
-        for vals in test_vals:
-            hw.set_pin_mode(vals[0], vals[1])
-            flush_packets(sim_app, device_type)
 
-            assert hw.get_pin_mode(vals[0]) == vals[1]
-
+        assert hw.get_pin_mode(20) == PinModes.INPUT
+        assert hw.get_pin_mode(21) == PinModes.INPUT
+        assert hw.get_pin_mode(13) == PinModes.INPUT
+        assert hw.get_pin_mode(13) == PinModes.INPUT
+        assert hw.get_pin_mode(16) == PinModes.INPUT
+        assert hw.get_pin_mode(4) == PinModes.INPUT
+        assert hw.get_pin_mode(14) == PinModes.OUTPUT
+        assert hw.get_pin_mode(35) == PinModes.INPUT
+        assert hw.get_pin_mode(17) == PinModes.INPUT
+        assert hw.get_pin_mode(34) == PinModes.OUTPUT
 
     def test_baro_altitude(self, qtbot, sim_app, device_type):
         Pb = 101325

@@ -5,7 +5,7 @@ import struct
 from enum import Enum
 from pathlib import Path
 
-from connections.sim.hw.hw_sim import SensorType
+from connections.sim.hw.hw_sim import SensorType, PinModes
 from ..connection import Connection, ConnectionMessage
 from .stream_filter import ReadFilter, WriteFilter
 from connections.sim.hw.hw_sim import HWSim
@@ -167,7 +167,7 @@ class SimConnection(Connection):
         length = self._getLength()
         assert length == 2
         pin, value = self.stdout.read(2)
-        self._hw_sim.set_pin_mode(pin, 0)
+        self._hw_sim.set_pin_mode(pin, PinModes.INPUT)
 
         self._hw_sim.digital_write(pin, value)
         LOGGER.info(f"SIM: Pin {pin} set to {value} (device_address={self.device_address})")
@@ -193,7 +193,7 @@ class SimConnection(Connection):
         length = self._getLength()
         assert length == 1
         pin = self.stdout.read(length)[0]
-        self._hw_sim.set_pin_mode(pin, 1)
+        self._hw_sim.set_pin_mode(pin, PinModes.OUTPUT)
         result = self._hw_sim.analog_read(pin).to_bytes(2, "big")
         self._send_sim_packet(SimTxId.ANALOG_READ.value, result)
 

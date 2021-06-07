@@ -11,12 +11,11 @@ jobs:
       - checkout:
           path: UBCRocketGroundStation
       - run:
-          name: "Run ci.sh (setup)"
+          name: "Run ci.sh"
           command: source ci.sh
           path: UBCRocketGroundStation
       - store_artifacts:
-          path: UBCRocketGroundStation
-          destination: coverage.xml
+          path: 'UBCRocketGroundStation'
       - codecov/upload:
           token: $CODECOV_TOKEN
           file: 'UBCRocketGroundStation/coverage.xml'

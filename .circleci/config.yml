@@ -14,8 +14,6 @@ jobs:
           name: "Run ci.sh"
           command: source ci.sh
           path: UBCRocketGroundStation
-      - store_artifacts:
-          path: .
       - codecov/upload:
           file: coverage.xml
 

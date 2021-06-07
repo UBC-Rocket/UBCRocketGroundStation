@@ -2,14 +2,17 @@ codecov:
   require_ci_to_pass: yes
 
 coverage:
-  precision: 2
-  round: down
-  range: "70...100"
-
-status:
-    project: yes
+  status:
+    project:
+      default: false  # disable the default status that measures entire project
+      tests:  # declare a new status context "tests" with 100% coverage
+        target: 100%
+        paths: "tests/"
+      app:  # declare a new status context "app" for everything else
+        paths: "!tests/"
+        target: auto
     patch: yes
-    changes: no
+    # changes: no # TODO decide if necessary
 
 parsers:
   gcov:

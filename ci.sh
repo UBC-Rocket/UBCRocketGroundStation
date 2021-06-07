@@ -48,10 +48,10 @@ cd UBCRocketGroundStation
 
 # Unit tests & integration tests
 source venv/bin/activate
-mkdir test_reports
-coverage run --omit 'venv/*' -m pytest tests/*.py && coverage report --omit 'venv/*' && coverage xml -o test_reports/coverage.xml
-# coverage run --omit 'venv/*' -m pytest tests/*.py && coverage report --omit 'venv/*' && coverage html -d test_reports/coverage_reports
-
+coverage run --omit 'venv/*' -m pytest tests/*.py
+coverage report --omit 'venv/*'
+coverage xml -o coverage.xml
+head coverage.xml
 deactivate
 
 # Pyinstaller "build" test & GS self-test

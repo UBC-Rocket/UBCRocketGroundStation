@@ -52,6 +52,9 @@ coverage run --omit 'venv/*' -m pytest tests/*.py
 coverage report --omit 'venv/*'
 coverage xml -o coverage.xml
 head coverage.xml
+
+# coverage run --omit 'venv/*' -m pytest tests/*.py && coverage report --omit 'venv/*' && coverage html -d test_reports/coverage_reports
+
 deactivate
 
 # Pyinstaller "build" test & GS self-test

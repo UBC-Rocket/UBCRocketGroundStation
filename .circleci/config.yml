@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  codecov: codecov/codecov@1.2.3
+
 jobs:
   test:
     machine:
@@ -11,7 +14,10 @@ jobs:
           name: "Run ci.sh"
           command: source ci.sh
           path: UBCRocketGroundStation
-
+      - store_artifacts:
+          path: test_reports
+      - codecov/upload:
+          file: test_reports/coverage.xml
 
 workflows:
   main:

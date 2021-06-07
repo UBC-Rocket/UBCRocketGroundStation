@@ -1,18 +1,34 @@
+# Useful ref: https://docs.codecov.io/docs/commit-status
 codecov:
   require_ci_to_pass: yes
-
-coverage:
-  status:
-    project:
-      default: false  # disable the default status that measures entire project
-      tests:  # declare a new status context "tests" with 100% coverage
-        target: 100%
-        paths: "tests/"
-      app:  # declare a new status context "app" for everything else
-        paths: "!tests/"
-        target: auto
-    patch: yes
-    # changes: no # TODO decide if necessary
+  coverage:
+    range: 70..100
+    round: down
+    precision: 2
+    status:
+      project:
+        default: false  # disable the default status that measures entire project
+        tests:  # declare a new status context "tests" with 100% coverage
+          target: 100%
+          paths: "tests/"
+        app:  # declare a new status context "app" for everything else
+          paths: "!tests/"
+          target: auto
+      patch:
+        default:
+          target: auto
+          threshold: 0%
+          base: auto 
+          # advanced
+          branches: 
+            - master
+          if_ci_failed: error #success, failure, error, ignore
+          only_pulls: false
+          flags: 
+            - "unit"
+          paths: 
+            - "src"
+        # changes: no # TODO decide if necessary
 
 parsers:
   gcov:

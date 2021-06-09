@@ -73,14 +73,11 @@ class HWSim:
             elif pin in self._ignitor_fires and val:
                 self._ignitor_fires[pin].fire()
 
-
-
     def analog_read(self, pin):
         """
         :param pin: Should be a read pin. Don't rely on behaviour if the pin isn't a readable pin.
         """
         with self._lock:
-            assert self._pin_modes[pin] == PinModes.OUTPUT
             val = 0
             if pin in self._ignitor_reads:
                 val = self._ignitor_reads[pin].read()

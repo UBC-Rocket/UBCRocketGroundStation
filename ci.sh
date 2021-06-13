@@ -48,7 +48,7 @@ cd UBCRocketGroundStation
 
 # Unit tests & integration tests
 source venv/bin/activate
-coverage run --omit 'venv/*' -m pytest tests/*.py
+coverage run --omit 'venv/*' -m pytest
 coverage report --omit 'venv/*'
 coverage xml -o coverage.xml
 head coverage.xml

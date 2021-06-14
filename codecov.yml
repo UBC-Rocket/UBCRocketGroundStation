@@ -9,13 +9,16 @@ coverage:
     project:
       default: false  # disable the default status that measures entire project
       tests:  # declare a new status context "tests" with 100% coverage
-        target: "100%"
+        target: auto # TODO change to 100% when possible
         paths:
           - "tests/"
       app:  # declare a new status context "app" for everything else
         target: auto
         paths:
           - "!tests/"
+        # flags:
+        #   - unit
+        #   - integration
     patch:
       default:
         target: auto
@@ -43,6 +46,23 @@ parsers:
 comment:
   layout: "reach,diff,flags,tree"
   behavior: default
-  require_changes: no
+  require_changes: false  
+#   require_base: yes
+#   require_head: yes       
+#   branches: null
+
+# # No individual flags are added to YAML and flag names are automatically
+# # ingested from the Uploader. https://docs.codecov.com/docs/flags
+# flag_management:
+#   default_rules:
+#     carryforward: true
+#     statuses:
+#       - name_prefix: project-
+#         type: project
+#         target: auto
+#         threshold: 1%
+#       - name_prefix: patch-
+#         type: patch
+#         target: 90%
 
 # Useful ref: https://docs.codecov.io/docs/commit-status

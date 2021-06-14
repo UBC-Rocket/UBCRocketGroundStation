@@ -14,11 +14,25 @@ jobs:
           name: "Run ci.sh"
           command: source ci.sh
           path: UBCRocketGroundStation
+      - store_test_results:
+          path: 'UBCRocketGroundStation/junit.xml'
       - store_artifacts:
           path: 'UBCRocketGroundStation/coverage.xml'
-      - codecov/upload:
-          token: $CODECOV_TOKEN
-          file: 'UBCRocketGroundStation/coverage.xml'
+      # - codecov/upload:
+      #     token: $CODECOV_TOKEN
+      #     file: 'UBCRocketGroundStation/coverage.xml'
+      - run:
+          name: Send unit tests to codecov
+          command: |
+            cd UBCRocketGroundStation
+                  bash <(curl -s https://codecov.io/bash) -Z -f test_reports/unit-test-coverage.xml -F unit
+            cd ..
+      - run:
+          name: Send integ tests to codecov
+          command: |
+            cd UBCRocketGroundStation
+                  bash <(curl -s https://codecov.io/bash) -Z -f test_reports/integ-test-coverage.xml -F integration  -t ecf28798-68f0-41a0-b707-663b5769cbdf
+            cd ..
 
 workflows:
   main:

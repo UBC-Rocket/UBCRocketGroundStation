@@ -31,7 +31,7 @@ jobs:
           name: Send integ tests to codecov
           command: |
             cd UBCRocketGroundStation
-                  bash <(curl -s https://codecov.io/bash) -Z -f test_reports/integ-test-coverage.xml -F integration  -t ecf28798-68f0-41a0-b707-663b5769cbdf
+                  bash <(curl -s https://codecov.io/bash) -Z -f test_reports/integ-test-coverage.xml -F integration
             cd ..
 
 workflows:

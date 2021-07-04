@@ -33,7 +33,6 @@ class RocketData:
         self.keyset: Dict[DataEntryKey, SortedDict[int, Union[int, float, str, Enum]]] = dict()
         self.last_time = 0
         self.highest_altitude: Dict[FullAddress, float] = dict()
-        self.existing_entry_keys: Set[DataEntryKey] = set()  # Set of entry keys actually recorded. Used for csv header
 
         self.session_name = os.path.join(LOGS_DIR, "autosave_" + SESSION_ID + ".csv")
 
@@ -110,9 +109,8 @@ class RocketData:
             for data_id in incoming_data:
                 key = DataEntryKey(full_address, data_id)
 
-                if key not in self.existing_entry_keys:
+                if key not in set(self.keyset.keys()):
                     self.keyset[key] = SortedDict()
-                self.existing_entry_keys.add(key)
                 self.timeset[self.last_time][key] = incoming_data[data_id]
                 self.keyset[key][self.last_time] = incoming_data[data_id]
 
@@ -240,7 +238,7 @@ class RocketData:
             # all appearing keys
             keys: List[DataEntryKey] = list(map(
                 lambda data_entry_key: DataEntryKey(data_entry_key.full_address, data_entry_key.data_id),
-                self.existing_entry_keys))
+                set(self.keyset.keys())))
 
             data = np.empty((len(keys), len(self.timeset) + 1), dtype=object)
             times = list(self.timeset.keys())

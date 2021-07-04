@@ -51,16 +51,22 @@ source venv/bin/activate
 mkdir test_reports
 
 # Unit
-coverage run --omit 'venv/*' -m pytest --junitxml=test_reports/junit.xml --ignore=tests/integration_tests --ignore-glob='tests/*_sim.py'
+coverage run --omit 'venv/*' --omit 'tests/*' -m pytest --durations=0 --ignore=tests/integration_tests
 coverage report --omit 'venv/*'
 coverage xml -o test_reports/unit-test-coverage.xml
 head test_reports/unit-test-coverage.xml
 
 # Integration
-coverage run --omit 'venv/*' -m pytest --junitxml=test_reports/junit.xml tests/integration_tests tests/*_sim.py
+coverage run --omit 'venv/*' --omit 'tests/*' -m pytest --durations=0 tests/integration_tests
 coverage report --omit 'venv/*'
 coverage xml -o test_reports/integ-test-coverage.xml
 head test_reports/integ-test-coverage.xml
+
+# All
+coverage run --omit 'venv/*' --omit 'tests/*' -m pytest --durations=0 --junitxml=test_reports/junit.xml tests
+coverage report --omit 'venv/*'
+coverage xml -o test_reports/coverage.xml
+head test_reports/coverage.xml
 
 deactivate
 

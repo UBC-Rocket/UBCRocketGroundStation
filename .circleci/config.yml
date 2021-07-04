@@ -15,9 +15,9 @@ jobs:
           command: source ci.sh
           path: UBCRocketGroundStation
       - store_test_results:
-          path: UBCRocketGroundStation/test_results/junit.xml
+          path: UBCRocketGroundStation/test_reports/junit.xml
       - store_artifacts:
-          path: UBCRocketGroundStation/test_results/coverage.xml
+          path: UBCRocketGroundStation/test_reports/coverage.xml
       # - codecov/upload:
       #     token: $CODECOV_TOKEN
       #     file: 'UBCRocketGroundStation/coverage.xml'

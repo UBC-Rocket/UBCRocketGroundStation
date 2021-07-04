@@ -37,8 +37,12 @@ def test_ground_rx(xbee):
 
     assert SENT_TO_ROCKET_EVENT.wait(snapshot) == 1
 
-    assert len(xbee.rocket_callback.call_args[0][0]) == 27
-    assert xbee.rocket_callback.call_args[0][0][15:-1] == b"HelloRocket"
+    msg = xbee.rocket_callback.call_args[0][0]
+
+    # Skip any escape characters
+    assert len(msg) - msg.count(b'\x7D') == 27
+
+    assert msg[-12:-1] == b"HelloRocket"
 
 
 def test_rocket_rx_pieces(xbee):

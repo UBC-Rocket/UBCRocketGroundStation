@@ -109,7 +109,7 @@ class RocketData:
             for data_id in incoming_data:
                 key = DataEntryKey(full_address, data_id)
 
-                if key not in set(self.keyset.keys()):
+                if key not in self.keyset:
                     self.keyset[key] = SortedDict()
                 self.timeset[self.last_time][key] = incoming_data[data_id]
                 self.keyset[key][self.last_time] = incoming_data[data_id]

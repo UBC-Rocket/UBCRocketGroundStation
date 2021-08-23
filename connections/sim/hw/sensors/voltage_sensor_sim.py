@@ -1,5 +1,7 @@
+from connections.sim.hw.sensors.sensor import *
 
-class VoltageSensor:
+
+class VoltageSensor(Sensor):
     """
     Simulates the hardware used for measuring battery voltage.
     """

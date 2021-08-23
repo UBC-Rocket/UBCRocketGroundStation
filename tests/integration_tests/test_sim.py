@@ -9,6 +9,7 @@ from connections.sim.sim_connection import FirmwareNotFound
 from connections.sim.hw.hw_sim import HWSim, PinModes
 from connections.sim.hw.sensors.sensor import SensorType
 from connections.sim.hw.sensors.dummy_sensor import DummySensor
+from connections.sim.hw.sensors.voltage_sensor_sim import VoltageSensor
 from connections.sim.hw.rocket_sim import FlightEvent, FlightDataType
 from main_window.competition.comp_app import CompApp
 from main_window.data_entry_id import DataEntryIds, DataEntryValues
@@ -38,6 +39,7 @@ def sim_app(test_app, request) -> CompApp:
 def get_hw_sim(sim_app, device_type: DeviceType) -> HWSim:
     connection_name = sim_app.device_manager.get_full_address(device_type).connection_name
     return sim_app.connections[connection_name]._hw_sim
+
 
 def get_profile(sim_app) -> RocketProfile:
     return sim_app.rocket_profile
@@ -133,6 +135,17 @@ class TestFlare:
         assert hw.get_pin_mode(35) == PinModes.INPUT
         assert hw.get_pin_mode(17) == PinModes.INPUT
         assert hw.get_pin_mode(34) == PinModes.OUTPUT
+
+    def test_voltage_reading(self, qtbot, sim_app, device_type):
+        voltage_sensor = VoltageSensor(36)
+        assert voltage_sensor.last_val == 0
+
+        hw = get_hw_sim(sim_app, device_type)
+        hw.replace_sensor(voltage_sensor)
+
+        time.sleep(1)
+
+        assert voltage_sensor.last_val == VoltageSensor.NOMINAL_VOLTAGE
 
     def test_baro_altitude(self, qtbot, sim_app, device_type):
         Pb = 101325

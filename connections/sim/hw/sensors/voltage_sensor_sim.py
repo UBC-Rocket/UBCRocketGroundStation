@@ -15,15 +15,31 @@ class VoltageSensor(Sensor):
         """
 
         self._pin = pin
+        self._data_length = REQUIRED_SENSOR_FLOATS[SensorType.VOLTAGE]
+        self._last_val = 0
 
-    def read_data(self):
+    def read(self):
         """
         :brief: Simulate voltage level from output pin.
         :return: Voltage level obtained by mapping analogRead value onto a voltage level.
         :note: currently a dummy implementation that returns a constant value
         """
+        self._last_val = self.NOMINAL_VOLTAGE
 
-        return self.NOMINAL_VOLTAGE
+        return self._last_val
 
+    @property
+    def pin(self):
+        return self._pin
 
+    @property
+    def last_val(self):
+        return self._last_val
+
+    @property
+    def data_length(self):
+        return self._data_length
+
+    def get_type(self) -> SensorType:
+        return SensorType.VOLTAGE
 

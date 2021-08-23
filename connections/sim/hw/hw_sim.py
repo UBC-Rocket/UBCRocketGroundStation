@@ -133,7 +133,11 @@ class HWSim:
 
     def replace_sensor(self, new_sensor: Sensor):
         with self._lock:
-            self._sensors[new_sensor.get_type()] = new_sensor
+            if new_sensor.get_type() != SensorType.VOLTAGE:
+                self._sensors[new_sensor.get_type()] = new_sensor
+
+            else:
+                self._voltage_sensor = new_sensor
 
     def pause(self):
         with self._lock:

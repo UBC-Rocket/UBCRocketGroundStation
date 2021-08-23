@@ -2,6 +2,7 @@ from typing import Iterable
 from enum import Enum
 
 from .ignitor_sim import Ignitor
+from .sensors.voltage_sensor_sim import VoltageSensor
 from .sensors.sensor import Sensor, SensorType, REQUIRED_SENSOR_FLOATS
 from .rocket_sim import RocketSim
 from util.detail import LOGGER
@@ -18,7 +19,7 @@ class PinModes(Enum):
 
 class HWSim:
     def __init__(
-            self, rocket_sim: RocketSim, sensors: Iterable[Sensor], ignitors: Iterable[Ignitor]
+            self, rocket_sim: RocketSim, sensors: Iterable[Sensor], ignitors: Iterable[Ignitor],
     ):
         """
         :param sensors: Iterable of all the sensors that the HW contains
@@ -34,6 +35,10 @@ class HWSim:
         self._pin_modes = {}
 
         self._sensors = {s.get_type(): s for s in sensors}
+
+        self._voltage_sensor = None
+        if SensorType.VOLTAGE in self._sensors:
+            self._voltage_sensor = self._sensors[SensorType.VOLTAGE]
 
         self._ignitors = {i.type: i for i in ignitors}
         self._ignitor_tests = {i.test_pin: i for i in ignitors}

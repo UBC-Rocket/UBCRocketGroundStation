@@ -84,6 +84,7 @@ def test_bulk_sensor_packet(qtbot, single_connection_tantalus):
     )
     last_values = tuple(map(get_val, vals_to_get))
 
+    # Only check items in tuple vals_to_get
     assert sensor_inputs[1:-1] == last_values
 
     # Special check for state

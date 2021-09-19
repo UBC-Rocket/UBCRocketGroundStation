@@ -11,11 +11,10 @@ ESCAPE_XOR = 0x20
 XON = 0x11
 XOFF = 0x13
 NEEDS_ESCAPING = (START_DELIMITER, ESCAPE_CHAR, XON, XOFF)
-SOURCE_ADDRESS = bytes.fromhex('0123456789ABCDEF')  # Dummy address
-XBEE_BROADCAST_ADDRESS = bytes.fromhex('000000000000FFFF')
+XBEE_BROADCAST_ADDRESS = bytes.fromhex("000000000000FFFF")
 
-FRAME_PARSED_EVENT = Event('frame_parsed')
-SENT_TO_ROCKET_EVENT = Event('sent_to_rocket')
+FRAME_PARSED_EVENT = Event("frame_parsed")
+SENT_TO_ROCKET_EVENT = Event("sent_to_rocket")
 
 
 class FrameType(IntEnum):
@@ -93,7 +92,8 @@ class XBeeModuleSim:
         rx_options = b"\x02"
         self.rocket_callback(
             self._create_frame(
-                FrameType.RX_INDICATOR, SOURCE_ADDRESS + reserved + rx_options + data,
+                FrameType.RX_INDICATOR,
+                self.gs_address + reserved + rx_options + data,
             )
         )
 
@@ -197,11 +197,14 @@ class XBeeModuleSim:
         if received_checksum != calculated_checksum:
             raise ChecksumMismatchError()
 
-        if (destination_address == bytearray(self.gs_address) or
-            destination_address == bytearray(XBEE_BROADCAST_ADDRESS)):
+        if destination_address == bytearray(
+            self.gs_address
+        ) or destination_address == bytearray(XBEE_BROADCAST_ADDRESS):
             self.ground_callback(payload)
         else:
-            LOGGER.warning(f"Discarding tx request frame with destination address other than GS ({destination_address.hex()})")
+            LOGGER.warning(
+                f"Discarding tx request frame with destination address other than GS ({destination_address.hex()})"
+            )
 
         # Send acknowledge
         status_payload = bytearray(
@@ -263,7 +266,7 @@ class XBeeModuleSim:
 
         checksum = 0xFF - ((frame_type + sum(payload)) & 0xFF)
         unescaped = (
-                bytearray((len_msb, len_lsb, frame_type)) + payload + bytearray((checksum,))
+            bytearray((len_msb, len_lsb, frame_type)) + payload + bytearray((checksum,))
         )
 
         return bytes((START_DELIMITER,)) + self._escape(unescaped)

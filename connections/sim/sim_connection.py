@@ -5,7 +5,7 @@ import struct
 from enum import Enum
 from pathlib import Path
 
-from connections.sim.hw.hw_sim import SensorType
+from connections.sim.hw.hw_sim import SensorType, PinModes
 from ..connection import Connection, ConnectionMessage
 from .stream_filter import ReadFilter, WriteFilter
 from connections.sim.hw.hw_sim import HWSim
@@ -16,6 +16,7 @@ from util.detail import LOGGER, LOCAL, EXECUTABLE_FILE_EXTENSION
 class SimRxId(Enum):
     CONFIG = 0x01
     BUZZER = 0x07
+    PIN_MODE = 0x4D
     DIGITAL_PIN_WRITE = 0x50
     RADIO = 0x52
     ANALOG_READ = 0x61
@@ -166,9 +167,18 @@ class SimConnection(Connection):
         length = self._getLength()
         assert length == 2
         pin, value = self.stdout.read(2)
+        self._hw_sim.set_pin_mode(pin, PinModes.INPUT)
 
         self._hw_sim.digital_write(pin, value)
         LOGGER.info(f"SIM: Pin {pin} set to {value} (device_address={self.device_address})")
+
+    def _handlePinMode(self):
+        length = self._getLength()
+        assert length == 2
+        pin, mode = self.stdout.read(2)
+
+        self._hw_sim.set_pin_mode(pin, mode)
+        LOGGER.info(f"SIM: Mode for pin {pin} set to {mode} (device_address={self.device_address})")
 
     def _handleRadio(self):
         length = self._getLength()
@@ -183,6 +193,7 @@ class SimConnection(Connection):
         length = self._getLength()
         assert length == 1
         pin = self.stdout.read(length)[0]
+        self._hw_sim.set_pin_mode(pin, PinModes.OUTPUT)
         result = self._hw_sim.analog_read(pin).to_bytes(2, "big")
         self._send_sim_packet(SimTxId.ANALOG_READ.value, result)
 
@@ -211,6 +222,7 @@ class SimConnection(Connection):
         SimRxId.ANALOG_READ.value: _handleAnalogRead,
         SimRxId.SENSOR_READ.value: _handleSensorRead,
         SimRxId.TIME_UPDATE.value: _handleTimeUpdate,
+        SimRxId.PIN_MODE.value: _handlePinMode
     }
 
     def _run(self):

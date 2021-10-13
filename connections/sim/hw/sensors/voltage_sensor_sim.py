@@ -6,7 +6,7 @@ class VoltageSensor(Sensor):
     Simulates the hardware used for measuring battery voltage.
     """
 
-    NOMINAL_VOLTAGE = 5
+    NOMINAL_VOLTAGE = 11.6
 
     def __init__(self, pin: int):
         """

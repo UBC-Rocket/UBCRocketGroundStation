@@ -87,9 +87,8 @@ class HWSim:
             if pin in self._ignitor_reads:
                 val = self._ignitor_reads[pin].read()
 
-            elif self._voltage_sensor:
-                if pin == self._voltage_sensor.pin:
-                    val = self._voltage_sensor.read()
+            elif self._voltage_sensor and pin == self._voltage_sensor.pin:
+                val = self._voltage_sensor.read()
 
             LOGGER.debug(f"Analog read from pin={pin} returned value={val}")
             return val

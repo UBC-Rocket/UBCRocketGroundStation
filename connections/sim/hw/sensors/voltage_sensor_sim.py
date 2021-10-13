@@ -15,7 +15,6 @@ class VoltageSensor(Sensor):
         """
 
         self._pin = pin
-        self._data_length = REQUIRED_SENSOR_FLOATS[SensorType.VOLTAGE]
         self._last_val = 0
 
     def read(self):
@@ -35,10 +34,6 @@ class VoltageSensor(Sensor):
     @property
     def last_val(self):
         return self._last_val
-
-    @property
-    def data_length(self):
-        return self._data_length
 
     def get_type(self) -> SensorType:
         return SensorType.VOLTAGE

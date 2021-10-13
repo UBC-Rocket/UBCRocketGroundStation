@@ -143,7 +143,7 @@ class TestFlare:
         hw = get_hw_sim(sim_app, device_type)
         hw.replace_sensor(voltage_sensor)
 
-        time.sleep(1)
+        flush_packets(sim_app, device_type)
 
         assert voltage_sensor.last_val == VoltageSensor.NOMINAL_VOLTAGE
 

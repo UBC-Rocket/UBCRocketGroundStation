@@ -262,7 +262,9 @@ class RocketData:
                 else:
                     data[ix, iy] = ""
 
-        np.savetxt(csv_path, np.transpose(data), delimiter=',',
+        keysColumn = 0
+        alphabeticalData = data[data[:, keysColumn].argsort()]
+        np.savetxt(csv_path, np.transpose(alphabeticalData), delimiter=',',
                    fmt="%s")  # Can free up the lock while we save since were no longer accessing the original data
 
     # TODO Missing unit test

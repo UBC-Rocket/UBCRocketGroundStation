@@ -100,7 +100,7 @@ class TestFlare:
         sim_app.send_command(device_type.name + ".config")
         flush_packets(sim_app, device_type)
 
-        assert CONFIG_EVENT.wait(snapshot, 2) == 2
+        assert CONFIG_EVENT.wait(snapshot, num_expected=2) == 2
 
     def test_gps_read(self, qtbot, sim_app, device_type):
         test_vals = [

@@ -263,8 +263,8 @@ class RocketData:
                     data[ix, iy] = ""
 
         keysColumn = 0
-        alphabeticalData = data[data[:, keysColumn].argsort()] #sort by keys in column 0
-        np.savetxt(csv_path, np.transpose(alphabeticalData), delimiter=',',
+        sortedData = data[data[:, keysColumn].argsort()] #sort by keys in column 0
+        np.savetxt(csv_path, np.transpose(sortedData), delimiter=',',
                    fmt="%s")  # Can free up the lock while we save since were no longer accessing the original data
 
     # TODO Missing unit test

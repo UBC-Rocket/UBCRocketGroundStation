@@ -261,8 +261,11 @@ class RocketData:
                 # Empty entry if this row of data doesn't have a val in this column
                 else:
                     data[ix, iy] = ""
-
-        np.savetxt(csv_path, np.transpose(data), delimiter=',',
+    
+        keysColumn = 0
+        sortedData = data[data[:, keysColumn].argsort()] #sort by keys in column 0
+        
+        np.savetxt(csv_path, np.transpose(sortedData), delimiter=',',
                    fmt="%s")  # Can free up the lock while we save since were no longer accessing the original data
 
     # TODO Missing unit test

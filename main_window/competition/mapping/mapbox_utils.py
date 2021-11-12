@@ -316,7 +316,9 @@ class TileGrid:
 
                 img = appendv(img, row)
 
-            plt.imsave(outfile, img)
+            if img.flatten().sum() != 0:
+                plt.imsave(outfile, img)
+
             t2 = time.perf_counter()
             LOGGER.debug(f"Successfully generated size {str(self.scale)} map in {t2 - t1} seconds.")
             return img

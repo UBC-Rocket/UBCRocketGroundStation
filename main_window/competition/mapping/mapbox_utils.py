@@ -136,6 +136,7 @@ class MapTile:
         self.x = x
         self.y = y
         self.s = s
+        self.has_non_zero_pixel = False
 
     def __str__(self) -> str:
         return f"{self.x}_{self.y}"
@@ -173,6 +174,7 @@ class MapTile:
                     # LOGGER.debug(f"x: {str(self.x)}, y: {str(self.y)}, s: {str(self.s)}\n")
 
         if os.path.isfile(impath):
+            self.has_non_zero_pixel = True
             return plt.imread(impath, "jpeg")
         else:
             return np.zeros((TILE_SIZE, TILE_SIZE, 3), dtype=np.uint8) # np generates float by default, pillow doesnt support that
@@ -308,15 +310,18 @@ class TileGrid:
 
             t1 = time.perf_counter()
 
+            has_non_zero_pixel_in_image = False
             img = None
             for i in self.ta:
                 row = None
                 for j in i:
                     row = appendh(row, j.getImage())
+                    if j.has_non_zero_pixel is True:
+                        has_non_zero_pixel_in_image = True
 
                 img = appendv(img, row)
 
-            if img.flatten().sum() != 0:
+            if has_non_zero_pixel_in_image is True:
                 plt.imsave(outfile, img)
 
             t2 = time.perf_counter()

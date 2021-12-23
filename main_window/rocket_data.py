@@ -245,19 +245,19 @@ class RocketData:
                 lambda data_entry_key: DataEntryKey(data_entry_key.full_address, data_entry_key.data_id),
                 set(self.keyset.keys())))
 
-            device_names = list(map(lambda x: (x.data_id.name if isinstance(x.data_id, DataEntryIds) else str(x.data_id))
-                      + (self.device_manager.get_device_type(x.full_address).name if self.device_manager.get_device_type(x.full_address)
-                         else f"{x.full_address.connection_name}_{x.full_address.device_address}"), keys))
+            column_names = list(map(lambda x: (x.data_id.name if isinstance(x.data_id, DataEntryIds) else str(x.data_id)) + '_'
+                + (self.device_manager.get_device_type(x.full_address).name if self.device_manager.get_device_type(x.full_address)
+                else f"{x.full_address.connection_name}_{x.full_address.device_address}"), keys))
 
             #sort keys based on device name (alphabetically)
-            device_names, keys = zip(*sorted(zip(device_names, keys)))
+            column_names, keys = zip(*sorted(zip(column_names, keys)))
 
             data = np.empty((len(keys), len(self.timeset) + 1), dtype=object)
             times = list(self.timeset.keys())
             for ix, iy in np.ndindex(data.shape):
                 # Make the first row a list of sensor names. Use the enum's name property
                 if iy == 0:
-                    data[ix, iy] = device_names[ix]
+                    data[ix, iy] = column_names[ix]
                 # For a time entry, copy over from time list
                 elif keys[ix].data_id == DataEntryIds.TIME:
                     data[ix, iy] = times[iy - 1]

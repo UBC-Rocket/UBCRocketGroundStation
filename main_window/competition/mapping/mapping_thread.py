@@ -51,6 +51,8 @@ class MappingThread(QtCore.QThread):
         self._desiredMapSize: tuple(int, int) = None  # Lock in cv is used to protect this
         self._is_shutting_down = False  # Lock in cv is used to protect this
 
+        self.crop_factor = 1
+
         # Condition variable to watch for notification of new lat and lon
         self.cv = threading.Condition()  # Uses RLock inside when none is provided
 
@@ -145,12 +147,12 @@ class MappingThread(QtCore.QThread):
         # Create MapPoints that correspond to corners of a square area (of side length 2*radius) surrounding the
         # inputted latitude and longitude. Radius is in km
 
-        lat1 = avg_latitude + max_lat_diff + radius / 110.574
-        lon1 = avg_longitude - max_long_diff - radius / 111.320 / math.cos(lat1 * math.pi / 180.0)
+        lat1 = avg_latitude + (max_lat_diff + radius / 110.574)*self.crop_factor
+        lon1 = avg_longitude - (max_long_diff + radius / 111.320 / math.cos(lat1 * math.pi / 180.0))*self.crop_factor
         p1 = mapbox_utils.MapPoint(lat1, lon1)  # Map corner 1
 
-        lat2 = avg_latitude - max_lat_diff - radius / 110.574
-        lon2 = avg_longitude + max_long_diff + radius / 111.320 / math.cos(lat2 * math.pi / 180.0)
+        lat2 = avg_latitude - (max_lat_diff + radius / 110.574)*self.crop_factor
+        lon2 = avg_longitude + (max_long_diff + radius / 111.320 / math.cos(lat2 * math.pi / 180.0))*self.crop_factor
         p2 = mapbox_utils.MapPoint(lat2, lon2)  # Map corner 2
 
         desiredSize = self.getDesiredMapSize()  # x,y

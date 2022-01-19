@@ -66,6 +66,13 @@ class CompApp(MainApp, Ui_MainWindow):
                 view_device.triggered.connect(lambda: self.set_view_device(i+1))
                 map_view_menu.addAction(view_device)
 
+        #Map zoom slider
+        #TODO: FINISH THIS OFF
+        self.horizontalSlider.setMinimum(1) #half zoom?
+        self.horizontalSlider.setMaximum(3)
+        self.horizontalSlider.setValue(2)
+        self.horizontalSlider.valueChanged.connect(self.map_crop)
+
         # Hook into some of commandEdit's events
         qtHook(self.commandEdit, 'focusNextPrevChild', lambda _: False, override_return=True)  # Prevents tab from changing focus
         qtHook(self.commandEdit, 'keyPressEvent', self.command_edit_key_pressed)
@@ -431,6 +438,10 @@ class CompApp(MainApp, Ui_MainWindow):
 
     def set_view_device(self, device_num) -> None:
         self.MappingThread.setViewedDevice(device_num)
+
+    def map_crop(self) -> None:
+        print("Slider", self.horizontalSlider.value())
+        self.MappingThread.crop_factor = self.horizontalSlider.value()/2
 
     def shutdown(self):
         self.save_view()

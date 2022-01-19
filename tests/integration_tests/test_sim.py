@@ -84,6 +84,24 @@ class TestFlare:
         assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.VERSION_ID) is not None
         assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.DEVICE_TYPE) == device_type
 
+    def test_config_change_gs_address(self, qtbot, sim_app, device_type):
+        flush_packets(sim_app, device_type)
+
+        snapshot = get_event_stats_snapshot()
+
+        sim_app.send_command(device_type.name + ".config")
+        flush_packets(sim_app, device_type)
+
+        assert CONFIG_EVENT.wait(snapshot) == 1
+
+        for connection in sim_app.connections.values():
+            connection._xbee.gs_address = b'\x00\x13\xa2\x00Ag\x8f\xc1'
+
+        sim_app.send_command(device_type.name + ".config")
+        flush_packets(sim_app, device_type)
+
+        assert CONFIG_EVENT.wait(snapshot, num_expected=2) == 2
+
     def test_gps_read(self, qtbot, sim_app, device_type):
         test_vals = [
             (11, 12, 13),

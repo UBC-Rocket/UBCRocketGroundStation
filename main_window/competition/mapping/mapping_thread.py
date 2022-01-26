@@ -45,7 +45,7 @@ class MappingThread(QtCore.QThread):
         self.map = map_data
         self.rocket_data = rocket_data
 
-        self.devices = rocket_profile.mapping_device #List of mappable devices
+        self.devices = rocket_profile.mapping_devices #List of mappable devices
         self.viewed_devices = self.devices #List of devices currently being viewed
 
         self._desiredMapSize: tuple(int, int) = None  # Lock in cv is used to protect this
@@ -88,15 +88,14 @@ class MappingThread(QtCore.QThread):
         with self.cv:
             self.cv.notify()
 
-    def setViewedDevice(self, device_number) -> None:
+    def setViewedDevice(self, devices) -> None:
         """
 
-        :param device_number
-        :type device_number: int
+        :param devices
+        :type devices: list of rocket devices
         """
         with self.cv:
-            #device_number 0 = view all devices, device_number 1 = view first device
-            self.viewed_devices = [self.devices[device_number - 1]] if device_number != 0 else self.devices
+            self.viewed_devices = devices
 
 
     def setDesiredMapSize(self, x, y) -> None:
@@ -121,26 +120,26 @@ class MappingThread(QtCore.QThread):
             return self._desiredMapSize
 
     # Draw and show the map on the UI
-    def plotMap(self, latitudes: float, longitudes: float, radius: float, zoom: float):
+    def plotMap(self, latitudes, longitudes, radius: float, zoom: float):
         """
 
-        :param latitude:
-        :type latitude: float
-        :param longitude:
-        :type longitude: float
+        :param latitudes:
+        :type latitudes: dict[device, float]
+        :param longitudes:
+        :type longitudes: dict[device, float]
         :return:
         :rtype:
         """
-        if (None in latitudes) or (None in longitudes):
+        if (None in latitudes.values()) or (None in longitudes.values()):
              return False
 
         #Calculate average of device points
-        avg_latitude = sum(latitudes)/len(latitudes)
-        avg_longitude = sum(longitudes) / len(longitudes)
+        avg_latitude = sum(latitudes.values())/len(latitudes)
+        avg_longitude = sum(longitudes.values()) / len(longitudes)
 
         #Maximum distance between points and average
-        max_lat_diff = max(map(lambda lat: abs(lat - avg_latitude), latitudes))
-        max_long_diff = max(map(lambda long: abs(long - avg_longitude), longitudes))
+        max_lat_diff = max(map(lambda lat: abs(lat - avg_latitude), latitudes.values()))
+        max_long_diff = max(map(lambda long: abs(long - avg_longitude), longitudes.values()))
 
         p0 = mapbox_utils.MapPoint(avg_latitude, avg_longitude)  # Point of interest
 
@@ -178,8 +177,9 @@ class MappingThread(QtCore.QThread):
 
         # Update mark coordinates
         marks = [] #list of device locations
-        for i in range(len(self.viewed_devices)):
-            p = mapbox_utils.MapPoint(latitudes[i], longitudes[i])
+        # using latitude keys instead of viewed_devices in case more devices are added before latitudes is updated
+        for device in latitudes.keys():
+            p = mapbox_utils.MapPoint(latitudes[device], longitudes[device])
             x = (p.x - xMin) / (xMax - xMin)
             y = (p.y - yMin) / (yMax - yMin)
             mark = (x * resizedMapImage.shape[1], y * resizedMapImage.shape[0])
@@ -200,7 +200,7 @@ class MappingThread(QtCore.QThread):
 
         """
         LOGGER.debug("Mapping thread started")
-        last_latitude = None #list of latitudes for each device
+        last_latitude = None
         last_longitude = None
         last_desired_size = None
         last_update_time = 0
@@ -217,17 +217,17 @@ class MappingThread(QtCore.QThread):
                     time.sleep(0.5)
 
                 # copy location values to use, to keep the values consistent in synchronous but adjacent calls
-                latitudes = [None]*len(self.viewed_devices)
-                longitudes = [None]*len(self.viewed_devices)
+                latitudes = dict()
+                longitudes = dict()
 
-                for i, device in enumerate(self.viewed_devices):
-                    latitudes[i] = self.rocket_data.last_value_by_device(device, DataEntryIds.LATITUDE)
-                    longitudes[i] = self.rocket_data.last_value_by_device(device, DataEntryIds.LONGITUDE)
+                for device in self.viewed_devices:
+                    latitudes[device] = self.rocket_data.last_value_by_device(device, DataEntryIds.LATITUDE)
+                    longitudes[device] = self.rocket_data.last_value_by_device(device, DataEntryIds.LONGITUDE)
 
                 desired_size = self.getDesiredMapSize()
 
                 # Prevent unnecessary work while no location data is received
-                if (None in latitudes) or (None in longitudes):
+                if (None in latitudes.values()) or (None in longitudes.values()):
                     continue
 
                 # Prevent unnecessary work while data hasnt changed

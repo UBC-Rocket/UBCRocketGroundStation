@@ -52,18 +52,18 @@ class CompApp(MainApp, Ui_MainWindow):
         self.actionReset.triggered.connect(self.reset_view)
 
         #Menubar for choosing rocket device view
-        self.devices = rocket_profile.mapping_device
+        self.devices = rocket_profile.mapping_devices
         if len(self.devices) > 1:
             view_menu = self.menuBar().children()[2]
             map_view_menu = view_menu.addMenu("Map")
 
             view_all = QAction("All", self)
-            view_all.triggered.connect(lambda: self.set_view_device(0))
+            view_all.triggered.connect(lambda: self.set_view_device(self.devices))
             map_view_menu.addAction(view_all)
 
-            for i, rocket in enumerate(self.devices):
-                view_device = QAction(f'{rocket.name}', self)
-                view_device.triggered.connect(lambda: self.set_view_device(i+1))
+            for device in self.devices:
+                view_device = QAction(f'{device.name}', self)
+                view_device.triggered.connect(lambda: self.set_view_device([device]))
                 map_view_menu.addAction(view_device)
 
         #Map zoom slider
@@ -436,8 +436,8 @@ class CompApp(MainApp, Ui_MainWindow):
         """
         self.MappingThread.setDesiredMapSize(event.width, event.height)
 
-    def set_view_device(self, device_num) -> None:
-        self.MappingThread.setViewedDevice(device_num)
+    def set_view_device(self, viewedDevices) -> None:
+        self.MappingThread.setViewedDevice(viewedDevices)
 
     def map_crop(self) -> None:
         print("Slider", self.horizontalSlider.value())

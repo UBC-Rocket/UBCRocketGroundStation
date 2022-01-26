@@ -37,7 +37,7 @@ class RocketProfile(ABC):
 
     @property
     @abstractmethod
-    def mapping_device(self) -> List[DeviceType]:
+    def mapping_devices(self) -> List[DeviceType]:
         pass
 
     @property

@@ -45,8 +45,8 @@ class CoPilotProfile(RocketProfile):
         return [DeviceType.CO_PILOT_FLARE]
 
     @property
-    def mapping_device(self):
-        return DeviceType.CO_PILOT_FLARE
+    def mapping_devices(self):
+        return [DeviceType.CO_PILOT_FLARE]
 
     @property
     def required_device_versions(self):

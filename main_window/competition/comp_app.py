@@ -66,12 +66,15 @@ class CompApp(MainApp, Ui_MainWindow):
                 view_device.triggered.connect(lambda: self.set_view_device([device]))
                 map_view_menu.addAction(view_device)
 
-        #Map zoom slider
-        #TODO: FINISH THIS OFF
-        self.horizontalSlider.setMinimum(1) #half zoom?
-        self.horizontalSlider.setMaximum(3)
-        self.horizontalSlider.setValue(2)
-        self.horizontalSlider.valueChanged.connect(self.map_crop)
+        # Map zoom slider
+        self.numTicks = 4
+        self.max_zoom = 2 #zoom out scale
+        self.min_zoom = 0.5 #zoom in scale
+
+        self.horizontalSlider.setMinimum(0)
+        self.horizontalSlider.setMaximum(self.numTicks)
+        self.horizontalSlider.setValue(self.numTicks/2)
+        self.horizontalSlider.valueChanged.connect(self.map_zoomed)
 
         # Hook into some of commandEdit's events
         qtHook(self.commandEdit, 'focusNextPrevChild', lambda _: False, override_return=True)  # Prevents tab from changing focus
@@ -439,9 +442,16 @@ class CompApp(MainApp, Ui_MainWindow):
     def set_view_device(self, viewedDevices) -> None:
         self.MappingThread.setViewedDevice(viewedDevices)
 
-    def map_crop(self) -> None:
-        print("Slider", self.horizontalSlider.value())
-        self.MappingThread.crop_factor = self.horizontalSlider.value()/2
+    def map_zoomed(self) -> None:
+
+        slider_span = self.numTicks
+        zoom_span = self.max_zoom - self.min_zoom
+
+        #map slider value to zoom level
+        slider_scaled = float(self.horizontalSlider.value())/float(slider_span)
+        zoom_factor = self.min_zoom + (slider_scaled * zoom_span)
+
+        self.MappingThread.setMapZoom(zoom_factor)
 
     def shutdown(self):
         self.save_view()

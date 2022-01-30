@@ -183,10 +183,6 @@ class MappingThread(QtCore.QThread):
             mark = (x * resizedMapImage.shape[1], y * resizedMapImage.shape[0])
             marks.append(mark)
 
-        # Because of the cropping, the mark should be in the middle:
-        # assert abs(marks[0] - resizedMapImage.shape[1] / 2) < 1  # x
-        # assert abs(marks[0] - resizedMapImage.shape[0] / 2) < 1  # y
-
         map_data_value = MapDataValue(zoom=zoom, radius=radius, image=resizedMapImage, mark=marks)
         self.map.set_map_value(map_data_value)
 

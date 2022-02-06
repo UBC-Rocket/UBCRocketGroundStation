@@ -23,4 +23,12 @@ jobs:
         uses: tj-actions/changed-files@v11.5
     - name: Analysing the code with pylint
       run: |
-        pylint $(git ls-files '*.py')
+        PYTHONFILES=""
+        for file in ${{ steps.changed-files.outputs.all_modified_files }}; do
+          if [[ -f $file && $file == *.py ]]
+            then
+              PYTHONFILES="${PYTHONFILES} $file"
+            fi
+        done
+        echo $PYTHONFILES
+        pylint $PYTHONFILES

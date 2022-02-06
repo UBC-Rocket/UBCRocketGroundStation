@@ -137,15 +137,16 @@ class TestFlare:
         assert hw.get_pin_mode(34) == PinModes.OUTPUT
 
     def test_voltage_reading(self, qtbot, sim_app, device_type):
-        voltage_sensor = VoltageSensor(36)
-        assert voltage_sensor.last_val == 0
-
-        hw = get_hw_sim(sim_app, device_type)
-        hw.replace_sensor(voltage_sensor)
-
         flush_packets(sim_app, device_type)
 
-        assert voltage_sensor.last_val == VoltageSensor.NOMINAL_VOLTAGE
+        snapshot = get_event_stats_snapshot()
+        sim_app.send_command(device_type.name + ".VOLT")
+        assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
+
+        last_voltage = sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.VOLTAGE)
+        assert(round(last_voltage, 1) == VoltageSensor.NOMINAL_VOLTAGE)
+
+        # TODO: Test for voltage too low
 
     def test_baro_altitude(self, qtbot, sim_app, device_type):
         Pb = 101325

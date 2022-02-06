@@ -36,10 +36,6 @@ class HWSim:
 
         self._sensors = {s.get_type(): s for s in sensors}
 
-        self._voltage_sensor = None
-        if SensorType.VOLTAGE in self._sensors:
-            self._voltage_sensor = self._sensors[SensorType.VOLTAGE]
-
         self._ignitors = {i.type: i for i in ignitors}
         self._ignitor_tests = {i.test_pin: i for i in ignitors}
         self._ignitor_reads = {i.read_pin: i for i in ignitors}
@@ -53,8 +49,9 @@ class HWSim:
         :param mode: The mode you want to set the pin to -> 0 for INPUT and 1 for OUTPUT
         """
         with self._lock:
-            self._pin_modes[pin] = mode
-            LOGGER.debug(f"Pin mode of pin={pin} set to={mode}")
+            if pin not in self._pin_modes or self._pin_modes[pin] != mode:
+                self._pin_modes[pin] = mode
+                LOGGER.debug(f"Pin mode of pin={pin} set to={mode}")
 
     def get_pin_mode(self, pin):
         """
@@ -86,11 +83,13 @@ class HWSim:
             val = 0
             if pin in self._ignitor_reads:
                 val = self._ignitor_reads[pin].read()
+                LOGGER.debug(f"Analog read from pin={pin} returned value={val}")
 
-            elif self._voltage_sensor and pin == self._voltage_sensor.pin:
-                val = self._voltage_sensor.read()
+            else:
+                voltage_sensor = self._sensors[SensorType.VOLTAGE]
+                if voltage_sensor is not None and pin == voltage_sensor.pin:
+                    val = self._sensors[SensorType.VOLTAGE].read()
 
-            LOGGER.debug(f"Analog read from pin={pin} returned value={val}")
             return val
 
     def sensor_read(self, sensor_type: SensorType) -> tuple:
@@ -132,11 +131,7 @@ class HWSim:
 
     def replace_sensor(self, new_sensor: Sensor):
         with self._lock:
-            if new_sensor.get_type() != SensorType.VOLTAGE:
-                self._sensors[new_sensor.get_type()] = new_sensor
-
-            else:
-                self._voltage_sensor = new_sensor
+            self._sensors[new_sensor.get_type()] = new_sensor
 
     def pause(self):
         with self._lock:

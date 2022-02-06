@@ -11,7 +11,7 @@ from main_window.packet_parser import PacketParser, Header
 BULK_SENSOR_EVENT = Event('bulk_sensor')
 
 # Aggregated DataEntryIds for iteration. Outside function for access by tests
-SENSOR_TYPES = [DataEntryIds.BAROMETER, DataEntryIds.GPS, DataEntryIds.ACCELEROMETER, DataEntryIds.IMU, DataEntryIds.TEMPERATURE]
+SENSOR_TYPES = [DataEntryIds.BAROMETER, DataEntryIds.GPS, DataEntryIds.ACCELEROMETER, DataEntryIds.IMU, DataEntryIds.TEMPERATURE, DataEntryIds.VOLTAGE]
 OTHER_STATUS_TYPES = [DataEntryIds.DROGUE_IGNITER_CONTINUITY, DataEntryIds.MAIN_IGNITER_CONTINUITY, DataEntryIds.FILE_OPEN_SUCCESS]
 
 # Converting bit array status to readable values

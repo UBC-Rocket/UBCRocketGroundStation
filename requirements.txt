@@ -4,12 +4,12 @@ numpy==1.15.4
 matplotlib==3.0.2
 PyQt5==5.12.1
 pyserial==3.4
-PyInstaller==4.0
+PyInstaller==4.9
 mapbox==0.18.0
 pytest==5.4.3
 pytest-mock==3.1.1
 pytest-qt==3.3.0
 coverage==5.1
-setuptools>=50.3.2
+setuptools==60.7.1
 sortedcontainers==2.1.0
 git+https://github.com/SilentSys/orhelper.git@bc240170b8fde9077c7e4ab6cd2aa01ace142a36#egg=orhelper

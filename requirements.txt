@@ -12,4 +12,4 @@ pytest-qt==3.3.0
 coverage==5.1
 setuptools==60.7.1
 sortedcontainers==2.1.0
-git+https://github.com/SilentSys/orhelper.git@bc240170b8fde9077c7e4ab6cd2aa01ace142a36#egg=orhelper
+orhelper==0.1.3

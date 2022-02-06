@@ -118,11 +118,13 @@ def build_step():
     print("Running PyInstaller...")
     hidden_imports = [f"--hidden-import={i}" for i in HIDDEN_IMPORTS]
     data_files = [f"--add-data={i}{PYINSTALLER_SEPARATOR}{parent_dir(i)}" for i in DATA_FILES]
+    splash = f"--splash {SPLASH_IMAGE}" if sys.platform != 'darwin' else ""  # Splash not currently supported on MacOS
     _run(VENV_PYINSTALLER, ['--onefile',
                             ENTRY_POINT,
+                            '--console',
                             '--name', EXECUTABLE_NAME,
-                            '--splash', SPLASH_IMAGE,
                             '--icon', ICON_FILE,
+                            splash,
                             ] + hidden_imports + data_files)
 
     os.remove(GIT_HASH_FILE)

@@ -1,3 +1,4 @@
+import os
 import sys
 import multiprocessing
 import argparse
@@ -7,7 +8,7 @@ from com_window.main import ComWindow
 from PyQt5 import QtWidgets, QtCore
 from profiles.rockets.tantalus import TantalusProfile
 from util.self_test import SelfTest
-from util.detail import IS_PYINSTALLER
+from util.detail import IS_PYINSTALLER, LOGGER
 
 if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
     QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
@@ -35,10 +36,13 @@ if __name__ == "__main__":
     font.setPointSize(max(MIN_APP_FONT_POINT_SIZE, font.pointSize()))
     app.setFont(font)
 
-    if IS_PYINSTALLER:
+    if IS_PYINSTALLER and '_PYIBoot_SPLASH' in os.environ:
         # Now that we are all loaded, close the splash screen
-        import pyi_splash
-        pyi_splash.close()
+        try: # pyi_splash is not a real module, its only available if splash was successfully included in the build
+            import pyi_splash
+            pyi_splash.close()
+        except:
+            LOGGER.debug("pyi_splash module expected but not found")
 
     if not args.self_test:
         # Open com_window dialog to get startup details

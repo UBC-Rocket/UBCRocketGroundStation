@@ -146,6 +146,20 @@ class TestFlare:
         last_voltage = sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.VOLTAGE)
         assert(round(last_voltage, 1) == VoltageSensor.NOMINAL_VOLTAGE)
 
+        # 863mV gets converted to 10.9V in battery.cpp in FLARE 21899292dc39015570f795ef9e607081aab57e3e
+        updated_voltage_sensor = VoltageSensor(voltage_read_input=863)
+        hw = get_hw_sim(sim_app, device_type)
+        hw.replace_sensor(updated_voltage_sensor)
+
+        flush_packets(sim_app, device_type)
+
+        snapshot = get_event_stats_snapshot()
+        sim_app.send_command(device_type.name + ".VOLT")
+        assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
+
+        last_voltage = sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.VOLTAGE)
+        assert(round(last_voltage, 1) == 10.9)
+
         # TODO: Test for voltage too low
 
     def test_baro_altitude(self, qtbot, sim_app, device_type):

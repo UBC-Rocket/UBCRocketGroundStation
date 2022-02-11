@@ -143,11 +143,11 @@ class TestFlare:
         sim_app.send_command(device_type.name + ".VOLT")
         assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
 
-        last_voltage = sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.VOLTAGE)
-        assert(round(last_voltage, 1) == VoltageSensor.NOMINAL_VOLTAGE)
+        last_battery_voltage = sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.VOLTAGE)
+        assert(round(last_battery_voltage, 1) == VoltageSensor.NOMINAL_BATTERY_VOLTAGE)
 
-        # 863mV gets converted to 10.9V in battery.cpp in FLARE 21899292dc39015570f795ef9e607081aab57e3e
-        updated_voltage_sensor = VoltageSensor(voltage_read_input=863)
+        # The ADC level of 863 gets converted to 10.9V in battery.cpp in FLARE 21899292dc39015570f795ef9e607081aab57e3e
+        updated_voltage_sensor = VoltageSensor(dummy_adc_level=863)
         hw = get_hw_sim(sim_app, device_type)
         hw.replace_sensor(updated_voltage_sensor)
 
@@ -157,8 +157,8 @@ class TestFlare:
         sim_app.send_command(device_type.name + ".VOLT")
         assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
 
-        last_voltage = sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.VOLTAGE)
-        assert(round(last_voltage, 1) == 10.9)
+        last_battery_voltage = sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.VOLTAGE)
+        assert(round(last_battery_voltage, 1) == 10.9)
 
         # TODO: Test for voltage too low
 

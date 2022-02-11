@@ -6,28 +6,27 @@ class VoltageSensor(Sensor):
     Simulates the hardware used for measuring battery voltage.
     """
 
-    # 920mV is the value that gets converted to 11.6V in battery.cpp in FLARE 21899292dc39015570f795ef9e607081aab57e3e
-    NOMINAL_VOLTAGE_READ_INPUT = 920
-    NOMINAL_VOLTAGE = 11.6
+    # The ADC level of 920 gets converted to 11.6V in battery.cpp in FLARE 21899292dc39015570f795ef9e607081aab57e3e
+    NOMINAL_ADC_LEVEL = 920
+    NOMINAL_BATTERY_VOLTAGE = 11.6
 
-    def __init__(self, pin: int = 36, voltage_read_input: int = NOMINAL_VOLTAGE_READ_INPUT):
+    def __init__(self, pin: int = 36, dummy_adc_level: int = NOMINAL_ADC_LEVEL):
         """
         In firmware's usage, to simulate the sensor used to read the battery's voltage
-        :param pin The pin whose value will be read from and which will be converted to a voltage level
+        :param pin: The pin whose value (raw ADC level between 0 and 1023) will be read from
+        :param dummy_adc_level: The ADC level which gets converted to pin voltage then battery voltage during a read
         """
 
         self._pin = pin
-        self._voltage = voltage_read_input
+        self._adc_level = dummy_adc_level
         self.sensor_type = SensorType.VOLTAGE
 
     def read(self):
         """
-        :brief: Simulate voltage level from output pin.
-        :return: Voltage level obtained by mapping analogRead value onto a voltage level.
-        :note: currently a dummy implementation that returns a constant value
+        :brief: Simulate ADC level from output pin
         """
 
-        return self._voltage
+        return self._adc_level
 
     @property
     def pin(self):

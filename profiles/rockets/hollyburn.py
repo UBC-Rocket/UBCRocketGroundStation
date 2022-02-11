@@ -62,8 +62,8 @@ class HollyburnProfile(RocketProfile):
         ]
 
     @property
-    def mapping_device(self):
-        return DeviceType.HOLLYBURN_NOSE_FLARE
+    def mapping_devices(self):
+        return [DeviceType.HOLLYBURN_NOSE_FLARE]
 
     @property
     def required_device_versions(self):

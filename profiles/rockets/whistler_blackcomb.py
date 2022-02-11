@@ -26,7 +26,7 @@ class WbProfile(RocketProfile):
         return None
 
     @property
-    def mapping_device(self):
+    def mapping_devices(self):
         return None
 
     @property

@@ -3,6 +3,7 @@ import os
 from typing import Callable, Dict
 import logging
 
+from PyQt5.QtWidgets import QAction
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 from PIL import Image
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
@@ -49,6 +50,21 @@ class CompApp(MainApp, Ui_MainWindow):
         self.actionSave.triggered.connect(self.save_file)
         self.actionSave.setShortcut("Ctrl+S")
         self.actionReset.triggered.connect(self.reset_view)
+
+        #Menubar for choosing rocket device view
+        self.devices = rocket_profile.mapping_devices
+        if len(self.devices) > 1:
+            view_menu = self.menuBar().children()[2]
+            map_view_menu = view_menu.addMenu("Map")
+
+            view_all = QAction("All", self)
+            view_all.triggered.connect(lambda: self.set_view_device(self.devices))
+            map_view_menu.addAction(view_all)
+
+            for device in self.devices:
+                view_device = QAction(f'{device.name}', self)
+                view_device.triggered.connect(lambda: self.set_view_device([device]))
+                map_view_menu.addAction(view_device)
 
         # Hook into some of commandEdit's events
         qtHook(self.commandEdit, 'focusNextPrevChild', lambda _: False, override_return=True)  # Prevents tab from changing focus
@@ -394,11 +410,12 @@ class CompApp(MainApp, Ui_MainWindow):
         self.im = self.plotWidget.canvas.ax.imshow(map_image)
 
         # updateMark UI modification
-        annotation_box = AnnotationBbox(OffsetImage(MAP_MARKER), mark, frameon=False)
-        self.plotWidget.canvas.ax.add_artist(annotation_box)
+        for i in range(len(mark)):
+            annotation_box = AnnotationBbox(OffsetImage(MAP_MARKER), mark[i], frameon=False)
+            self.plotWidget.canvas.ax.add_artist(annotation_box)
 
         # For debugging marker position
-        #self.plotWidget.canvas.ax.plot(mark[0], mark[1], marker='o', markersize=3, color="red")
+        #self.plotWidget.canvas.ax.plot(mark[1][0], mark[1][1], marker='o', markersize=3, color="red")
 
         self.plotWidget.canvas.draw()
 
@@ -411,6 +428,9 @@ class CompApp(MainApp, Ui_MainWindow):
         :type event:
         """
         self.MappingThread.setDesiredMapSize(event.width, event.height)
+
+    def set_view_device(self, viewedDevices) -> None:
+        self.MappingThread.setViewedDevice(viewedDevices)
 
     def shutdown(self):
         self.save_view()

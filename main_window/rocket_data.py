@@ -1,5 +1,6 @@
 import os
 import threading
+import time
 from enum import Enum
 from typing import Dict, Union, Set, Callable, List, Optional
 from collections import namedtuple
@@ -51,6 +52,7 @@ class RocketData:
 
         """
         LOGGER.debug("Auto-save thread started")
+
         while True:
 
             with self.as_cv:
@@ -60,8 +62,11 @@ class RocketData:
                     break
 
             try:
+                t1 = time.perf_counter()
                 self.save(self.session_name)
-                LOGGER.debug("Auto-Save successful.")
+                t2 = time.perf_counter()
+                # LOGGER.debug("Auto-Save Successful.")
+                LOGGER.debug(f"Successfully Auto-Saved in {t2 - t1} seconds.")
             except Exception as e:
                 LOGGER.exception("Exception in autosave thread")  # Automatically grabs and prints exception info
 
@@ -240,17 +245,19 @@ class RocketData:
                 lambda data_entry_key: DataEntryKey(data_entry_key.full_address, data_entry_key.data_id),
                 set(self.keyset.keys())))
 
+            column_names = list(map(lambda x: (x.data_id.name if isinstance(x.data_id, DataEntryIds) else str(x.data_id)) + '_'
+                + (self.device_manager.get_device_type(x.full_address).name if self.device_manager.get_device_type(x.full_address)
+                else f"{x.full_address.connection_name}_{x.full_address.device_address}"), keys))
+
+            #sort keys based on device name (alphabetically)
+            column_names, keys = zip(*sorted(zip(column_names, keys)))
+
             data = np.empty((len(keys), len(self.timeset) + 1), dtype=object)
             times = list(self.timeset.keys())
             for ix, iy in np.ndindex(data.shape):
                 # Make the first row a list of sensor names. Use the enum's name property
                 if iy == 0:
-                    data_name = keys[ix].data_id.name if isinstance(keys[ix].data_id, DataEntryIds) else str(keys[ix].data_id)
-                    device = self.device_manager.get_device_type(keys[ix].full_address)
-                    device_name = device.name if device else \
-                        f"{keys[ix].full_address.connection_name}_{keys[ix].full_address.device_address}"
-
-                    data[ix, iy] = data_name + '_' + device_name
+                    data[ix, iy] = column_names[ix]
                 # For a time entry, copy over from time list
                 elif keys[ix].data_id == DataEntryIds.TIME:
                     data[ix, iy] = times[iy - 1]
@@ -262,8 +269,8 @@ class RocketData:
                 else:
                     data[ix, iy] = ""
 
-        np.savetxt(csv_path, np.transpose(data), delimiter=',',
-                   fmt="%s")  # Can free up the lock while we save since were no longer accessing the original data
+        # Can free up the lock while we save since were no longer accessing the original data
+        np.savetxt(csv_path, np.transpose(data), delimiter=',', fmt="%s")
 
     # TODO Missing unit test
     def add_new_callback(self, device: DeviceType, data_id: DataEntryIds, callback_fn: Callable):

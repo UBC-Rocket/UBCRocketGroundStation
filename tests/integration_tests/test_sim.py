@@ -9,6 +9,7 @@ from connections.sim.sim_connection import FirmwareNotFound
 from connections.sim.hw.hw_sim import HWSim, PinModes
 from connections.sim.hw.sensors.sensor import SensorType
 from connections.sim.hw.sensors.dummy_sensor import DummySensor
+from connections.sim.hw.sensors.voltage_sensor_sim import VoltageSensor
 from connections.sim.hw.rocket_sim import FlightEvent, FlightDataType
 from main_window.competition.comp_app import CompApp
 from main_window.data_entry_id import DataEntryIds, DataEntryValues
@@ -38,6 +39,7 @@ def sim_app(test_app, request) -> CompApp:
 def get_hw_sim(sim_app, device_type: DeviceType) -> HWSim:
     connection_name = sim_app.device_manager.get_full_address(device_type).connection_name
     return sim_app.connections[connection_name]._hw_sim
+
 
 def get_profile(sim_app) -> RocketProfile:
     return sim_app.rocket_profile
@@ -133,6 +135,32 @@ class TestFlare:
         assert hw.get_pin_mode(35) == PinModes.INPUT
         assert hw.get_pin_mode(17) == PinModes.INPUT
         assert hw.get_pin_mode(34) == PinModes.OUTPUT
+
+    def test_voltage_reading(self, qtbot, sim_app, device_type):
+        flush_packets(sim_app, device_type)
+
+        snapshot = get_event_stats_snapshot()
+        sim_app.send_command(device_type.name + ".VOLT")
+        assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
+
+        last_battery_voltage = sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.VOLTAGE)
+        assert(round(last_battery_voltage, 1) == VoltageSensor.NOMINAL_BATTERY_VOLTAGE)
+
+        # The ADC level of 863 gets converted to 10.9V in battery.cpp in FLARE 21899292dc39015570f795ef9e607081aab57e3e
+        updated_voltage_sensor = VoltageSensor(dummy_adc_level=863)
+        hw = get_hw_sim(sim_app, device_type)
+        hw.replace_sensor(updated_voltage_sensor)
+
+        flush_packets(sim_app, device_type)
+
+        snapshot = get_event_stats_snapshot()
+        sim_app.send_command(device_type.name + ".VOLT")
+        assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
+
+        last_battery_voltage = sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.VOLTAGE)
+        assert(round(last_battery_voltage, 1) == 10.9)
+
+        # TODO: Test for voltage too low
 
     def test_baro_altitude(self, qtbot, sim_app, device_type):
         Pb = 101325

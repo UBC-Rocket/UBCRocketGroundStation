@@ -9,6 +9,7 @@ class SensorType(Enum):
     BAROMETER = auto()
     TEMPERATURE = auto()
     THERMOCOUPLE = auto()
+    VOLTAGE = auto()
 
 
 REQUIRED_SENSOR_FLOATS = {
@@ -17,7 +18,8 @@ REQUIRED_SENSOR_FLOATS = {
     SensorType.ACCELEROMETER: 3,
     SensorType.BAROMETER: 2,
     SensorType.TEMPERATURE: 1,
-    SensorType.THERMOCOUPLE: 1
+    SensorType.THERMOCOUPLE: 1,
+    SensorType.VOLTAGE: 1
 }
 
 

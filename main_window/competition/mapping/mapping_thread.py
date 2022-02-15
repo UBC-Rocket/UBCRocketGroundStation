@@ -46,7 +46,6 @@ class MappingThread(QtCore.QThread):
         self.rocket_data = rocket_data
 
         self.devices = rocket_profile.mapping_devices #List of mappable devices
-        self.device_status = {device:True for device in self.devices} #Data is received, false when data null
         self.viewed_devices = self.devices #List of devices currently being viewed
 
         self._desiredMapSize: tuple(int, int) = None  # Lock in cv is used to protect this
@@ -96,7 +95,7 @@ class MappingThread(QtCore.QThread):
         with self.cv:
             self.viewed_devices = devices
             for device in self.viewed_devices:
-                if self.device_status[device] == False: #no data for this device
+                if self.rocket_data.last_value_by_device(device, DataEntryIds.LATITUDE) is None:
                     LOGGER.warning("Data unavailable for {}".format(device.name))
 
             self.notify()
@@ -227,9 +226,6 @@ class MappingThread(QtCore.QThread):
                     longitude = self.rocket_data.last_value_by_device(device, DataEntryIds.LONGITUDE)
                     if latitude and longitude: #plot on map if data not None
                         latitudes[device], longitudes[device] = latitude, longitude
-                        self.device_status[device] = True
-                    else:
-                        self.device_status[device] = False
 
                 desired_size = self.getDesiredMapSize()
 

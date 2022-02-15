@@ -40,7 +40,6 @@ class CompApp(MainApp, Ui_MainWindow):
         super().__init__(connections, rocket_profile)
 
         self.map_data = map_data.MapData()
-        self.devices = rocket_profile.mapping_devices
         self.im = None  # Plot im
 
         self.command_history = []
@@ -175,16 +174,16 @@ class CompApp(MainApp, Ui_MainWindow):
 
     def setup_view_menu(self) -> None:
         # Menubar for choosing rocket device view
-        if len(self.devices) > 1:
+        if len(self.rocket_profile.mapping_devices) > 1:
             view_menu = self.menuBar().children()[2]
             self.map_view_menu = view_menu.addMenu("Map")
 
             view_all = QAction("All", self)
-            all_devices = self.devices
+            all_devices = self.rocket_profile.mapping_devices
             view_all.triggered.connect(lambda i, all_devices = all_devices: self.set_view_device(all_devices))
             self.map_view_menu.addAction(view_all)
 
-        for device in self.devices:
+        for device in self.rocket_profile.mapping_devices:
             view_device = QAction(f'{device}', self)
             view_device.triggered.connect(lambda i, device=device: self.set_view_device([device]))
             self.map_view_menu.addAction(view_device)

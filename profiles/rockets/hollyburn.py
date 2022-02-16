@@ -16,6 +16,7 @@ from connections.sim.hw.hw_sim import HWSim
 from connections.sim.hw.sensors.sensor import SensorType
 from connections.sim.hw.sensors.dummy_sensor import DummySensor
 from connections.sim.hw.ignitor_sim import Ignitor, IgnitorType
+from connections.sim.hw.sensors.voltage_sensor_sim import VoltageSensor
 from connections.sim.hw.sensors.sensor_sim import SensorSim
 from connections.sim.hw.rocket_sim import RocketSim, FlightDataType
 from main_window.competition.comp_app import CompApp
@@ -119,6 +120,7 @@ class HollyburnProfile(RocketProfile):
             SensorSim(SensorType.ACCELEROMETER, rocket_sim_body),
             DummySensor(SensorType.IMU, (1, 0, 0, 0)),
             DummySensor(SensorType.TEMPERATURE, (20,)),
+            VoltageSensor()
         ]
 
         hw_sim_ignitors_body = [

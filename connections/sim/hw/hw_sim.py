@@ -2,6 +2,7 @@ from typing import Iterable
 from enum import Enum
 
 from .ignitor_sim import Ignitor
+from .sensors.voltage_sensor_sim import VoltageSensor
 from .sensors.sensor import Sensor, SensorType, REQUIRED_SENSOR_FLOATS
 from .rocket_sim import RocketSim
 from util.detail import LOGGER
@@ -18,7 +19,7 @@ class PinModes(Enum):
 
 class HWSim:
     def __init__(
-            self, rocket_sim: RocketSim, sensors: Iterable[Sensor], ignitors: Iterable[Ignitor]
+            self, rocket_sim: RocketSim, sensors: Iterable[Sensor], ignitors: Iterable[Ignitor],
     ):
         """
         :param sensors: Iterable of all the sensors that the HW contains
@@ -48,8 +49,9 @@ class HWSim:
         :param mode: The mode you want to set the pin to -> 0 for INPUT and 1 for OUTPUT
         """
         with self._lock:
-            self._pin_modes[pin] = mode
-            LOGGER.debug(f"Pin mode of pin={pin} set to={mode}")
+            if pin not in self._pin_modes or self._pin_modes[pin] != mode:
+                self._pin_modes[pin] = mode
+                LOGGER.debug(f"Pin mode of pin={pin} set to={mode}")
 
     def get_pin_mode(self, pin):
         """
@@ -81,8 +83,13 @@ class HWSim:
             val = 0
             if pin in self._ignitor_reads:
                 val = self._ignitor_reads[pin].read()
+                LOGGER.debug(f"Analog read from pin={pin} returned value={val}")
 
-            LOGGER.debug(f"Analog read from pin={pin} returned value={val}")
+            else:
+                voltage_sensor = self._sensors[SensorType.VOLTAGE]
+                if voltage_sensor is not None and pin == voltage_sensor.pin:
+                    val = self._sensors[SensorType.VOLTAGE].read()
+
             return val
 
     def sensor_read(self, sensor_type: SensorType) -> tuple:

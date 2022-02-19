@@ -51,21 +51,6 @@ class CompApp(MainApp, Ui_MainWindow):
         self.actionSave.setShortcut("Ctrl+S")
         self.actionReset.triggered.connect(self.reset_view)
 
-        #Menubar for choosing rocket device view
-        self.devices = rocket_profile.mapping_devices
-        if len(self.devices) > 1:
-            view_menu = self.menuBar().children()[2]
-            map_view_menu = view_menu.addMenu("Map")
-
-            view_all = QAction("All", self)
-            view_all.triggered.connect(lambda: self.set_view_device(self.devices))
-            map_view_menu.addAction(view_all)
-
-            for device in self.devices:
-                view_device = QAction(f'{device.name}', self)
-                view_device.triggered.connect(lambda: self.set_view_device([device]))
-                map_view_menu.addAction(view_device)
-
         # Hook into some of commandEdit's events
         qtHook(self.commandEdit, 'focusNextPrevChild', lambda _: False, override_return=True)  # Prevents tab from changing focus
         qtHook(self.commandEdit, 'keyPressEvent', self.command_edit_key_pressed)
@@ -84,6 +69,7 @@ class CompApp(MainApp, Ui_MainWindow):
         self.setup_buttons()
         self.setup_labels()
         self.setup_subwindow().showMaximized()
+        self.setup_view_menu()
 
         self.setWindowIcon(QtGui.QIcon(mapbox_utils.MARKER_PATH))
 
@@ -185,6 +171,22 @@ class CompApp(MainApp, Ui_MainWindow):
         sub.show()
 
         return sub
+
+    def setup_view_menu(self) -> None:
+        # Menubar for choosing rocket device view
+        if len(self.rocket_profile.mapping_devices) > 1:
+            view_menu = self.menuBar().children()[2]
+            self.map_view_menu = view_menu.addMenu("Map")
+
+            view_all = QAction("All", self)
+            all_devices = self.rocket_profile.mapping_devices
+            view_all.triggered.connect(lambda i, all_devices = all_devices: self.set_view_device(all_devices))
+            self.map_view_menu.addAction(view_all)
+
+            for device in self.rocket_profile.mapping_devices:
+                view_device = QAction(f'{device}', self)
+                view_device.triggered.connect(lambda i, device=device: self.set_view_device([device]))
+                self.map_view_menu.addAction(view_device)
 
     def receive_data(self) -> None:
         """

@@ -94,6 +94,12 @@ class MappingThread(QtCore.QThread):
         """
         with self.cv:
             self.viewed_devices = devices
+            for device in self.viewed_devices:
+                if self.rocket_data.last_value_by_device(device, DataEntryIds.LATITUDE) is None:
+                    LOGGER.warning("Data unavailable for {}".format(device.name))
+
+            self.notify()
+
 
 
     def setDesiredMapSize(self, x, y) -> None:
@@ -128,8 +134,8 @@ class MappingThread(QtCore.QThread):
         :return:
         :rtype:
         """
-        if (None in latitudes.values()) or (None in longitudes.values()):
-             return False
+        if len(latitudes) == 0:
+            return False
 
         #Calculate average of device points
         avg_latitude = sum(latitudes.values())/len(latitudes)
@@ -198,6 +204,7 @@ class MappingThread(QtCore.QThread):
         last_longitude = None
         last_desired_size = None
         last_update_time = 0
+
         while True:
             with self.cv:
                 self.cv.wait()  # CV lock is released while waiting
@@ -215,16 +222,18 @@ class MappingThread(QtCore.QThread):
                 longitudes = dict()
 
                 for device in self.viewed_devices:
-                    latitudes[device] = self.rocket_data.last_value_by_device(device, DataEntryIds.LATITUDE)
-                    longitudes[device] = self.rocket_data.last_value_by_device(device, DataEntryIds.LONGITUDE)
+                    latitude = self.rocket_data.last_value_by_device(device, DataEntryIds.LATITUDE)
+                    longitude = self.rocket_data.last_value_by_device(device, DataEntryIds.LONGITUDE)
+                    if latitude and longitude: #plot on map if data not None
+                        latitudes[device], longitudes[device] = latitude, longitude
 
                 desired_size = self.getDesiredMapSize()
 
-                # Prevent unnecessary work while no location data is received
-                if (None in latitudes.values()) or (None in longitudes.values()):
+                # Prevent unnecessary work while no location data is received from any device
+                if len(latitudes) == 0: #latitudes does not store data if lat = None
                     continue
 
-                # Prevent unnecessary work while data hasnt changed
+                # Prevent unnecessary work while data hasn't changed
                 if (latitudes, longitudes, desired_size) == (last_latitude, last_longitude, last_desired_size):
                     continue
 

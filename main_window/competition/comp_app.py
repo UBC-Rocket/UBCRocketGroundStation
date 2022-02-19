@@ -183,10 +183,10 @@ class CompApp(MainApp, Ui_MainWindow):
             view_all.triggered.connect(lambda i, all_devices = all_devices: self.set_view_device(all_devices))
             self.map_view_menu.addAction(view_all)
 
-        for device in self.rocket_profile.mapping_devices:
-            view_device = QAction(f'{device}', self)
-            view_device.triggered.connect(lambda i, device=device: self.set_view_device([device]))
-            self.map_view_menu.addAction(view_device)
+            for device in self.rocket_profile.mapping_devices:
+                view_device = QAction(f'{device}', self)
+                view_device.triggered.connect(lambda i, device=device: self.set_view_device([device]))
+                self.map_view_menu.addAction(view_device)
 
     def receive_data(self) -> None:
         """

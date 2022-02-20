@@ -21,6 +21,10 @@ HIDDEN_IMPORTS = [
     'main_window.mplwidget',
 ]
 
+SPLASH_IMAGE = 'qt_files/logo.png'
+
+ICON_FILE = 'qt_files/icon.ico'
+
 '''
 Environment specific paths and constants
 '''
@@ -114,7 +118,14 @@ def build_step():
     print("Running PyInstaller...")
     hidden_imports = [f"--hidden-import={i}" for i in HIDDEN_IMPORTS]
     data_files = [f"--add-data={i}{PYINSTALLER_SEPARATOR}{parent_dir(i)}" for i in DATA_FILES]
-    _run(VENV_PYINSTALLER, ['-F', '-n', EXECUTABLE_NAME, ENTRY_POINT] + hidden_imports + data_files)
+    splash = f"--splash {SPLASH_IMAGE}" if sys.platform != 'darwin' else ""  # Splash not currently supported on MacOS
+    _run(VENV_PYINSTALLER, ['--onefile',
+                            ENTRY_POINT,
+                            '--console',
+                            '--name', EXECUTABLE_NAME,
+                            '--icon', ICON_FILE,
+                            splash,
+                            ] + hidden_imports + data_files)
 
     os.remove(GIT_HASH_FILE)
 

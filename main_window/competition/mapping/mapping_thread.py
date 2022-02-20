@@ -95,6 +95,12 @@ class MappingThread(QtCore.QThread):
         """
         with self.cv:
             self.viewed_devices = devices
+            for device in self.viewed_devices:
+                if self.rocket_data.last_value_by_device(device, DataEntryIds.LATITUDE) is None:
+                    LOGGER.warning("Data unavailable for {}".format(device.name))
+
+            self.notify()
+
 
     def setMapZoom(self, zoom) -> None:
         """
@@ -148,8 +154,8 @@ class MappingThread(QtCore.QThread):
         :return:
         :rtype:
         """
-        if (None in latitudes.values()) or (None in longitudes.values()):
-             return False
+        if len(latitudes) == 0:
+            return False
 
         #Calculate average of device points
         avg_latitude = sum(latitudes.values())/len(latitudes)
@@ -202,10 +208,6 @@ class MappingThread(QtCore.QThread):
             mark = (x * resizedMapImage.shape[1], y * resizedMapImage.shape[0])
             marks.append(mark)
 
-        # Because of the cropping, the mark should be in the middle:
-        # assert abs(marks[0] - resizedMapImage.shape[1] / 2) < 1  # x
-        # assert abs(marks[0] - resizedMapImage.shape[0] / 2) < 1  # y
-
         map_data_value = MapDataValue(zoom=zoom, radius=radius, image=resizedMapImage, mark=marks)
         self.map.set_map_value(map_data_value)
 
@@ -222,6 +224,7 @@ class MappingThread(QtCore.QThread):
         last_desired_size = None
         last_map_zoom = None
         last_update_time = 0
+
         while True:
             with self.cv:
                 self.cv.wait()  # CV lock is released while waiting
@@ -239,14 +242,16 @@ class MappingThread(QtCore.QThread):
                 longitudes = dict()
 
                 for device in self.viewed_devices:
-                    latitudes[device] = self.rocket_data.last_value_by_device(device, DataEntryIds.LATITUDE)
-                    longitudes[device] = self.rocket_data.last_value_by_device(device, DataEntryIds.LONGITUDE)
+                    latitude = self.rocket_data.last_value_by_device(device, DataEntryIds.LATITUDE)
+                    longitude = self.rocket_data.last_value_by_device(device, DataEntryIds.LONGITUDE)
+                    if latitude and longitude: #plot on map if data not None
+                        latitudes[device], longitudes[device] = latitude, longitude
 
                 desired_size = self.getDesiredMapSize()
                 map_zoom = self.getMapZoom()
 
-                # Prevent unnecessary work while no location data is received
-                if (None in latitudes.values()) or (None in longitudes.values()):
+                # Prevent unnecessary work while no location data is received from any device
+                if len(latitudes) == 0: #latitudes does not store data if lat = None
                     continue
 
                 # Prevent unnecessary work while data hasnt changed

@@ -78,6 +78,7 @@ class ReadThread(QtCore.QThread):
             full_address = FullAddress(connection_name=self.connection_to_name[connection],
                                        device_address=connection_message.device_address)
             data = connection_message.data
+            signal_strength = connection_message.signal_strength
 
             byte_stream: BytesIO = BytesIO(data)
 
@@ -91,6 +92,7 @@ class ReadThread(QtCore.QThread):
                 try:
                     self.packet_parser.set_endianness(connection.isIntBigEndian(), connection.isFloatBigEndian())
                     parsed_data: Dict[DataEntryIds, any] = self.packet_parser.extract(byte_stream)
+                    parsed_data[DataEntryIds.SIGNAL_STRENGTH] = signal_strength
 
                     if DataEntryIds.DEVICE_TYPE in parsed_data and DataEntryIds.VERSION_ID in parsed_data:
                         self.device_manager.register_device(parsed_data[DataEntryIds.DEVICE_TYPE], parsed_data[DataEntryIds.VERSION_ID], full_address)

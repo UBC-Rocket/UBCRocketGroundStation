@@ -84,6 +84,12 @@ def update_acceleration(rocket_data: RocketData, device: DeviceType) -> str:
     else:
         return VALUE_NOT_AVAILABLE
 
+def update_signal_strength(rocket_data: RocketData, device: DeviceType) -> str:
+    sig_strength = rocket_data.last_value_by_device(device, DataEntryIds.SIGNAL_STRENGTH)
+    if sig_strength is not None:
+        return f'{sig_strength:.2f} -dBm'
+    else:
+        return VALUE_NOT_AVAILABLE
 
 # TODO: Implement Tantalus test separation label update.
 def update_test_separation(rocket_data: RocketData, device: DeviceType) -> str:

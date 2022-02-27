@@ -22,8 +22,8 @@ class SerialConnection(Connection):
                 device_address=str(xbee_message.remote_device.get_64bit_addr()),
                 connection=self,
                 data=xbee_message.data,
-                signal_strength = self.device.get_parameter("DB"))
-            #seems like you can get signal strength value through parameter as well
+                signal_strength = int(self.device.get_parameter("DB"),16))
+            #seems like you can get signal strength value (hex) through DB parameter
             #https://www.digi.com/resources/documentation/Digidocs/90001456-13/concepts/c_rssi_pin_and_signal_strength.htm
 
             self.callback(message)

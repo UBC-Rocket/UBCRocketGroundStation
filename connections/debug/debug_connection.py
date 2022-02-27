@@ -59,7 +59,7 @@ class DebugConnection(Connection):
                 # full_arr.extend(self.bad_subpacket_id_mock()) # bad id, to see handling of itself and remaining data
                 full_arr.extend(self.gps_mock_random())
                 full_arr.extend(self.orientation_mock_random())
-                signal_strength = random.uniform(26,92)
+                signal_strength = random.uniform(0,255)
                 self.receive(full_arr,signal_strength)
 
             LOGGER.warning(f"Debug connection thread shut down (device_address={self.device_address})")

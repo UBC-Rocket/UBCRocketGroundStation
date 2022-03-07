@@ -2,6 +2,7 @@ import time
 import pytest
 import numpy as np
 from pytest import approx
+
 from profiles.rocket_profile import RocketProfile
 from profiles.rockets.hollyburn import HollyburnProfile
 from .integration_utils import test_app, valid_paramitrization, all_devices, all_profiles, only_flare, flush_packets
@@ -35,9 +36,11 @@ def sim_app(test_app, request) -> CompApp:
 
     return test_app(profile, connections)
 
+def get_connection_name(sim_app, device_type: DeviceType):
+    return sim_app.device_manager.get_full_address(device_type).connection_name
 
 def get_hw_sim(sim_app, device_type: DeviceType) -> HWSim:
-    connection_name = sim_app.device_manager.get_full_address(device_type).connection_name
+    connection_name = get_connection_name(sim_app, device_type)
     return sim_app.connections[connection_name]._hw_sim
 
 
@@ -145,6 +148,7 @@ class TestFlare:
 
         last_battery_voltage = sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.VOLTAGE)
         assert(round(last_battery_voltage, 1) == VoltageSensor.NOMINAL_BATTERY_VOLTAGE)
+        assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.EVENT) is None
 
         # The ADC level of 863 gets converted to 10.9V in battery.cpp in FLARE 21899292dc39015570f795ef9e607081aab57e3e
         updated_voltage_sensor = VoltageSensor(dummy_adc_level=863)
@@ -159,8 +163,8 @@ class TestFlare:
 
         last_battery_voltage = sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.VOLTAGE)
         assert(round(last_battery_voltage, 1) == 10.9)
-
-        # TODO: Test for voltage too low
+        assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.EVENT) \
+               == DataEntryValues.EVENT_LOW_VOLTAGE
 
     def test_baro_altitude(self, qtbot, sim_app, device_type):
         Pb = 101325

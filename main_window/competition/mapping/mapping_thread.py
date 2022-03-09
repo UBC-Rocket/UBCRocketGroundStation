@@ -144,7 +144,7 @@ class MappingThread(QtCore.QThread):
             return self._desiredMapSize
 
     # Draw and show the map on the UI
-    def plotMap(self, latitudes, longitudes, radius: float, zoom: float):
+    def plotMap(self, latitudes, longitudes, radius: float):
         """
 
         :param latitudes:
@@ -169,6 +169,7 @@ class MappingThread(QtCore.QThread):
 
         # Create MapPoints that correspond to corners of a square area (of side length 2*radius) surrounding the
         # inputted latitude and longitude. Radius is in km
+
         lat1 = avg_latitude + (max_lat_diff + radius / 110.574)*self.map_zoom
         lon1 = avg_longitude - (max_long_diff + radius / 111.320 / math.cos(lat1 * math.pi / 180.0))*self.map_zoom
         p1 = mapbox_utils.MapPoint(lat1, lon1)  # Map corner 1
@@ -184,7 +185,7 @@ class MappingThread(QtCore.QThread):
         #Find zoom s.t. approximately 2x2 tiles are downloaded
         lon_zoom = math.floor(math.log2(2 / (abs(p1.x - p2.x))))
         lat_zoom = math.floor(math.log2(2 / (abs(p1.y - p2.y))))
-        zoom = min(zoom, lat_zoom, lon_zoom)
+        zoom = min(DEFAULT_ZOOM, lat_zoom, lon_zoom)
 
         self.requestQueue.put_nowait((p0, p1, p2, zoom, desiredSize))
 
@@ -258,7 +259,7 @@ class MappingThread(QtCore.QThread):
                 if (latitudes, longitudes, desired_size, map_zoom) == (last_latitude, last_longitude, last_desired_size, last_map_zoom):
                     continue
 
-                if self.plotMap(latitudes, longitudes, DEFAULT_RADIUS, DEFAULT_ZOOM):
+                if self.plotMap(latitudes, longitudes, DEFAULT_RADIUS):
                     # notify UI that new data is available to be displayed
                     self.sig_received.emit()
                 else:

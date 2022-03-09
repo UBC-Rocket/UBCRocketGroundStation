@@ -192,13 +192,15 @@ class CompApp(MainApp, Ui_MainWindow):
 
     def setup_zoom_slider(self) -> None:
         # Map zoom slider and zoom buttons
-        self.numTicks = 4
-        self.max_zoom = 2  # zoom out scale
-        self.min_zoom = 0.5  # zoom in scale
+        self.maxZoomFactor = 3 #zoom out 2**3 scale
+        self.minZoomFactor = -2
+        self.numTicksPerScale = 1
+        #currently, each tick represents a 2x scale change
+        #increase numTicksPerScale for more ticks on slider
 
-        self.horizontalSlider.setMinimum(0)
-        self.horizontalSlider.setMaximum(self.numTicks)
-        self.horizontalSlider.setValue(self.numTicks / 2)
+        self.horizontalSlider.setMinimum(self.minZoomFactor*self.numTicksPerScale)
+        self.horizontalSlider.setMaximum(self.maxZoomFactor*self.numTicksPerScale)
+        self.horizontalSlider.setValue(0) #default original scale
         self.horizontalSlider.valueChanged.connect(self.map_zoomed)
 
         self.zoom_in_button.clicked.connect(self.slider_dec)
@@ -458,15 +460,7 @@ class CompApp(MainApp, Ui_MainWindow):
 
 
     def map_zoomed(self) -> None:
-
-        slider_span = self.numTicks
-        zoom_span = self.max_zoom - self.min_zoom
-
-        #map slider value to zoom level
-        slider_scaled = float(self.horizontalSlider.value())/float(slider_span)
-        zoom_factor = self.min_zoom + (slider_scaled * zoom_span)
-
-        self.MappingThread.setMapZoom(zoom_factor)
+        self.MappingThread.setMapZoom(2**(self.horizontalSlider.value()/self.numTicksPerScale))
 
 
     def shutdown(self):

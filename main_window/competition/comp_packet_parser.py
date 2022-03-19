@@ -11,7 +11,7 @@ from main_window.packet_parser import PacketParser, Header
 BULK_SENSOR_EVENT = Event('bulk_sensor')
 
 # Aggregated DataEntryIds for iteration. Outside function for access by tests
-SENSOR_TYPES = [DataEntryIds.BAROMETER, DataEntryIds.GPS, DataEntryIds.ACCELEROMETER, DataEntryIds.IMU, DataEntryIds.TEMPERATURE]
+SENSOR_TYPES = [DataEntryIds.BAROMETER, DataEntryIds.GPS, DataEntryIds.ACCELEROMETER, DataEntryIds.IMU, DataEntryIds.TEMPERATURE, DataEntryIds.VOLTAGE]
 OTHER_STATUS_TYPES = [DataEntryIds.DROGUE_IGNITER_CONTINUITY, DataEntryIds.MAIN_IGNITER_CONTINUITY, DataEntryIds.FILE_OPEN_SUCCESS]
 
 # Converting bit array status to readable values
@@ -104,7 +104,8 @@ class CompPacketParser(PacketParser):
         data[DataEntryIds.ORIENTATION_3] = self.fourtofloat(byte_stream.read(4))  # TODO Remove soon?
         data[DataEntryIds.LATITUDE] = self.fourtofloat(byte_stream.read(4))
         data[DataEntryIds.LONGITUDE] = self.fourtofloat(byte_stream.read(4))
-        data[DataEntryIds.STATE] = int.from_bytes(byte_stream.read(1), "big")
+        state_data = super().state(byte_stream, header, print_state=False)
+        data[DataEntryIds.STATE] = state_data[DataEntryIds.STATE]
 
         BULK_SENSOR_EVENT.increment()
         return data

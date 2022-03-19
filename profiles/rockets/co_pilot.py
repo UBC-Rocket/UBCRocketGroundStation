@@ -72,12 +72,20 @@ class CoPilotProfile(RocketProfile):
         return [DeviceType.CO_PILOT_FLARE]
 
     @property
-    def mapping_device(self):
-        return DeviceType.CO_PILOT_FLARE
+    def mapping_devices(self):
+        return [DeviceType.CO_PILOT_FLARE]
 
     @property
     def required_device_versions(self):
         return {DeviceType.CO_PILOT_FLARE: REQUIRED_FLARE}
+
+    @property
+    def expected_apogee_point(self):
+        return None
+
+    @property
+    def expected_main_deploy_point(self):
+        return None
 
     def construct_serial_connection(self, com_port, baud_rate):
         return None

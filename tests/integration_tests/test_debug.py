@@ -14,8 +14,9 @@ from main_window.packet_parser import (
     SINGLE_SENSOR_EVENT,
     EVENT_EVENT,
     CONFIG_EVENT,
+    STATE_EVENT,
     DEVICE_TYPE_TO_ID,
-    SubpacketIds)
+    SubpacketIds, STATE_IDS, EVENT_IDS)
 from main_window.competition.comp_packet_parser import (
     SENSOR_TYPES,
     OTHER_STATUS_TYPES,
@@ -50,7 +51,8 @@ def test_bulk_sensor_packet(qtbot, single_connection_tantalus):
     app = single_connection_tantalus
     connection = app.connections['DEBUG_CONNECTION']
 
-    sensor_inputs = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
+    state_input = 0x09
+    sensor_inputs = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, state_input)
 
     packet = radio_packets.bulk_sensor(*sensor_inputs)
 
@@ -61,6 +63,7 @@ def test_bulk_sensor_packet(qtbot, single_connection_tantalus):
     ):  # Needed otherwise signals wont process because UI is in same thread
         connection.receive(packet)
 
+    assert STATE_EVENT.wait(snapshot) == 1
     assert BULK_SENSOR_EVENT.wait(snapshot) == 1
 
     assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
@@ -78,17 +81,21 @@ def test_bulk_sensor_packet(qtbot, single_connection_tantalus):
         DataEntryIds.ORIENTATION_3,
         DataEntryIds.LATITUDE,
         DataEntryIds.LONGITUDE,
-        DataEntryIds.STATE,
     )
     last_values = tuple(map(get_val, vals_to_get))
 
-    assert sensor_inputs[1:] == last_values
+    # Only check items in tuple vals_to_get
+    assert sensor_inputs[1:-1] == last_values
+
+    # Special check for state
+    state_val = get_val(DataEntryIds.STATE)
+    assert STATE_IDS[state_input] == state_val
 
     assert LABLES_UPDATED_EVENT.wait(snapshot) >= 1
 
     assert app.AltitudeLabel.text() == '2.00 m'
     assert app.GPSLabel.text() == '9.00000\xb0, 10.00000\xb0'
-    assert app.StateLabel.text() == '11'
+    assert app.StateLabel.text() == STATE_IDS[state_input].name
 
 
 def test_single_sensor_packet(qtbot, single_connection_tantalus):
@@ -134,10 +141,12 @@ def test_single_sensor_packet(qtbot, single_connection_tantalus):
                                                     DataEntryIds.TIME) == 0xFFFFFFFF
         assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1_FLARE, data_entry_id) == val
 
+
 def test_event_packet(qtbot, single_connection_tantalus):
     app = single_connection_tantalus
     connection = app.connections['DEBUG_CONNECTION']
-    packet = radio_packets.event(0xFFFFFFFF, 0x00)
+    event_to_test = 0x00
+    packet = radio_packets.event(0xFFFFFFFF, event_to_test)
     snapshot = get_event_stats_snapshot()
     connection.receive(packet)
 
@@ -145,7 +154,21 @@ def test_event_packet(qtbot, single_connection_tantalus):
     assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1_FLARE,
                                                 DataEntryIds.TIME) == 0xFFFFFFFF
     assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1_FLARE,
-                                                DataEntryIds.EVENT) == DataEntryValues.EVENT_IGNITOR_FIRED
+                                                DataEntryIds.EVENT) == EVENT_IDS[event_to_test]
+
+def test_state_packet(qtbot, single_connection_tantalus):
+    app = single_connection_tantalus
+    connection = app.connections['DEBUG_CONNECTION']
+    state_to_test = 0x00
+    packet = radio_packets.state(0xFFFFFFFF, state_to_test)
+    snapshot = get_event_stats_snapshot()
+    connection.receive(packet)
+
+    assert STATE_EVENT.wait(snapshot) == 1
+    assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1_FLARE,
+                                                DataEntryIds.TIME) == 0xFFFFFFFF
+    assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1_FLARE,
+                                                DataEntryIds.STATE) == STATE_IDS[state_to_test]
 
 
 def test_message_packet(qtbot, single_connection_tantalus, caplog):

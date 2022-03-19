@@ -13,6 +13,7 @@ from main_window.data_entry_id import DataEntryIds, DataEntryValues
 SINGLE_SENSOR_EVENT = Event('single_sensor')
 CONFIG_EVENT = Event('config')
 EVENT_EVENT = Event('event')
+STATE_EVENT = Event('event')
 
 # Essentially a mini-class, to structure the header data. Doesn't merit its own class due to limited use,
 # can be expanded if necessary elsewhere.
@@ -23,6 +24,7 @@ class SubpacketIds(Enum):
     MESSAGE = 0x01
     EVENT = 0x02
     CONFIG = 0x03
+    STATE = 0x05
     # SINGLE_SENSOR's many values, added dynamically in constructor
     ACCELERATION_X = 0x10
     ACCELERATION_Y = 0x11
@@ -34,7 +36,6 @@ class SubpacketIds(Enum):
     LONGITUDE = 0x1A
     GPS_ALTITUDE = 0x1B
     CALCULATED_ALTITUDE = 0x1C
-    STATE = 0x1D
     VOLTAGE = 0x1E
     GROUND_ALTITUDE = 0x1F
     TIME = 0x20
@@ -54,12 +55,28 @@ ID_TO_DEVICE_TYPE = {
         0x00: DeviceType.TANTALUS_STAGE_1_FLARE,
         0x01: DeviceType.TANTALUS_STAGE_2_FLARE,
         0x02: DeviceType.CO_PILOT_FLARE,
+        0x03: DeviceType.HOLLYBURN_BODY_FLARE,
+        0x04: DeviceType.HOLLYBURN_NOSE_FLARE,
 }
 DEVICE_TYPE_TO_ID = {y: x for (x, y) in ID_TO_DEVICE_TYPE.items()}
 
-# NOTE: Must match enum EventId in FLARE: radio.h
+# NOTE: Must match enum ids in radio spec (and FLARE: radio.h)
 EVENT_IDS = {
     0x00: DataEntryValues.EVENT_IGNITOR_FIRED,
+    0x01: DataEntryValues.EVENT_LOW_VOLTAGE
+}
+STATE_IDS = {
+    0x00: DataEntryValues.STATE_STANDBY,
+    0x01: DataEntryValues.STATE_ARMED,
+    0x02: DataEntryValues.STATE_POWERED_ASCENT,
+    0x03: DataEntryValues.STATE_PRE_AIR_START_COAST_TIMED,
+    0x04: DataEntryValues.STATE_ASCENT_TO_APOGEE,
+    0x05: DataEntryValues.STATE_MACH_LOCK,
+    0x06: DataEntryValues.STATE_PRESSURE_DELAY,
+    0x07: DataEntryValues.STATE_DROGUE_DESCENT,
+    0x08: DataEntryValues.STATE_MAIN_DESCENT,
+    0x09: DataEntryValues.STATE_LANDED,
+    0x0A: DataEntryValues.STATE_WINTER_CONTINGENCY,
 }
 
 
@@ -84,6 +101,7 @@ class PacketParser:
             SubpacketIds.MESSAGE.value: self.message,
             SubpacketIds.EVENT.value: self.event,
             SubpacketIds.CONFIG.value: self.config,
+            SubpacketIds.STATE.value: self.state,
             # SubpacketIds.SINGLE_SENSOR.value: single_sensor,  # See loop that maps function for range of ids below
         }
         for i in range(MIN_SINGLE_SENSOR_ID, MAX_SINGLE_SENSOR_ID + 1):
@@ -186,6 +204,14 @@ class PacketParser:
         return data
 
     def event(self, byte_stream: BytesIO, header: Header):
+        """
+
+        :param byte_stream:
+        :type byte_stream:
+        :param header:
+        :type header:
+        :return:
+        """
         data: Dict = {}
         event_bytes = byte_stream.read(2)
         event_int = self.bytestoint(event_bytes)
@@ -219,6 +245,24 @@ class PacketParser:
                     str(data[DataEntryIds.VERSION_ID]))
 
         CONFIG_EVENT.increment()
+        return data
+
+    def state(self, byte_stream: BytesIO, header: Header, print_state=True):
+        """
+
+        :param byte_stream:
+        :param header:
+        :return:
+        """
+        data = {}
+        state_id = self.bytestoint(byte_stream.read(2))
+        data_entry_value = STATE_IDS[state_id]
+        data[DataEntryIds.STATE] = data_entry_value
+
+        if print_state:
+            LOGGER.info("State: %s", str(data_entry_value.name))
+
+        STATE_EVENT.increment()
         return data
 
     def single_sensor(self, byte_stream: BytesIO, header: Header):

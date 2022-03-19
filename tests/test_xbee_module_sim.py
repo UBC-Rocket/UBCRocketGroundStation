@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 
-from connections.sim.xbee_module_sim import XBeeModuleSim, FRAME_PARSED_EVENT, SENT_TO_ROCKET_EVENT
+from connections.sim.hw.xbee_module_sim import XBeeModuleSim, FRAME_PARSED_EVENT, SENT_TO_ROCKET_EVENT
 from util.event_stats import get_event_stats_snapshot
 
 TEST_GS_ADDR = bytes.fromhex('0013A200400A0127')
@@ -37,8 +37,12 @@ def test_ground_rx(xbee):
 
     assert SENT_TO_ROCKET_EVENT.wait(snapshot) == 1
 
-    assert len(xbee.rocket_callback.call_args[0][0]) == 27
-    assert xbee.rocket_callback.call_args[0][0][15:-1] == b"HelloRocket"
+    msg = xbee.rocket_callback.call_args[0][0]
+
+    # Skip any escape characters
+    assert len(msg) - msg.count(b'\x7D') == 27
+
+    assert msg[-12:-1] == b"HelloRocket"
 
 
 def test_rocket_rx_pieces(xbee):

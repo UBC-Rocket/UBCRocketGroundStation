@@ -2,6 +2,7 @@ import argparse
 import sys
 import os
 import subprocess
+import urllib.request
 from collections import OrderedDict
 
 '''
@@ -19,6 +20,10 @@ DATA_FILES = [
 HIDDEN_IMPORTS = [
     'main_window.mplwidget',
 ]
+
+SPLASH_IMAGE = 'qt_files/logo.png'
+
+ICON_FILE = 'qt_files/icon.ico'
 
 '''
 Environment specific paths and constants
@@ -59,6 +64,11 @@ PYINSTALLER_SEPARATOR = {
 
 GIT_HASH_FILE = os.path.join(LOCAL, '.git_hash')
 
+EXTERNAL_DEPENDENCIES = {
+    'https://github.com/openrocket/openrocket/releases/download/release-15.03/OpenRocket-15.03.jar':
+        os.path.join(LOCAL, 'OpenRocket-15.03.jar'),
+}
+
 def _run(executable, args):
     cmd = [executable] + args
     cmd = ' '.join(cmd)
@@ -90,6 +100,11 @@ def setup_step():
     print("Installing requirements in venv...")
     _run(VENV_PIP, ['install', '-r', 'requirements.txt'])
 
+    print("Downloading external requirements...")
+    for url, file in EXTERNAL_DEPENDENCIES.items():
+        print(f"Downloading {url} to {file}")
+        urllib.request.urlretrieve(url, file)
+
 
 def build_step():
     git_hash = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=LOCAL).strip().decode("utf-8")
@@ -103,7 +118,14 @@ def build_step():
     print("Running PyInstaller...")
     hidden_imports = [f"--hidden-import={i}" for i in HIDDEN_IMPORTS]
     data_files = [f"--add-data={i}{PYINSTALLER_SEPARATOR}{parent_dir(i)}" for i in DATA_FILES]
-    _run(VENV_PYINSTALLER, ['-F', '-n', EXECUTABLE_NAME, ENTRY_POINT] + hidden_imports + data_files)
+    splash = f"--splash {SPLASH_IMAGE}" if sys.platform != 'darwin' else ""  # Splash not currently supported on MacOS
+    _run(VENV_PYINSTALLER, ['--onefile',
+                            ENTRY_POINT,
+                            '--console',
+                            '--name', EXECUTABLE_NAME,
+                            '--icon', ICON_FILE,
+                            splash,
+                            ] + hidden_imports + data_files)
 
     os.remove(GIT_HASH_FILE)
 

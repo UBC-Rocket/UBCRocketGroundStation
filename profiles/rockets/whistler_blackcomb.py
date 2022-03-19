@@ -1,4 +1,4 @@
-from ..rocket_profile import RocketProfile
+from ..rocket_profile import RocketProfile, FlightPoint
 from main_window.whistler_blackcomb.wb_app import WbApp
 from main_window.whistler_blackcomb.wb_packet_parser import WbPacketParser
 from main_window.competition.comp_packet_parser import CompPacketParser
@@ -25,11 +25,19 @@ class WbProfile(RocketProfile):
         return None
 
     @property
-    def mapping_device(self):
+    def mapping_devices(self):
         return None
 
     @property
     def required_device_versions(self):
+        return None
+
+    @property
+    def expected_apogee_point(self):
+        return None
+
+    @property
+    def expected_main_deploy_point(self):
         return None
 
     def construct_serial_connection(self, com_port, baud_rate):

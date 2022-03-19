@@ -3,6 +3,8 @@ import os
 from typing import Callable, Dict
 import logging
 
+from PyQt5.QtWidgets import QAction
+from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 from PIL import Image
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
@@ -69,6 +71,7 @@ class CompApp(MainApp, Ui_MainWindow):
         self.setup_buttons()
         self.setup_labels()
         self.setup_subwindow().showMaximized()
+        self.setup_view_menu()
 
         self.setWindowIcon(QtGui.QIcon(mapbox_utils.MARKER_PATH))
 
@@ -192,6 +195,22 @@ class CompApp(MainApp, Ui_MainWindow):
         sub.show()
 
         return sub
+
+    def setup_view_menu(self) -> None:
+        # Menubar for choosing rocket device view
+        if len(self.rocket_profile.mapping_devices) > 1:
+            view_menu = self.menuBar().children()[2]
+            self.map_view_menu = view_menu.addMenu("Map")
+
+            view_all = QAction("All", self)
+            all_devices = self.rocket_profile.mapping_devices
+            view_all.triggered.connect(lambda i, all_devices = all_devices: self.set_view_device(all_devices))
+            self.map_view_menu.addAction(view_all)
+
+            for device in self.rocket_profile.mapping_devices:
+                view_device = QAction(f'{device}', self)
+                view_device.triggered.connect(lambda i, device=device: self.set_view_device([device]))
+                self.map_view_menu.addAction(view_device)
 
     def receive_data(self) -> None:
         """
@@ -397,6 +416,9 @@ class CompApp(MainApp, Ui_MainWindow):
         :type event:
         """
         self.MappingThread.setDesiredMapSize(event.width, event.height)
+
+    def set_view_device(self, viewedDevices) -> None:
+        self.MappingThread.setViewedDevice(viewedDevices)
 
     def shutdown(self):
         self.save_view()

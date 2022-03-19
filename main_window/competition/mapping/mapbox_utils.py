@@ -136,6 +136,7 @@ class MapTile:
         self.x = x
         self.y = y
         self.s = s
+        self.is_tile_not_blank = False
 
     def __str__(self) -> str:
         return f"{self.x}_{self.y}"
@@ -173,6 +174,7 @@ class MapTile:
                     # LOGGER.debug(f"x: {str(self.x)}, y: {str(self.y)}, s: {str(self.s)}\n")
 
         if os.path.isfile(impath):
+            self.is_tile_not_blank = True
             return plt.imread(impath, "jpeg")
         else:
             return np.zeros((TILE_SIZE, TILE_SIZE, 3), dtype=np.uint8) # np generates float by default, pillow doesnt support that
@@ -308,15 +310,20 @@ class TileGrid:
 
             t1 = time.perf_counter()
 
+            is_img_not_blank = False
             img = None
             for i in self.ta:
                 row = None
                 for j in i:
                     row = appendh(row, j.getImage())
+                    if j.is_tile_not_blank is True:
+                        is_img_not_blank = True
 
                 img = appendv(img, row)
 
-            plt.imsave(outfile, img)
+            if is_img_not_blank is True:
+                plt.imsave(outfile, img)
+
             t2 = time.perf_counter()
             LOGGER.debug(f"Successfully generated size {str(self.scale)} map in {t2 - t1} seconds.")
             return img

@@ -1,7 +1,10 @@
 import os
 import threading
-from typing import Dict, Union, Set, Callable, List
+import time
+from enum import Enum
+from typing import Dict, Union, Set, Callable, List, Optional
 from collections import namedtuple
+from sortedcontainers import SortedDict
 
 import numpy as np
 
@@ -25,11 +28,14 @@ class RocketData:
         self.device_manager = device_manager
 
         self.data_lock = threading.RLock()  # create lock ASAP since self.lock needs to be defined when autosave starts
-        self.timeset: Dict[int, Dict[DataEntryKey, Union[int, float, str]]] = {}
-        self.last_time = 0  # TODO REVIEW/CHANGE THIS, once all subpackets have their own timestamp.
+        # Map: Time -> key-indexed list of data
+        self.timeset: SortedDict[int, Dict[DataEntryKey, Union[int, float, str, Enum]]] = SortedDict()
+        # Map: Key -> time-indexed list of data
+        self.keyset: Dict[DataEntryKey, SortedDict[int, Union[int, float, str, Enum]]] = dict()
+        self.last_time = 0
         self.highest_altitude: Dict[FullAddress, float] = dict()
+
         self.session_name = os.path.join(LOGS_DIR, "autosave_" + SESSION_ID + ".csv")
-        self.existing_entry_keys: Set[DataEntryKey] = set() # Set of entry keys that have actually been recorded. Used for creating csv header
 
         self.callback_lock = threading.RLock()  # Only for callback dict
         self.callbacks: Dict[CallBackKey, List[Callable]] = {}
@@ -40,11 +46,13 @@ class RocketData:
         self.autosave_thread = threading.Thread(target=self.timer, daemon=True, name="AutosaveThread")
         self.autosave_thread.start()
 
+    # TODO Missing unit test
     def timer(self):
         """
 
         """
         LOGGER.debug("Auto-save thread started")
+
         while True:
 
             with self.as_cv:
@@ -54,13 +62,17 @@ class RocketData:
                     break
 
             try:
+                t1 = time.perf_counter()
                 self.save(self.session_name)
-                LOGGER.debug("Auto-Save successful.")
+                t2 = time.perf_counter()
+                # LOGGER.debug("Auto-Save Successful.")
+                LOGGER.debug(f"Successfully Auto-Saved in {t2 - t1} seconds.")
             except Exception as e:
                 LOGGER.exception("Exception in autosave thread")  # Automatically grabs and prints exception info
 
         LOGGER.warning("Auto save thread shut down")
 
+    # TODO Missing unit test
     def shutdown(self):
         with self.as_cv:
             self._as_is_shutting_down = True
@@ -76,6 +88,8 @@ class RocketData:
         Adding a bundle of data points and trigger callbacks according to id.
         Current implementation: adds to time given, otherwise will add to the last time received.
 
+        :param full_address:
+        :type full_address:
         :param incoming_data:
         :type incoming_data:
         """
@@ -99,8 +113,11 @@ class RocketData:
             # write the data
             for data_id in incoming_data:
                 key = DataEntryKey(full_address, data_id)
-                self.existing_entry_keys.add(key)
+
+                if key not in self.keyset:
+                    self.keyset[key] = SortedDict()
                 self.timeset[self.last_time][key] = incoming_data[data_id]
+                self.keyset[key][self.last_time] = incoming_data[data_id]
 
         device = self.device_manager.get_device_type(full_address)
         if device is not None:
@@ -112,34 +129,87 @@ class RocketData:
 
         BUNDLE_ADDED_EVENT.increment()
 
-    def last_value_by_device(self, device: DeviceType, sensor_id: DataEntryIds):
+    # TODO Missing unit test
+    def time_series_by_device(self, device: DeviceType, data_entry_id: DataEntryIds):
         """
-        Gets the most recent value specified by the DataEntryIds (enum object) given
+        Get a time series list and a value series list for the specified DataEntryIds (enum object)
 
         :param device:
         :type device:
-        :param sensor_id:
-        :type sensor_id:
-        :return:
+        :param data_entry_id:
+        :type data_entry_id:
+        :return: [times], [values]
         :rtype:
         """
+        t = []
+        y = []
+
         with self.data_lock:
-            times = list(self.timeset.keys())
-            times.sort(reverse=True) # TODO : Should probably use OrderedDict to improve performance
+            all_times = list(self.timeset.keys())
 
             full_address = self.device_manager.get_full_address(device)
             if full_address is None:
                 return None
 
-            data_entry_key = DataEntryKey(full_address, sensor_id)
-            for i in range(len(times)):
-                if data_entry_key in self.timeset[times[i]]:
-                    return self.timeset[times[i]][data_entry_key]
+            data_entry_key = DataEntryKey(full_address, data_entry_id)
+            for time in all_times:
+                if data_entry_key in self.timeset[time]:
+                    t.append(time)
+                    y.append(self.timeset[time][data_entry_key])
+
+            if len(t) == 0:
+                return None
+
+            return t, y
+
+    # TODO Missing unit test
+    def last_value_and_time(self, device: DeviceType, data_entry_id: DataEntryIds) -> Optional[tuple]:
+        """
+        Gets the most recent value and its time for the specified DataEntryIds (enum object)
+        Returns None if requested device address not available or if requested value not found.
+
+        :param device:
+        :type device:
+        :param data_entry_id:
+        :type data_entry_id:
+        :return: Value, Time
+        :rtype:
+        """
+        with self.data_lock:
+            full_address = self.device_manager.get_full_address(device)
+            if full_address is None:
+                return None
+
+            data_entry_key = DataEntryKey(full_address, data_entry_id)
+
+            if data_entry_key in self.keyset:
+                time, val = self.keyset[data_entry_key].peekitem()
+                return val, time
             return None
 
-    def highest_altitude_by_device(self, device: DeviceType):
+    def last_value_by_device(self, device: DeviceType, data_entry_id: DataEntryIds) -> Optional[float]:
         """
-        Gets the max altitude for the device specified
+        Gets the most recent value specified by the DataEntryIds (enum object) given
+        Returns None if requested device address not available or if requested value not found.
+
+        :param device:
+        :type device:
+        :param data_entry_id:
+        :type data_entry_id:
+        :return: Value
+        :rtype:
+        """
+        ret = self.last_value_and_time(device, data_entry_id)
+
+        if ret is None:
+            return None
+
+        return ret[0]
+
+    def highest_altitude_by_device(self, device: DeviceType) -> Optional[float]:
+        """
+        Gets the max altitude for the device specified.
+        Returns None if requested device address not available or if no altitude available.
 
         :param device:
         :type device:
@@ -156,6 +226,7 @@ class RocketData:
 
             return None
 
+    # TODO Missing unit test
     def save(self, csv_path):
         """
         Data saving function that creates csv
@@ -172,34 +243,36 @@ class RocketData:
             # all appearing keys
             keys: List[DataEntryKey] = list(map(
                 lambda data_entry_key: DataEntryKey(data_entry_key.full_address, data_entry_key.data_id),
-                self.existing_entry_keys))
+                set(self.keyset.keys())))
+
+            column_names = list(map(lambda x: (x.data_id.name if isinstance(x.data_id, DataEntryIds) else str(x.data_id)) + '_'
+                + (self.device_manager.get_device_type(x.full_address).name if self.device_manager.get_device_type(x.full_address)
+                else f"{x.full_address.connection_name}_{x.full_address.device_address}"), keys))
+
+            #sort keys based on device name (alphabetically)
+            column_names, keys = zip(*sorted(zip(column_names, keys)))
 
             data = np.empty((len(keys), len(self.timeset) + 1), dtype=object)
             times = list(self.timeset.keys())
-            times.sort(reverse=False)
             for ix, iy in np.ndindex(data.shape):
                 # Make the first row a list of sensor names. Use the enum's name property
                 if iy == 0:
-                    data_name = keys[ix].data_id.name if isinstance(keys[ix].data_id, DataEntryIds) else str(keys[ix].data_id)
-                    device = self.device_manager.get_device_type(keys[ix].full_address)
-                    if device:
-                        device_name = device.name
-                    else:
-                        device_name = f"{keys[ix].full_address.connection_name}_{keys[ix].full_address.device_address}"
-
-                    data[ix, iy] = data_name + '_' + device_name
+                    data[ix, iy] = column_names[ix]
+                # For a time entry, copy over from time list
+                elif keys[ix].data_id == DataEntryIds.TIME:
+                    data[ix, iy] = times[iy - 1]
+                # Otherwise as long as it exists, copy it over, trying to stringify from enum
+                elif keys[ix] in self.timeset[times[iy - 1]]:
+                    value = self.timeset[times[iy - 1]][keys[ix]]
+                    data[ix, iy] = value if not isinstance(value, Enum) else value.name
+                # Empty entry if this row of data doesn't have a val in this column
                 else:
-                    if keys[ix].data_id == DataEntryIds.TIME:
-                        data[ix, iy] = times[iy - 1]
-                    else:
-                        if keys[ix] in self.timeset[times[iy - 1]]:
-                            data[ix, iy] = self.timeset[times[iy - 1]][keys[ix]]
-                        else:
-                            data[ix, iy] = ""
+                    data[ix, iy] = ""
 
-        np.savetxt(csv_path, np.transpose(data), delimiter=',',
-                   fmt="%s")  # Can free up the lock while we save since were no longer accessing the original data
+        # Can free up the lock while we save since were no longer accessing the original data
+        np.savetxt(csv_path, np.transpose(data), delimiter=',', fmt="%s")
 
+    # TODO Missing unit test
     def add_new_callback(self, device: DeviceType, data_id: DataEntryIds, callback_fn: Callable):
         """
         Add a new callback for its associated ID
@@ -218,6 +291,7 @@ class RocketData:
             else:
                 self.callbacks[key].append(callback_fn)
 
+    # TODO Missing unit test
     def _notify_callbacks_of_id(self, key: CallBackKey):
         """
 
@@ -229,6 +303,7 @@ class RocketData:
                 for fn in self.callbacks[key]:
                     fn()
 
+    # TODO Missing unit test
     def _notify_all_callbacks(self):
         """
 

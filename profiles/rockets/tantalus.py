@@ -7,7 +7,7 @@ from ..label import (
     update_pressure,
     update_state,
 )
-from ..mpl_funcs import receive_map
+from ..mpl_funcs import receive_map, receive_time_series
 from ..rocket_profile import RocketProfile, FlightPoint
 from connections.serial.serial_connection import SerialConnection
 from connections.debug.debug_connection import DebugConnection
@@ -44,7 +44,10 @@ class TantalusProfile(RocketProfile):
     @property
     def labels(self):
         return [
-            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Altitude", update_altitude),
+            Label(DeviceType.TANTALUS_STAGE_1_FLARE,
+                  "Altitude",
+                  update_altitude,
+                  map_fn = receive_time_series),
             Label(
                 DeviceType.TANTALUS_STAGE_1_FLARE,
                 "MaxAltitude",

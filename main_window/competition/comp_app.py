@@ -19,6 +19,9 @@ from .mapping.mapping_thread import MappingThread
 from main_window.main_app import MainApp
 from main_window.mplwidget import MplWidget
 
+from main_window.data_entry_id import DataEntryIds
+from main_window.device_manager import DeviceType
+
 qtCreatorFile = os.path.join(BUNDLED_DATA, "qt_files", "comp_app.ui")
 
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
@@ -137,6 +140,7 @@ class CompApp(MainApp, Ui_MainWindow):
 
         def gen_clicked_callback(label: Label):
             def mousePressEvent(QMouseEvent):
+                print("Label selected:", label)
                 self.selected_label = label
             return mousePressEvent
 
@@ -175,7 +179,11 @@ class CompApp(MainApp, Ui_MainWindow):
             getattr(self, name + "Label").setText(QtCore.QCoreApplication.translate("MainWindow", ""))
 
     def map_callback(self):
-        self.selected_label.map_fn(self)
+        if self.selected_label.name == "Altitude":
+            self.selected_label.map_fn(self, DeviceType.TANTALUS_STAGE_1_FLARE,DataEntryIds.CALCULATED_ALTITUDE)
+        else:
+            self.selected_label.map_fn(self)
+
         if self.selected_label.name == "GPS":
             MAP_UPDATED_EVENT.increment()
 
@@ -416,6 +424,8 @@ class CompApp(MainApp, Ui_MainWindow):
         :type event:
         """
         self.MappingThread.setDesiredMapSize(event.width, event.height)
+        self.windowWidth = event.width
+        self.windowHeight = event.height
 
     def set_view_device(self, viewedDevices) -> None:
         self.MappingThread.setViewedDevice(viewedDevices)

@@ -68,3 +68,4 @@ class DataEntryValues(Enum):
 
     # Events
     EVENT_IGNITOR_FIRED = auto()
+    EVENT_LOW_VOLTAGE = auto()

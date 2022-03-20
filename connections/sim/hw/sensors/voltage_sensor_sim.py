@@ -10,7 +10,7 @@ class VoltageSensor(Sensor):
     NOMINAL_ADC_LEVEL = 920
     NOMINAL_BATTERY_VOLTAGE = 11.6
 
-    def __init__(self, pin: int = 36, dummy_adc_level: int = NOMINAL_ADC_LEVEL):
+    def __init__(self, pin: int = 23, dummy_adc_level: int = NOMINAL_ADC_LEVEL):
         """
         In firmware's usage, to simulate the sensor used to read the battery's voltage
         :param pin: The pin whose value (raw ADC level between 0 and 1023) will be read from

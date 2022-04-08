@@ -1,3 +1,4 @@
+from connections.serial.serial_connection import SerialConnection
 from connections.sim.hw.hw_sim import HWSim
 from connections.sim.hw.ignitor_sim import Ignitor, IgnitorType
 from connections.sim.hw.rocket_sim import RocketSim

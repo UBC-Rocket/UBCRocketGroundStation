@@ -53,7 +53,7 @@ class SimConnection(Connection):
         self.bigEndianInts = None
         self.bigEndianFloats = None
 
-        self.stdin_lock = threading.RLock() # Since SIM Thread and Send Thread / XBee Thread both send packets
+        self.stdin_lock = threading.RLock()  # Since SIM Thread and Send Thread / XBee Thread both send packets
 
         # Firmware subprocess - Closes automatically when parent (ground station) closes
         self.rocket = sp.Popen(
@@ -256,6 +256,8 @@ class SimConnection(Connection):
 
     def _find_executable(self, executable_name):
         flare_path = os.path.join(Path(LOCAL).parent, 'FLARE', 'avionics', 'build')
+        wb_path = os.path.join(Path(LOCAL).parent, 'Whistler-Blackcomb-v2', 'build')
+        wb_path_workspace = os.path.join(Path(LOCAL).parent, 'workspace', 'Whistler-Blackcomb-v2', 'build')
 
         local_path = os.path.join(LOCAL, 'FW')
 
@@ -264,7 +266,11 @@ class SimConnection(Connection):
         # Check FW (child) dir and FLARE (neighbour) dir for rocket build files
         # If multiple build files found throw exception
         neighbour_build_file = executable_name + EXECUTABLE_FILE_EXTENSION
-        neighbour_build_file_exists = os.path.exists(os.path.join(flare_path, neighbour_build_file))
+        flare_neighbour_build_file_exists = os.path.exists(os.path.join(flare_path, neighbour_build_file))
+        wb_neighbour_build_file_exists = os.path.exists(os.path.join(wb_path, neighbour_build_file))
+        wb_workspace_neighbour_build_file_exists = os.path.exists(os.path.join(wb_path_workspace, neighbour_build_file))
+        neighbour_build_file_exists = flare_neighbour_build_file_exists | wb_neighbour_build_file_exists | \
+                                      wb_workspace_neighbour_build_file_exists
 
         child_build_file_exists = os.path.exists(os.path.join(local_path, local_name))
 
@@ -273,7 +279,12 @@ class SimConnection(Connection):
                 f"Multiple build files found: {neighbour_build_file} and {local_name}")
         elif neighbour_build_file_exists:
             executable_name = neighbour_build_file
-            path = flare_path
+            if flare_neighbour_build_file_exists:
+                path = flare_path
+            elif wb_neighbour_build_file_exists:
+                path = wb_path
+            else:
+                path = wb_path_workspace
         elif child_build_file_exists:
             executable_name = local_name
             path = local_path

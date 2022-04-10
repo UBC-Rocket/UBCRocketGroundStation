@@ -45,6 +45,12 @@ class WbProfile(RocketProfile):
         }
 
     @property
+    def mapping_devices(self):
+        return [
+            DeviceType.WB_FIRMWARE,
+        ]
+
+    @property
     def labels(self):
         return [
             Label(DeviceType.WB_FIRMWARE, "Altitude", update_altitude),

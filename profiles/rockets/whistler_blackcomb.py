@@ -19,7 +19,7 @@ from util.detail import REQUIRED_WB_FIRMWARE
 
 from ..label import (
     Label,
-    update_altitude,
+    update_altitude, update_max_altitude, update_gps, update_state, update_pressure, update_acceleration,
 )
 
 class WbProfile(RocketProfile):
@@ -54,6 +54,11 @@ class WbProfile(RocketProfile):
     def labels(self):
         return [
             Label(DeviceType.WB_FIRMWARE, "Altitude", update_altitude),
+            Label(DeviceType.WB_FIRMWARE, "MaxAltitude", update_max_altitude, "Max Altitude"),
+            Label(DeviceType.WB_FIRMWARE, "GPS", update_gps),
+            Label(DeviceType.WB_FIRMWARE, "State", update_state),
+            Label(DeviceType.WB_FIRMWARE, "Pressure", update_pressure),
+            Label(DeviceType.WB_FIRMWARE, "Acceleration", update_acceleration),
         ]
 
     @property

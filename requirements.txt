@@ -1,8 +1,8 @@
-digi_xbee==1.1.1.1
+digi_xbee==1.4
 Pillow==7.2.0
 numpy==1.15.4
 matplotlib==3.0.2
-PyQt5==5.12.1
+PyQt5==5.14.2
 pyserial==3.4
 PyInstaller==4.9
 mapbox==0.18.0

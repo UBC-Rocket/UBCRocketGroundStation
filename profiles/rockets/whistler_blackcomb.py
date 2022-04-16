@@ -118,8 +118,8 @@ class WbProfile(RocketProfile):
         }
 
     def construct_app(self, connections):
-        # return WbApp(connections, self)
-        return CompApp(connections, self)
+        return WbApp(connections, self)
+        # return CompApp(connections, self)
 
     def construct_packet_parser(self):
         # return CompPacketParser()  # TODO : Use WbPacketParser once its set up

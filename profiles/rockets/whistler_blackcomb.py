@@ -20,11 +20,6 @@ from util.detail import REQUIRED_WB_FIRMWARE
 from ..label import (
     Label,
     update_altitude,
-    # update_max_altitude,
-    # update_gps,
-    # update_state,
-    # update_pressure,
-    # update_acceleration,
 )
 
 class WbProfile(RocketProfile):
@@ -59,11 +54,6 @@ class WbProfile(RocketProfile):
     def labels(self):
         return [
             Label(DeviceType.WB_FIRMWARE, "Altitude", update_altitude),
-            # Label(DeviceType.WB_FIRMWARE, "MaxAltitude", update_max_altitude),
-            # Label(DeviceType.WB_FIRMWARE, "GPS", update_gps),
-            # Label(DeviceType.WB_FIRMWARE, "State", update_state),
-            # Label(DeviceType.WB_FIRMWARE, "Pressure", update_pressure),
-            # Label(DeviceType.WB_FIRMWARE, "Acceleration", update_acceleration),
         ]
 
     @property
@@ -94,11 +84,12 @@ class WbProfile(RocketProfile):
     def construct_debug_connection(self):
         return {
             'WB_CONNECTION': DebugConnection('WHISTLER_BLACKCOMB_RADIO_ADDRESS',
-                                             DEVICE_TYPE_TO_ID[DeviceType.WB_FIRMWARE],
-                                             generate_radio_packets=True)
+                                                           DEVICE_TYPE_TO_ID[DeviceType.WB_FIRMWARE],
+                                                           generate_radio_packets=True)
         }
 
     def construct_sim_connection(self):
+
         # TODO: Change this to actual wb profile when it's actually made on open rocket
         rocket_sim = RocketSim('Hollyburn CanSat Jan 20.ork')
 

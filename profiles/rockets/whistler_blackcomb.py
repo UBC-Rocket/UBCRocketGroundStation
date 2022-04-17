@@ -54,7 +54,7 @@ class WbProfile(RocketProfile):
     def labels(self):
         return [
             Label(DeviceType.WB_FIRMWARE, "Altitude", update_altitude),
-            Label(DeviceType.WB_FIRMWARE, "MaxAltitude", update_max_altitude, "Max Altitude"),
+            Label(DeviceType.WB_FIRMWARE, "MaxAltitude", update_max_altitude),
             Label(DeviceType.WB_FIRMWARE, "GPS", update_gps),
             Label(DeviceType.WB_FIRMWARE, "State", update_state),
             Label(DeviceType.WB_FIRMWARE, "Pressure", update_pressure),

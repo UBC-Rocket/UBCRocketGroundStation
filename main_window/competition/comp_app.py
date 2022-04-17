@@ -84,6 +84,8 @@ class CompApp(MainApp, Ui_MainWindow):
         self.MappingThread.sig_received.connect(self.receive_map)
         self.MappingThread.start()
 
+        self.setup_zoom_slider() #have to set up after mapping thread created
+
         LOGGER.info(f"Successfully started app (version = {GIT_HASH})")
 
     def setup_buttons(self):
@@ -187,6 +189,22 @@ class CompApp(MainApp, Ui_MainWindow):
                 view_device = QAction(f'{device}', self)
                 view_device.triggered.connect(lambda i, device=device: self.set_view_device([device]))
                 self.map_view_menu.addAction(view_device)
+
+    def setup_zoom_slider(self) -> None:
+        # Map zoom slider and zoom buttons
+        self.maxZoomFactor = 3 #zoom out 2**3 scale
+        self.minZoomFactor = -2
+        self.numTicksPerScale = 1
+        #currently, each tick represents a 2x scale change
+        #increase numTicksPerScale for more ticks on slider
+
+        self.horizontalSlider.setMinimum(self.minZoomFactor*self.numTicksPerScale)
+        self.horizontalSlider.setMaximum(self.maxZoomFactor*self.numTicksPerScale)
+        self.horizontalSlider.setValue(0) #default original scale
+        self.horizontalSlider.valueChanged.connect(self.map_zoomed)
+
+        self.zoom_in_button.clicked.connect(self.slider_dec)
+        self.zoom_out_button.clicked.connect(self.slider_inc)
 
     def receive_data(self) -> None:
         """
@@ -433,6 +451,17 @@ class CompApp(MainApp, Ui_MainWindow):
 
     def set_view_device(self, viewedDevices) -> None:
         self.MappingThread.setViewedDevice(viewedDevices)
+
+    def slider_inc(self, zoom_change) -> None:
+        self.horizontalSlider.setValue(self.horizontalSlider.value() + 1)
+
+    def slider_dec(self, zoom_change) -> None:
+        self.horizontalSlider.setValue(self.horizontalSlider.value() - 1)
+
+
+    def map_zoomed(self) -> None:
+        self.MappingThread.setMapZoom(2**(self.horizontalSlider.value()/self.numTicksPerScale))
+
 
     def shutdown(self):
         self.save_view()

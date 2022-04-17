@@ -49,6 +49,7 @@ class MappingThread(QtCore.QThread):
         self.viewed_devices = self.devices #List of devices currently being viewed
 
         self._desiredMapSize: tuple(int, int) = None  # Lock in cv is used to protect this
+        self.map_zoom = 1
         self._is_shutting_down = False  # Lock in cv is used to protect this
 
         # Condition variable to watch for notification of new lat and lon
@@ -101,6 +102,25 @@ class MappingThread(QtCore.QThread):
             self.notify()
 
 
+    def setMapZoom(self, zoom) -> None:
+        """
+
+        :param factor
+        :type factor: int
+        """
+        with self.cv:
+            self.map_zoom = zoom
+
+    def getMapZoom(self):
+        """
+
+        :return:
+        :rtype:
+        """
+        with self.cv:
+            return self.map_zoom
+
+
 
     def setDesiredMapSize(self, x, y) -> None:
         """
@@ -124,7 +144,7 @@ class MappingThread(QtCore.QThread):
             return self._desiredMapSize
 
     # Draw and show the map on the UI
-    def plotMap(self, latitudes, longitudes, radius: float, zoom: float):
+    def plotMap(self, latitudes, longitudes, radius: float):
         """
 
         :param latitudes:
@@ -150,12 +170,12 @@ class MappingThread(QtCore.QThread):
         # Create MapPoints that correspond to corners of a square area (of side length 2*radius) surrounding the
         # inputted latitude and longitude. Radius is in km
 
-        lat1 = avg_latitude + max_lat_diff + radius / 110.574
-        lon1 = avg_longitude - max_long_diff - radius / 111.320 / math.cos(lat1 * math.pi / 180.0)
+        lat1 = avg_latitude + (max_lat_diff + radius / 110.574)*self.map_zoom
+        lon1 = avg_longitude - (max_long_diff + radius / 111.320 / math.cos(lat1 * math.pi / 180.0))*self.map_zoom
         p1 = mapbox_utils.MapPoint(lat1, lon1)  # Map corner 1
 
-        lat2 = avg_latitude - max_lat_diff - radius / 110.574
-        lon2 = avg_longitude + max_long_diff + radius / 111.320 / math.cos(lat2 * math.pi / 180.0)
+        lat2 = avg_latitude - (max_lat_diff + radius / 110.574)*self.map_zoom
+        lon2 = avg_longitude + (max_long_diff + radius / 111.320 / math.cos(lat2 * math.pi / 180.0))*self.map_zoom
         p2 = mapbox_utils.MapPoint(lat2, lon2)  # Map corner 2
 
         desiredSize = self.getDesiredMapSize()  # x,y
@@ -165,7 +185,7 @@ class MappingThread(QtCore.QThread):
         #Find zoom s.t. approximately 2x2 tiles are downloaded
         lon_zoom = math.floor(math.log2(2 / (abs(p1.x - p2.x))))
         lat_zoom = math.floor(math.log2(2 / (abs(p1.y - p2.y))))
-        zoom = min(zoom, lat_zoom, lon_zoom)
+        zoom = min(DEFAULT_ZOOM, lat_zoom, lon_zoom)
 
         self.requestQueue.put_nowait((p0, p1, p2, zoom, desiredSize))
 
@@ -203,6 +223,7 @@ class MappingThread(QtCore.QThread):
         last_latitude = None
         last_longitude = None
         last_desired_size = None
+        last_map_zoom = None
         last_update_time = 0
 
         while True:
@@ -228,16 +249,17 @@ class MappingThread(QtCore.QThread):
                         latitudes[device], longitudes[device] = latitude, longitude
 
                 desired_size = self.getDesiredMapSize()
+                map_zoom = self.getMapZoom()
 
                 # Prevent unnecessary work while no location data is received from any device
                 if len(latitudes) == 0: #latitudes does not store data if lat = None
                     continue
 
-                # Prevent unnecessary work while data hasn't changed
-                if (latitudes, longitudes, desired_size) == (last_latitude, last_longitude, last_desired_size):
+                # Prevent unnecessary work while data hasnt changed
+                if (latitudes, longitudes, desired_size, map_zoom) == (last_latitude, last_longitude, last_desired_size, last_map_zoom):
                     continue
 
-                if self.plotMap(latitudes, longitudes, DEFAULT_RADIUS, DEFAULT_ZOOM):
+                if self.plotMap(latitudes, longitudes, DEFAULT_RADIUS):
                     # notify UI that new data is available to be displayed
                     self.sig_received.emit()
                 else:
@@ -247,6 +269,7 @@ class MappingThread(QtCore.QThread):
                 last_longitude = longitudes
                 last_update_time = current_time
                 last_desired_size = desired_size
+                last_map_zoom = map_zoom
 
             except Exception:
                 LOGGER.exception("Error in map thread loop")  # Automatically grabs and prints exception info

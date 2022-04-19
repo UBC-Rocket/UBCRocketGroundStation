@@ -74,6 +74,7 @@ class CompApp(MainApp, Ui_MainWindow):
         self.setup_buttons()
         self.setup_labels()
         self.setup_subwindow().showMaximized()
+
         self.setup_view_menu()
 
         self.setWindowIcon(QtGui.QIcon(mapbox_utils.MARKER_PATH))
@@ -179,10 +180,7 @@ class CompApp(MainApp, Ui_MainWindow):
             getattr(self, name + "Label").setText(QtCore.QCoreApplication.translate("MainWindow", ""))
 
     def map_callback(self):
-        if self.selected_label.name == "Altitude":
-            self.selected_label.map_fn(self, DeviceType.TANTALUS_STAGE_1_FLARE,DataEntryIds.CALCULATED_ALTITUDE)
-        else:
-            self.selected_label.map_fn(self)
+        self.selected_label.map_fn(self, self.selected_label.device, self.selected_label.name) #come back
 
         if self.selected_label.name == "GPS":
             MAP_UPDATED_EVENT.increment()
@@ -194,7 +192,7 @@ class CompApp(MainApp, Ui_MainWindow):
         # TODO: Also have access to click, scroll, keyboard, etc. Would be good to implement map manipulation.
 
         sub = QtWidgets.QMdiSubWindow()
-        sub.layout().setContentsMargins(0, 0, 0, 0)
+        sub.layout().setContentsMargins(0,0,0,0)
         sub.setWidget(self.plotWidget)
         sub.setWindowTitle("Data Plot")
         sub.setWindowIcon(QtGui.QIcon(mapbox_utils.MARKER_PATH))
@@ -426,6 +424,7 @@ class CompApp(MainApp, Ui_MainWindow):
         self.MappingThread.setDesiredMapSize(event.width, event.height)
         self.windowWidth = event.width
         self.windowHeight = event.height
+
 
     def set_view_device(self, viewedDevices) -> None:
         self.MappingThread.setViewedDevice(viewedDevices)

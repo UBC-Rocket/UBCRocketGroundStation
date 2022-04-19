@@ -45,34 +45,38 @@ class TantalusProfile(RocketProfile):
     def labels(self):
         return [
             Label(DeviceType.TANTALUS_STAGE_1_FLARE,
-                  "Altitude",
-                  update_altitude,
-                  map_fn = receive_time_series),
+                "Altitude",
+                update_altitude,
+                map_fn = receive_time_series),
             Label(
                 DeviceType.TANTALUS_STAGE_1_FLARE,
                 "MaxAltitude",
                 update_max_altitude,
-                "Max Altitude",
-            ),
+                "Max Altitude",),
             Label(
-                DeviceType.TANTALUS_STAGE_1_FLARE, "GPS", update_gps, map_fn=receive_map
-            ),
-            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "State", update_state,),
+                DeviceType.TANTALUS_STAGE_1_FLARE,
+                "GPS",
+                update_gps,
+                map_fn = receive_map),
+            Label(DeviceType.TANTALUS_STAGE_1_FLARE,
+                "State",
+                update_state,
+                map_fn = receive_time_series),
             Label(
                 DeviceType.TANTALUS_STAGE_1_FLARE,
                 "Pressure",
-                update_pressure,
-                map_fn=receive_map,
-            ),
+                update_pressure,),
             Label(
-                DeviceType.TANTALUS_STAGE_1_FLARE, "Acceleration", update_acceleration,
-            ),
+                DeviceType.TANTALUS_STAGE_1_FLARE,
+                "Acceleration",
+                update_acceleration,
+                map_fn = receive_time_series,),
             Label(
                 DeviceType.TANTALUS_STAGE_2_FLARE,
                 "Stage2State",
                 update_state,
                 "Stage 2 State",
-            ),
+                map_fn = receive_time_series,),
         ]
 
     @property

@@ -3,7 +3,7 @@ import os
 from typing import Callable, Dict
 import logging
 
-from PyQt5.QtWidgets import QAction
+from PyQt5.QtWidgets import QAction, QApplication
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 from PIL import Image
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
@@ -141,7 +141,6 @@ class CompApp(MainApp, Ui_MainWindow):
 
         def gen_clicked_callback(label: Label):
             def mousePressEvent(QMouseEvent):
-                print("Label selected:", label)
                 self.selected_label = label
             return mousePressEvent
 
@@ -168,6 +167,7 @@ class CompApp(MainApp, Ui_MainWindow):
             if label.name == "GPS":
                 self.selected_label = label
 
+
         if self.selected_label is None:
             self.selected_label = self.rocket_profile.labels[0]
 
@@ -179,11 +179,22 @@ class CompApp(MainApp, Ui_MainWindow):
                 QtCore.QCoreApplication.translate("MainWindow", label.display_name + ":"))
             getattr(self, name + "Label").setText(QtCore.QCoreApplication.translate("MainWindow", ""))
 
+
     def map_callback(self):
-        self.selected_label.map_fn(self, self.selected_label.device, self.selected_label.name) #come back
+        #plot in main window
+        self.selected_label.map_fn(self, self.plotWidget, self.selected_label.device, self.selected_label.name)
 
         if self.selected_label.name == "GPS":
             MAP_UPDATED_EVENT.increment()
+
+        #plot in other open windows
+        for label, window in self.label_windows.items():
+            if window:
+                try: #not the most elegant solution to deal with closed windows...
+                    label.map_fn(self, self.label_windows[label], label.device, label.name)
+                except Exception as e: #catches canvas deleted exception
+                    self.label_windows[label] = None
+
 
     def setup_subwindow(self):
         self.plotWidget = MplWidget()
@@ -203,9 +214,10 @@ class CompApp(MainApp, Ui_MainWindow):
         return sub
 
     def setup_view_menu(self) -> None:
+        view_menu = self.menuBar().children()[2]
+
         # Menubar for choosing rocket device view
         if len(self.rocket_profile.mapping_devices) > 1:
-            view_menu = self.menuBar().children()[2]
             self.map_view_menu = view_menu.addMenu("Map")
 
             view_all = QAction("All", self)
@@ -217,6 +229,18 @@ class CompApp(MainApp, Ui_MainWindow):
                 view_device = QAction(f'{device}', self)
                 view_device.triggered.connect(lambda i, device=device: self.set_view_device([device]))
                 self.map_view_menu.addAction(view_device)
+
+        # Menubar for choosing which data to plot
+        self.dataplot_view_menu = view_menu.addMenu("Data Plot")
+
+        #{label: MplWidget}, None if window not open
+        self.label_windows = {label: None for label in self.rocket_profile.labels if label.name != "GPS"}
+
+        for label in self.label_windows.keys():
+            data_label = QAction(f'{label.name}', self)
+            data_label.triggered.connect(lambda i, label=label: self.open_plot_window(label))
+            self.dataplot_view_menu.addAction(data_label)
+
 
     def receive_data(self) -> None:
         """
@@ -429,7 +453,21 @@ class CompApp(MainApp, Ui_MainWindow):
     def set_view_device(self, viewedDevices) -> None:
         self.MappingThread.setViewedDevice(viewedDevices)
 
+    def open_plot_window(self, label) -> None:
+        """
+        Opens new window for plotting data when selected from menu bar
+        :param label:
+        """
+        if self.label_windows[label] == None:
+            new_window = MplWidget()
+            new_window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+            new_window.setWindowTitle(label.name)
+            self.label_windows[label] = new_window
+            new_window.show()
+
     def shutdown(self):
         self.save_view()
         self.MappingThread.shutdown()
         super().shutdown()
+        QApplication.closeAllWindows()
+

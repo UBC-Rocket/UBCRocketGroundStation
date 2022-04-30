@@ -1,10 +1,13 @@
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
+from matplotlib.animation import FuncAnimation
 
 from main_window.competition.comp_app import MAP_MARKER
 from main_window.device_manager import DeviceType
 from main_window.data_entry_id import DataEntryIds
 from main_window.main_app import MainApp
 from textwrap import wrap
+
+from main_window.mplwidget import MplWidget
 
 label_to_dataID = {"Altitude":DataEntryIds.CALCULATED_ALTITUDE,
                    "State":DataEntryIds.STATE,
@@ -13,12 +16,11 @@ label_to_dataID = {"Altitude":DataEntryIds.CALCULATED_ALTITUDE,
                    "Acceleration": DataEntryIds.ACCELERATION_X,
                    }
 
-
-def receive_map(self, device:DeviceType, label_name:str) -> None:
+def receive_map(self, plot_widget: MplWidget, device:DeviceType, label_name:str) -> None:
     """
     Updates the UI when a new map is available for display
     """
-    children = self.plotWidget.canvas.ax.get_children()
+    children = plot_widget.canvas.ax.get_children()
     for c in children:
         if isinstance(c, AnnotationBbox):
             c.remove()
@@ -26,44 +28,43 @@ def receive_map(self, device:DeviceType, label_name:str) -> None:
     zoom, radius, map_image, mark = self.map_data.get_map_value()
 
     # plotMap UI modification
-    self.plotWidget.canvas.ax.set_axis_off()
-    self.plotWidget.canvas.ax.set_ylim(map_image.shape[0], 0)
-    self.plotWidget.canvas.ax.set_xlim(0, map_image.shape[1])
+    plot_widget.canvas.ax.set_axis_off()
+    plot_widget.canvas.ax.set_ylim(map_image.shape[0], 0)
+    plot_widget.canvas.ax.set_xlim(0, map_image.shape[1])
 
     # Removes pesky white boarder
-    self.plotWidget.canvas.fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
+    plot_widget.canvas.fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
 
     if self.im:
         # Required because plotting images over old ones creates memory leak
         # NOTE: im.set_data() can also be used
         self.im.remove()
 
-    self.im = self.plotWidget.canvas.ax.imshow(map_image)
+    self.im = plot_widget.canvas.ax.imshow(map_image)
+
 
     # updateMark UI modification
     for i in range(len(mark)):
         annotation_box = AnnotationBbox(OffsetImage(MAP_MARKER), mark[i], frameon=False)
-        self.plotWidget.canvas.ax.add_artist(annotation_box)
+        plot_widget.canvas.ax.add_artist(annotation_box)
 
-    # For debugging marker position
-    # self.plotWidget.canvas.ax.plot(mark[1][0], mark[1][1], marker='o', markersize=3, color="red")
-
-    self.plotWidget.canvas.draw()
+    plot_widget.canvas.draw()
 
 
-def receive_time_series(self, device:DeviceType, label_name:str) -> None:
+
+def receive_time_series(self, plot_widget: MplWidget, device:DeviceType, label_name:str) -> None:
     """
         Setup for plotting time series
         Clear previous plot, change subplot settings
     """
-    children = self.plotWidget.canvas.ax.get_children()
+    children = plot_widget.canvas.ax.get_children()
 
     #clear children if still exist from last plot
     for c in children:
         if isinstance(c, AnnotationBbox):
             c.remove()
 
-    self.plotWidget.canvas.fig.subplots_adjust(left=0.2, bottom=0.1, right=0.95, top=0.9, wspace=0, hspace=0)
+    plot_widget.canvas.fig.subplots_adjust(left=0.2, bottom=0.1, right=0.95, top=0.9, wspace=0, hspace=0)
 
     if self.im:
         # Required because plotting images over old ones creates memory leak
@@ -72,32 +73,33 @@ def receive_time_series(self, device:DeviceType, label_name:str) -> None:
 
     self.im = None
 
-    self.plotWidget.canvas.ax.set_axis_on()
-    self.plotWidget.canvas.ax.set_aspect('auto')
+    plot_widget.canvas.ax.set_axis_on()
+    plot_widget.canvas.ax.set_aspect('auto')
 
-    plot_time_series(self, device, label_name)
+    plot_time_series(self, plot_widget, device, label_name)
 
 
-def plot_time_series(self, device:DeviceType, label_name:str) -> None:
+def plot_time_series(self, plot_widget: MplWidget, device:DeviceType, label_name:str) -> None:
     """
             Updates the UI when time series data is available for display
     """
     data_entry_id = label_to_dataID[label_name]
     t, y = self.rocket_data.time_series_by_device(device, data_entry_id)
 
-    self.plotWidget.canvas.ax.cla()
+    plot_widget.canvas.ax.cla()
 
     if data_entry_id == data_entry_id.STATE:
-        self.plotWidget.canvas.ax.plot(t, ['\n'.join(wrap(e.name[6:], 10)) for e in y])
+        plot_widget.canvas.ax.plot(t, ['\n'.join(wrap(e.name[6:], 10)) for e in y])
+
         #plot trimmed state name (STATE_LANDED -> LANDED)
         #the text wrapping is a work in progress
 
-        self.plotWidget.canvas.ax.tick_params(axis='y', labelsize= 6)
+        plot_widget.canvas.ax.tick_params(axis='y', labelsize=6)
 
     else:
-        self.plotWidget.canvas.ax.scatter(t, y)
+        plot_widget.canvas.ax.scatter(t, y)
 
-    self.plotWidget.canvas.ax.set_title(f"{device.name} {label_name}", fontsize=10, pad=10)
+    plot_widget.canvas.ax.set_title(f"{device.name} {label_name}", fontsize=10, pad=10)
     # TODO: check memory leak - plot returns a list of Line2D objects
 
-    self.plotWidget.canvas.draw()
+    plot_widget.canvas.draw()

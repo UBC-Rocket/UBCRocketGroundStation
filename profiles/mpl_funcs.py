@@ -89,17 +89,15 @@ def plot_time_series(self, plot_widget: MplWidget, device:DeviceType, label_name
     plot_widget.canvas.ax.cla()
 
     if data_entry_id == data_entry_id.STATE:
-        plot_widget.canvas.ax.plot(t, ['\n'.join(wrap(e.name[6:], 10)) for e in y])
 
-        #plot trimmed state name (STATE_LANDED -> LANDED)
-        #the text wrapping is a work in progress
+        #Trim state name (STATE_LANDED -> LANDED), wrap state labels so they fit within the window
+        fig_width = plot_widget.canvas.fig.get_size_inches()[0]*plot_widget.canvas.fig.dpi #figure width in pixels
+        plot_widget.canvas.ax.plot(t, ['\n'.join(wrap(e.name[6:], int(fig_width*0.015))) for e in y])
 
         plot_widget.canvas.ax.tick_params(axis='y', labelsize=6)
 
     else:
         plot_widget.canvas.ax.scatter(t, y)
 
-    plot_widget.canvas.ax.set_title(f"{device.name} {label_name}", fontsize=10, pad=10)
-    # TODO: check memory leak - plot returns a list of Line2D objects
-
+    plot_widget.canvas.ax.set_title(f"{device.name} {label_name}", fontsize=10, pad=10, wrap=True)
     plot_widget.canvas.draw()

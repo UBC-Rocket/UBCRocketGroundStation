@@ -10,6 +10,7 @@ from textwrap import wrap
 from main_window.mplwidget import MplWidget
 
 label_to_dataID = {"Altitude":DataEntryIds.CALCULATED_ALTITUDE,
+                   "MaxAltitude":None,
                    "State":DataEntryIds.STATE,
                    "Stage2State":DataEntryIds.STATE,
                    "Pressure":DataEntryIds.PRESSURE,
@@ -83,21 +84,25 @@ def plot_time_series(self, plot_widget: MplWidget, device:DeviceType, label_name
     """
             Updates the UI when time series data is available for display
     """
-    data_entry_id = label_to_dataID[label_name]
-    t, y = self.rocket_data.time_series_by_device(device, data_entry_id)
-
     plot_widget.canvas.ax.cla()
+    data_entry_id = label_to_dataID[label_name]
 
-    if data_entry_id == data_entry_id.STATE:
+    if data_entry_id and self.rocket_data.time_series_by_device(device, data_entry_id):
+        t, y = self.rocket_data.time_series_by_device(device, data_entry_id)
 
-        #Trim state name (STATE_LANDED -> LANDED), wrap state labels so they fit within the window
-        fig_width = plot_widget.canvas.fig.get_size_inches()[0]*plot_widget.canvas.fig.dpi #figure width in pixels
-        plot_widget.canvas.ax.plot(t, ['\n'.join(wrap(e.name[6:], int(fig_width*0.015))) for e in y])
+        if y is None:
+            pass #do we want to log if no data found?
 
-        plot_widget.canvas.ax.tick_params(axis='y', labelsize=6)
+        elif data_entry_id == data_entry_id.STATE:
 
-    else:
-        plot_widget.canvas.ax.scatter(t, y)
+            #Trim state name (STATE_LANDED -> LANDED), wrap state labels so they fit within the window
+            fig_width = plot_widget.canvas.fig.get_size_inches()[0]*plot_widget.canvas.fig.dpi #figure width in pixels
+            plot_widget.canvas.ax.plot(t, ['\n'.join(wrap(e.name[6:], int(fig_width*0.015))) for e in y])
+
+            plot_widget.canvas.ax.tick_params(axis='y', labelsize=6)
+
+        else:
+            plot_widget.canvas.ax.scatter(t, y)
 
     plot_widget.canvas.ax.set_title(f"{device.name} {label_name}", fontsize=10, pad=10, wrap=True)
     plot_widget.canvas.draw()

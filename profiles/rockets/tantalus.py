@@ -52,7 +52,8 @@ class TantalusProfile(RocketProfile):
                 DeviceType.TANTALUS_STAGE_1_FLARE,
                 "MaxAltitude",
                 update_max_altitude,
-                "Max Altitude",),
+                "Max Altitude",
+                map_fn = receive_time_series),
             Label(
                 DeviceType.TANTALUS_STAGE_1_FLARE,
                 "GPS",
@@ -65,7 +66,8 @@ class TantalusProfile(RocketProfile):
             Label(
                 DeviceType.TANTALUS_STAGE_1_FLARE,
                 "Pressure",
-                update_pressure,),
+                update_pressure,
+                map_fn = receive_time_series),
             Label(
                 DeviceType.TANTALUS_STAGE_1_FLARE,
                 "Acceleration",

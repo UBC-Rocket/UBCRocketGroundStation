@@ -30,10 +30,10 @@ class SerialConnection(Connection):
 
     def send(self, device_address, data):
         remote_device = RemoteXBeeDevice(self.device, XBee64BitAddress.from_hex_string(device_address))
-        self.device.send_data(remote_device, bytes)
+        self.device.send_data(remote_device, data)
 
     def broadcast(self, data):
-        self.device.send_data_broadcast(bytes)
+        self.device.send_data_broadcast(data)
 
     def shutdown(self):
         self.device.close()

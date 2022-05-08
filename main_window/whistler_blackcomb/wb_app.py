@@ -1,3 +1,4 @@
+import logging
 import math
 import os
 from typing import Dict, Callable
@@ -8,19 +9,22 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
 from connections.connection import Connection
 from util.detail import LOCAL, BUNDLED_DATA
-
+from util.event_stats import Event
 from profiles.rocket_profile import RocketProfile
-
+from PIL import Image
 from main_window.main_app import MainApp
 
-from UBCRocketGroundStation.main_window.competition.comp_app import LABLES_UPDATED_EVENT, MAP_UPDATED_EVENT, MAP_MARKER
-from UBCRocketGroundStation.main_window.competition.mapping import mapbox_utils
+from UBCRocketGroundStation.main_window.competition.mapping import mapbox_utils, map_data
+from UBCRocketGroundStation.main_window.competition.mapping.mapping_thread import MappingThread
 from UBCRocketGroundStation.main_window.mplwidget import MplWidget
-from UBCRocketGroundStation.util.detail import LOGGER
+from UBCRocketGroundStation.util.detail import LOGGER, qtHook, qtSignalLogHandler, GIT_HASH
 
 qtCreatorFile = os.path.join(BUNDLED_DATA, "qt_files", "wb_app.ui")
 
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
+MAP_MARKER = Image.open(mapbox_utils.MARKER_PATH).resize((12, 12), Image.LANCZOS)
+LABLES_UPDATED_EVENT = Event('lables_updated')
+MAP_UPDATED_EVENT = Event('map_updated')
 
 
 class WbApp(MainApp, Ui_MainWindow):
@@ -28,12 +32,60 @@ class WbApp(MainApp, Ui_MainWindow):
     def __init__(self, connections: Dict[str, Connection], rocket_profile: RocketProfile) -> None:
         """
 
-        :param connection:
-        :type connection: Connection
+        :param connections:
         :param rocket_profile:
-        :type rocket_profile: RocketProfile
         """
-        super().__init__(connections, rocket_profile)  # Must call base
+        super().__init__(connections, rocket_profile)
+
+        self.map_data = map_data.MapData()
+        self.im = None  # Plot im
+
+        self.command_history = []
+        self.command_history_index = None
+
+        # Attach functions for static buttons
+        self.sendButton.clicked.connect(self.send_button_pressed)
+        self.actionSave.triggered.connect(self.save_file)
+        self.actionSave.setShortcut("Ctrl+S")
+        self.actionReset.triggered.connect(self.reset_view)
+
+        # Hook into some of commandEdit's events
+        qtHook(self.commandEdit, 'focusNextPrevChild', lambda _: False,
+               override_return=True)  # Prevents tab from changing focus
+        qtHook(self.commandEdit, 'keyPressEvent', self.command_edit_key_pressed)
+        qtHook(self.commandEdit, 'showPopup', self.command_edit_show_popup)
+
+        # Hook-up logger to UI text output
+        # Note: Currently doesn't print logs from other processes (e.g. mapping process)
+        log_format = logging.Formatter("[%(asctime)s] (%(levelname)s) %(message)s")
+        log_handler = qtSignalLogHandler(exception_traces=False)
+        log_handler.setLevel(logging.INFO)
+        log_handler.setFormatter(log_format)
+        log_handler.qt_signal.connect(self.print_to_ui)
+        LOGGER.addHandler(log_handler)
+
+        # Setup dynamic UI elements
+        self.setup_buttons()
+        self.setup_labels()
+        self.setup_subwindow().showMaximized()
+        self.setup_view_menu()
+
+        self.setWindowIcon(QtGui.QIcon(mapbox_utils.MARKER_PATH))
+
+        # Setup user window preferences
+        self.original_geometry = self.saveGeometry()
+        self.original_state = self.saveState()
+        self.settings = QtCore.QSettings('UBCRocket', 'UBCRGS')
+        self.restore_view()
+
+        # Init and connection of MappingThread
+        self.MappingThread = MappingThread(self.connections, self.map_data, self.rocket_data, self.rocket_profile)
+        self.MappingThread.sig_received.connect(self.receive_map)
+        self.MappingThread.start()
+
+        self.setup_zoom_slider()  # have to set up after mapping thread created
+
+        LOGGER.info(f"Successfully started app (version = {GIT_HASH})")
 
         # Set up UI stuff using base class here. E.g.:
         # self.armingButton.clicked.connect(self.arming_button_pressed)
@@ -104,7 +156,8 @@ class WbApp(MainApp, Ui_MainWindow):
         # are being used to be consistent with the PyQt5 conventions.
         for label in self.rocket_profile.labels:
             name = label.name
-            getattr(self, name + "Text").setText(QtCore.QCoreApplication.translate("MainWindow", label.display_name + ":"))
+            getattr(self, name + "Text").setText(
+                QtCore.QCoreApplication.translate("MainWindow", label.display_name + ":"))
             getattr(self, name + "Label").setText(QtCore.QCoreApplication.translate("MainWindow", ""))
 
     def setup_subwindow(self):
@@ -132,7 +185,7 @@ class WbApp(MainApp, Ui_MainWindow):
 
             view_all = QAction("All", self)
             all_devices = self.rocket_profile.mapping_devices
-            view_all.triggered.connect(lambda i, all_devices = all_devices: self.set_view_device(all_devices))
+            view_all.triggered.connect(lambda i, all_devices=all_devices: self.set_view_device(all_devices))
             self.map_view_menu.addAction(view_all)
 
             for device in self.rocket_profile.mapping_devices:
@@ -142,15 +195,15 @@ class WbApp(MainApp, Ui_MainWindow):
 
     def setup_zoom_slider(self) -> None:
         # Map zoom slider and zoom buttons
-        self.maxZoomFactor = 3 #zoom out 2**3 scale
+        self.maxZoomFactor = 3  # zoom out 2**3 scale
         self.minZoomFactor = -2
         self.numTicksPerScale = 1
-        #currently, each tick represents a 2x scale change
-        #increase numTicksPerScale for more ticks on slider
+        # currently, each tick represents a 2x scale change
+        # increase numTicksPerScale for more ticks on slider
 
-        self.horizontalSlider.setMinimum(self.minZoomFactor*self.numTicksPerScale)
-        self.horizontalSlider.setMaximum(self.maxZoomFactor*self.numTicksPerScale)
-        self.horizontalSlider.setValue(0) #default original scale
+        self.horizontalSlider.setMinimum(self.minZoomFactor * self.numTicksPerScale)
+        self.horizontalSlider.setMaximum(self.maxZoomFactor * self.numTicksPerScale)
+        self.horizontalSlider.setValue(0)  # default original scale
         self.horizontalSlider.valueChanged.connect(self.map_zoomed)
 
         self.zoom_in_button.clicked.connect(self.slider_dec)
@@ -368,7 +421,7 @@ class WbApp(MainApp, Ui_MainWindow):
             self.plotWidget.canvas.ax.add_artist(annotation_box)
 
         # For debugging marker position
-        #self.plotWidget.canvas.ax.plot(mark[1][0], mark[1][1], marker='o', markersize=3, color="red")
+        # self.plotWidget.canvas.ax.plot(mark[1][0], mark[1][1], marker='o', markersize=3, color="red")
 
         self.plotWidget.canvas.draw()
 
@@ -392,7 +445,7 @@ class WbApp(MainApp, Ui_MainWindow):
         self.horizontalSlider.setValue(self.horizontalSlider.value() - 1)
 
     def map_zoomed(self) -> None:
-        self.MappingThread.setMapZoom(2**(self.horizontalSlider.value()/self.numTicksPerScale))
+        self.MappingThread.setMapZoom(2 ** (self.horizontalSlider.value() / self.numTicksPerScale))
 
     def shutdown(self):
         self.save_view()
@@ -421,7 +474,6 @@ class WbApp(MainApp, Ui_MainWindow):
         # Handle new data here. New data is put retrieved from rocket_data. E.g.:
         # self.pressureLabel.setText(self.rocket_data.last_value_by_device(DataEntryIds.PRESSURE))
 
-
     ''' # Optional implementation
     def shutdown(self):
         """
@@ -429,8 +481,8 @@ class WbApp(MainApp, Ui_MainWindow):
         :return:
         :rtype:
         """
-        
+
         # Handle shutdown stuff here
-        
+
         super().shutdown() # Must always call base
     '''

@@ -1,3 +1,4 @@
+from connections.sim.hw.sensors.sensor_sim import SensorSim
 from ..label import (
     Label,
     update_acceleration,
@@ -64,11 +65,21 @@ class SilvertipProfile(RocketProfile):
 
     @property
     def expected_apogee_point(self):
-        return None
+        return FlightPoint(
+            time=35.9,
+            time_tolerance=5,
+            altitude=7603,
+            altitude_tolerance=30
+        )
 
     @property
     def expected_main_deploy_point(self):
-        return None
+        return FlightPoint(
+            time=514.4,
+            time_tolerance=5,
+            altitude=590,
+            altitude_tolerance=50
+        )
 
     def construct_serial_connection(self, com_port, baud_rate):
         return {
@@ -85,23 +96,20 @@ class SilvertipProfile(RocketProfile):
     def construct_sim_connection(self):
         # Assemble HW here
 
-        '''
-        Stage 1
-        '''
-        rocket_sim = RocketSim('simple.ork') # TODO: Update ORK file once possible
+        rocket_sim = RocketSim('Silvertip-01-05-2022.ork')
 
         hw_sim_sensors = [ # TODO: Use different values than Tantalus
-            DummySensor(SensorType.BAROMETER, (1000, 25)),
+            SensorSim(SensorType.BAROMETER, rocket_sim, error_stdev=(50, 0.005)),
             DummySensor(SensorType.GPS, (12.6, 13.2, 175)),
-            DummySensor(SensorType.ACCELEROMETER, (1, 0, 0)),
+            SensorSim(SensorType.ACCELEROMETER, rocket_sim),
             DummySensor(SensorType.IMU, (1, 0, 0, 0)),
             DummySensor(SensorType.TEMPERATURE, (20,)),
             VoltageSensor()
         ]
 
         hw_sim_ignitors = [
-            Ignitor(IgnitorType.MAIN, 4, 14, 16),
-            Ignitor(IgnitorType.DROGUE, 17, 34, 35),
+            Ignitor(IgnitorType.MAIN, 4, 14, 16, action_fn=rocket_sim.deploy_main),
+            Ignitor(IgnitorType.DROGUE, 17, 34, 35, action_fn=rocket_sim.deploy_drogue),
         ]
 
         hwsim = HWSim(rocket_sim, hw_sim_sensors, hw_sim_ignitors)

@@ -17,6 +17,7 @@ class DeviceType(Enum):
     CO_PILOT_FLARE = auto()
     HOLLYBURN_BODY_FLARE = auto()
     HOLLYBURN_NOSE_FLARE = auto()
+    SILVERTIP_FLARE = auto()
 
 
 _FLARE_DEVICE_TYPES = [
@@ -25,6 +26,7 @@ _FLARE_DEVICE_TYPES = [
     DeviceType.CO_PILOT_FLARE,
     DeviceType.HOLLYBURN_BODY_FLARE,
     DeviceType.HOLLYBURN_NOSE_FLARE,
+    DeviceType.SILVERTIP_FLARE,
 ]
 
 

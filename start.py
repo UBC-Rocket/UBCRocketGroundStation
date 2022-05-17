@@ -4,6 +4,7 @@ import argparse
 import matplotlib
 matplotlib.use('QT5Agg') # Ensures that the Qt5 backend is used, otherwise there might be some issues on some OSs (Mac)
 from com_window.main import ComWindow
+from download_window.main import DownloadWindow
 from PyQt5 import QtWidgets, QtCore
 from profiles.rockets.tantalus import TantalusProfile
 from util.self_test import SelfTest
@@ -35,6 +36,15 @@ if __name__ == "__main__":
     app.setFont(font)
 
     if not args.self_test:
+        # #TODO: Open download tile
+        # Open download_window to download tiles ahead of time
+        download_window = DownloadWindow()
+        download_window.show()
+        return_code = app.exec_()
+        # if return_code != 0 or download_window.mode is None:
+        if return_code != 0:
+            sys.exit(return_code)
+
         # Open com_window dialog to get startup details
         com_window = ComWindow()
         com_window.show()

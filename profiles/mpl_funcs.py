@@ -9,13 +9,22 @@ from textwrap import wrap
 
 from main_window.mplwidget import MplWidget
 
-label_to_dataID = {"Altitude":DataEntryIds.CALCULATED_ALTITUDE,
-                   "MaxAltitude":None,
-                   "State":DataEntryIds.STATE,
-                   "Stage2State":DataEntryIds.STATE,
-                   "Pressure":DataEntryIds.PRESSURE,
-                   "Acceleration": DataEntryIds.ACCELERATION_X,
-                   }
+label_to_dataID = {"Altitude": DataEntryIds.CALCULATED_ALTITUDE,
+               "MaxAltitude": None,
+               "State": DataEntryIds.STATE,
+               "Stage2State": DataEntryIds.STATE,
+               "Pressure": DataEntryIds.PRESSURE,
+               "Acceleration": [DataEntryIds.ACCELERATION_X, DataEntryIds.ACCELERATION_Y,
+                                DataEntryIds.ACCELERATION_Z]
+               }
+
+label_unit = {"Altitude": "m",
+               "MaxAltitude": "m",
+               "State": "",
+               "Stage2State": "",
+               "Pressure": "" ,
+               "Acceleration": "g",
+               }
 
 def receive_map(self, plot_widget: MplWidget, device:DeviceType, label_name:str) -> None:
     """
@@ -87,11 +96,19 @@ def plot_time_series(self, plot_widget: MplWidget, device:DeviceType, label_name
     plot_widget.canvas.ax.cla()
     data_entry_id = label_to_dataID[label_name]
 
-    if data_entry_id and self.rocket_data.time_series_by_device(device, data_entry_id):
+    if label_name == "Acceleration":
+        colors = ["Red", "Blue", "Green"]
+        for i in range(3): #plot acceleration x,y,z on same graph
+            t, y = self.rocket_data.time_series_by_device(device, data_entry_id[i])
+            plot_widget.canvas.ax.plot(t, y, color = colors[i])
+        plot_widget.canvas.ax.legend(["x", "y","z"], loc = "upper right")
+
+    elif data_entry_id and self.rocket_data.time_series_by_device(device, data_entry_id):
+
         t, y = self.rocket_data.time_series_by_device(device, data_entry_id)
 
         if y is None:
-            pass #do we want to log if no data found?
+            pass #possible edit: log if no data found
 
         elif data_entry_id == data_entry_id.STATE:
 
@@ -102,7 +119,10 @@ def plot_time_series(self, plot_widget: MplWidget, device:DeviceType, label_name
             plot_widget.canvas.ax.tick_params(axis='y', labelsize=6)
 
         else:
-            plot_widget.canvas.ax.scatter(t, y)
+            plot_widget.canvas.ax.plot(t, y)
+
+    plot_widget.canvas.ax.set_xlabel("Time (s)")
+    plot_widget.canvas.ax.set_ylabel(f"{label_name} ({label_unit[label_name]})")
 
     plot_widget.canvas.ax.set_title(f"{device.name} {label_name}", fontsize=10, pad=10, wrap=True)
     plot_widget.canvas.draw()

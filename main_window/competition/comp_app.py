@@ -19,7 +19,6 @@ from .mapping.mapping_thread import MappingThread
 from main_window.main_app import MainApp
 from main_window.mplwidget import MplWidget
 
-
 qtCreatorFile = os.path.join(BUNDLED_DATA, "qt_files", "comp_app.ui")
 
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
@@ -184,16 +183,19 @@ class CompApp(MainApp, Ui_MainWindow):
         #plot in main window
         self.selected_label.map_fn(self, self.plotWidget, self.selected_label.device, self.selected_label.name)
 
-        if self.selected_label.name == "GPS":
+        if "GPS" in self.selected_label.name:
             MAP_UPDATED_EVENT.increment()
 
         #plot in other open windows
-        for label, window in self.label_windows.items():
+        for label_name, label_window in self.label_windows.items():
+            label = label_window[0]
+            window = label_window[1]
             if window:
-                try: #not the most elegant solution to deal with closed windows...
-                    label.map_fn(self, self.label_windows[label], label.device, label.name)
+                try: #window may have been closed
+                    label.map_fn(self, window, label.device, label.name)
+
                 except Exception as e: #catches canvas deleted exception
-                    self.label_windows[label] = None
+                    label_window[1] = None
 
 
     def setup_subwindow(self):
@@ -233,12 +235,13 @@ class CompApp(MainApp, Ui_MainWindow):
         # Menubar for choosing which data to plot
         self.dataplot_view_menu = view_menu.addMenu("Data Plot")
 
-        #{label: MplWidget}, None if window not open
-        self.label_windows = {label: None for label in self.rocket_profile.labels if label.name != "GPS"}
+        all_labels = self.rocket_profile.labels + self.rocket_profile.other_labels
+        self.label_windows = {label.display_name: [label, None] for label in all_labels}
+        #{label name: [label object, window object]}
 
-        for label in self.label_windows.keys():
-            data_label = QAction(f'{label.name}', self)
-            data_label.triggered.connect(lambda i, label=label: self.open_plot_window(label))
+        for label_name, label_window in self.label_windows.items():
+            data_label = QAction(f'{label_name}', self)
+            data_label.triggered.connect(lambda i, label_name=label_name: self.open_plot_window(label_name))
             self.dataplot_view_menu.addAction(data_label)
 
     def setup_zoom_slider(self) -> None:
@@ -477,16 +480,19 @@ class CompApp(MainApp, Ui_MainWindow):
     def map_zoomed(self) -> None:
         self.MappingThread.setMapZoom(2 ** (self.horizontalSlider.value() / self.numTicksPerScale))
 
-    def open_plot_window(self, label) -> None:
+    def open_plot_window(self, label_name) -> None:
         """
         Opens new window for plotting data when selected from menu bar
         :param label:
         """
-        if self.label_windows[label] == None:
+        label = self.label_windows[label_name][0]
+        window = self.label_windows[label_name][1]
+
+        if window == None:
             new_window = MplWidget()
             new_window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-            new_window.setWindowTitle(label.name)
-            self.label_windows[label] = new_window
+            new_window.setWindowTitle(f"{label.device} {label.display_name}")
+            self.label_windows[label_name][1] = new_window
             new_window.show()
 
     def shutdown(self):

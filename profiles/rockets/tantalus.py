@@ -44,6 +44,7 @@ class TantalusProfile(RocketProfile):
     @property
     def labels(self):
         return [
+            #Labels for data that are displayed
             Label(DeviceType.TANTALUS_STAGE_1_FLARE,
                 "Altitude",
                 update_altitude,
@@ -59,10 +60,6 @@ class TantalusProfile(RocketProfile):
                 "GPS",
                 update_gps,
                 map_fn = receive_map),
-            Label(DeviceType.TANTALUS_STAGE_1_FLARE,
-                "State",
-                update_state,
-                map_fn = receive_time_series),
             Label(
                 DeviceType.TANTALUS_STAGE_1_FLARE,
                 "Pressure",
@@ -73,12 +70,45 @@ class TantalusProfile(RocketProfile):
                 "Acceleration",
                 update_acceleration,
                 map_fn = receive_time_series,),
+            Label(DeviceType.TANTALUS_STAGE_1_FLARE,
+                  "State",
+                  update_state,
+                  map_fn=receive_time_series),
             Label(
                 DeviceType.TANTALUS_STAGE_2_FLARE,
                 "Stage2State",
                 update_state,
                 "Stage 2 State",
                 map_fn = receive_time_series,),
+        ]
+
+    @property
+    def other_labels(self):
+        #Labels for which data is available but not displayed on screen
+        return [
+            Label(DeviceType.TANTALUS_STAGE_2_FLARE,
+                  "Altitude",
+                  update_altitude,
+                  "Stage 2 Altitude",
+                  map_fn=receive_time_series),
+            Label(
+                DeviceType.TANTALUS_STAGE_2_FLARE,
+                "MaxAltitude",
+                update_max_altitude,
+                "Stage 2 Max Altitude",
+                map_fn=receive_time_series),
+            Label(
+                DeviceType.TANTALUS_STAGE_2_FLARE,
+                "Pressure",
+                update_pressure,
+                "Stage 2 Pressure",
+                map_fn=receive_time_series),
+            Label(
+                DeviceType.TANTALUS_STAGE_2_FLARE,
+                "Acceleration",
+                update_acceleration,
+                "Stage 2 Acceleration",
+                map_fn=receive_time_series, ),
         ]
 
     @property

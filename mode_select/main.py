@@ -44,9 +44,9 @@ class ModeSelect(QtWidgets.QMainWindow, Ui_MainWindow):
     def doneButtonPressed(self) -> None:
         window = self.windowBox.currentText()
 
-        LOGGER.debug(
-            f"User has selected {window}")
+        LOGGER.debug(f"User has selected {window}")
 
-        self.chosen_window = WINDOWS[window]
+        # self.chosen_window = WINDOWS[window]
+        self.chosen_window = window
 
         self.close()

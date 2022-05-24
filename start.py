@@ -2,6 +2,9 @@ import sys
 import multiprocessing
 import argparse
 import matplotlib
+
+from mode_select.main import ModeSelect
+
 matplotlib.use('QT5Agg') # Ensures that the Qt5 backend is used, otherwise there might be some issues on some OSs (Mac)
 from com_window.main import ComWindow
 from download_window.main import DownloadWindow
@@ -36,14 +39,21 @@ if __name__ == "__main__":
     app.setFont(font)
 
     if not args.self_test:
-        # #TODO: Open download tile
-        # Open download_window to download tiles ahead of time
-        download_window = DownloadWindow()
-        download_window.show()
+        # Open mode select window (tile download or com_window)
+        mode_window = ModeSelect()
+        mode_window.show()
         return_code = app.exec_()
-        # if return_code != 0 or download_window.mode is None:
-        if return_code != 0:
+        if return_code != 0 or mode_window.chosen_window is None:
             sys.exit(return_code)
+
+        if mode_window.chosen_window == "Tile Downloader":
+            # Open download_window to download tiles ahead of time
+            download_window = DownloadWindow()
+            download_window.show()
+            return_code = app.exec_()
+            # if return_code != 0 or download_window.mode is None:
+            if return_code != 0:
+                sys.exit(return_code)
 
         # Open com_window dialog to get startup details
         com_window = ComWindow()

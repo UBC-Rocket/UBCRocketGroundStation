@@ -45,9 +45,11 @@ class MappingThread(QtCore.QThread):
         self.map = map_data
         self.rocket_data = rocket_data
 
-        self.device = rocket_profile.mapping_device
+        self.devices = rocket_profile.mapping_devices #List of mappable devices
+        self.viewed_devices = self.devices #List of devices currently being viewed
 
         self._desiredMapSize: tuple(int, int) = None  # Lock in cv is used to protect this
+        self.map_zoom = 1
         self._is_shutting_down = False  # Lock in cv is used to protect this
 
         # Condition variable to watch for notification of new lat and lon
@@ -74,8 +76,9 @@ class MappingThread(QtCore.QThread):
         self.map_process.start()
 
         # Must be done last to prevent race condition
-        self.rocket_data.add_new_callback(self.device, DataEntryIds.LATITUDE, self.notify)
-        self.rocket_data.add_new_callback(self.device, DataEntryIds.LONGITUDE, self.notify)  # TODO review, could/should be omitted?
+        for device in self.viewed_devices:
+            self.rocket_data.add_new_callback(device, DataEntryIds.LATITUDE, self.notify)
+            self.rocket_data.add_new_callback(device, DataEntryIds.LONGITUDE, self.notify)  # TODO review, could/should be omitted?
 
     def notify(self) -> None:
         """
@@ -83,6 +86,41 @@ class MappingThread(QtCore.QThread):
         """
         with self.cv:
             self.cv.notify()
+
+    def setViewedDevice(self, devices) -> None:
+        """
+
+        :param devices
+        :type devices: list of rocket devices
+        """
+        with self.cv:
+            self.viewed_devices = devices
+            for device in self.viewed_devices:
+                if self.rocket_data.last_value_by_device(device, DataEntryIds.LATITUDE) is None:
+                    LOGGER.warning("Data unavailable for {}".format(device.name))
+
+            self.notify()
+
+
+    def setMapZoom(self, zoom) -> None:
+        """
+
+        :param factor
+        :type factor: int
+        """
+        with self.cv:
+            self.map_zoom = zoom
+
+    def getMapZoom(self):
+        """
+
+        :return:
+        :rtype:
+        """
+        with self.cv:
+            return self.map_zoom
+
+
 
     def setDesiredMapSize(self, x, y) -> None:
         """
@@ -106,34 +144,48 @@ class MappingThread(QtCore.QThread):
             return self._desiredMapSize
 
     # Draw and show the map on the UI
-    def plotMap(self, latitude: float, longitude: float, radius: float, zoom: float):
+    def plotMap(self, latitudes, longitudes, radius: float):
         """
 
-        :param latitude:
-        :type latitude: float
-        :param longitude:
-        :type longitude: float
+        :param latitudes:
+        :type latitudes: dict[device, float]
+        :param longitudes:
+        :type longitudes: dict[device, float]
         :return:
         :rtype:
         """
-        if longitude is None or latitude is None:
+        if len(latitudes) == 0:
             return False
 
-        p0 = mapbox_utils.MapPoint(latitude, longitude)  # Point of interest
+        #Calculate average of device points
+        avg_latitude = sum(latitudes.values())/len(latitudes)
+        avg_longitude = sum(longitudes.values()) / len(longitudes)
+
+        #Maximum distance between points and average
+        max_lat_diff = max(map(lambda lat: abs(lat - avg_latitude), latitudes.values()))
+        max_long_diff = max(map(lambda long: abs(long - avg_longitude), longitudes.values()))
+
+        p0 = mapbox_utils.MapPoint(avg_latitude, avg_longitude)  # Point of interest
 
         # Create MapPoints that correspond to corners of a square area (of side length 2*radius) surrounding the
         # inputted latitude and longitude. Radius is in km
-        lat1 = latitude + radius / 110.574
-        lon1 = longitude - radius / 111.320 / math.cos(lat1 * math.pi / 180.0)
+
+        lat1 = avg_latitude + (max_lat_diff + radius / 110.574)*self.map_zoom
+        lon1 = avg_longitude - (max_long_diff + radius / 111.320 / math.cos(lat1 * math.pi / 180.0))*self.map_zoom
         p1 = mapbox_utils.MapPoint(lat1, lon1)  # Map corner 1
 
-        lat2 = latitude - radius / 110.574
-        lon2 = longitude + radius / 111.320 / math.cos(lat2 * math.pi / 180.0)
+        lat2 = avg_latitude - (max_lat_diff + radius / 110.574)*self.map_zoom
+        lon2 = avg_longitude + (max_long_diff + radius / 111.320 / math.cos(lat2 * math.pi / 180.0))*self.map_zoom
         p2 = mapbox_utils.MapPoint(lat2, lon2)  # Map corner 2
 
         desiredSize = self.getDesiredMapSize()  # x,y
         if not desiredSize:
             return False
+
+        #Find zoom s.t. approximately 2x2 tiles are downloaded
+        lon_zoom = math.floor(math.log2(2 / (abs(p1.x - p2.x))))
+        lat_zoom = math.floor(math.log2(2 / (abs(p1.y - p2.y))))
+        zoom = min(DEFAULT_ZOOM, lat_zoom, lon_zoom)
 
         self.requestQueue.put_nowait((p0, p1, p2, zoom, desiredSize))
 
@@ -148,16 +200,16 @@ class MappingThread(QtCore.QThread):
         (resizedMapImage, xMin, xMax, yMin, yMax) = result
 
         # Update mark coordinates
-        p = mapbox_utils.MapPoint(latitude, longitude)
-        x = (p.x - xMin) / (xMax - xMin)
-        y = (p.y - yMin) / (yMax - yMin)
-        mark = (x * resizedMapImage.shape[1], y * resizedMapImage.shape[0]) # images are (h,w) = (y,x) not (w,h) = (x,y)
+        marks = [] #list of device locations
+        # using latitude keys instead of viewed_devices in case more devices are added before latitudes is updated
+        for device in latitudes.keys():
+            p = mapbox_utils.MapPoint(latitudes[device], longitudes[device])
+            x = (p.x - xMin) / (xMax - xMin)
+            y = (p.y - yMin) / (yMax - yMin)
+            mark = (x * resizedMapImage.shape[1], y * resizedMapImage.shape[0])
+            marks.append(mark)
 
-        # Because of the cropping, the mark should be in the middle:
-        assert abs(mark[0] - resizedMapImage.shape[1] / 2) < 1  # x
-        assert abs(mark[1] - resizedMapImage.shape[0] / 2) < 1  # y
-
-        map_data_value = MapDataValue(zoom=zoom, radius=radius, image=resizedMapImage, mark=mark)
+        map_data_value = MapDataValue(zoom=zoom, radius=radius, image=resizedMapImage, mark=marks)
         self.map.set_map_value(map_data_value)
 
         return True
@@ -171,7 +223,9 @@ class MappingThread(QtCore.QThread):
         last_latitude = None
         last_longitude = None
         last_desired_size = None
+        last_map_zoom = None
         last_update_time = 0
+
         while True:
             with self.cv:
                 self.cv.wait()  # CV lock is released while waiting
@@ -185,28 +239,37 @@ class MappingThread(QtCore.QThread):
                     time.sleep(0.5)
 
                 # copy location values to use, to keep the values consistent in synchronous but adjacent calls
-                latitude = self.rocket_data.last_value_by_device(self.device, DataEntryIds.LATITUDE)
-                longitude = self.rocket_data.last_value_by_device(self.device, DataEntryIds.LONGITUDE)
-                desired_size = self.getDesiredMapSize()
+                latitudes = dict()
+                longitudes = dict()
 
-                # Prevent unnecessary work while no location data is received
-                if latitude is None or longitude is None:
+                for device in self.viewed_devices:
+                    latitude = self.rocket_data.last_value_by_device(device, DataEntryIds.LATITUDE)
+                    longitude = self.rocket_data.last_value_by_device(device, DataEntryIds.LONGITUDE)
+                    if latitude and longitude: #plot on map if data not None
+                        latitudes[device], longitudes[device] = latitude, longitude
+
+                desired_size = self.getDesiredMapSize()
+                map_zoom = self.getMapZoom()
+
+                # Prevent unnecessary work while no location data is received from any device
+                if len(latitudes) == 0: #latitudes does not store data if lat = None
                     continue
 
                 # Prevent unnecessary work while data hasnt changed
-                if (latitude, longitude, desired_size) == (last_latitude, last_longitude, last_desired_size):
+                if (latitudes, longitudes, desired_size, map_zoom) == (last_latitude, last_longitude, last_desired_size, last_map_zoom):
                     continue
 
-                if self.plotMap(latitude, longitude, DEFAULT_RADIUS, DEFAULT_ZOOM):
+                if self.plotMap(latitudes, longitudes, DEFAULT_RADIUS):
                     # notify UI that new data is available to be displayed
                     self.sig_received.emit()
                 else:
                     continue
 
-                last_latitude = latitude
-                last_longitude = longitude
+                last_latitude = latitudes
+                last_longitude = longitudes
                 last_update_time = current_time
                 last_desired_size = desired_size
+                last_map_zoom = map_zoom
 
             except Exception:
                 LOGGER.exception("Error in map thread loop")  # Automatically grabs and prints exception info

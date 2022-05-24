@@ -57,12 +57,14 @@ ID_TO_DEVICE_TYPE = {
         0x02: DeviceType.CO_PILOT_FLARE,
         0x03: DeviceType.HOLLYBURN_BODY_FLARE,
         0x04: DeviceType.HOLLYBURN_NOSE_FLARE,
+        0x05: DeviceType.SILVERTIP_FLARE
 }
 DEVICE_TYPE_TO_ID = {y: x for (x, y) in ID_TO_DEVICE_TYPE.items()}
 
 # NOTE: Must match enum ids in radio spec (and FLARE: radio.h)
 EVENT_IDS = {
     0x00: DataEntryValues.EVENT_IGNITOR_FIRED,
+    0x01: DataEntryValues.EVENT_LOW_VOLTAGE
 }
 STATE_IDS = {
     0x00: DataEntryValues.STATE_STANDBY,

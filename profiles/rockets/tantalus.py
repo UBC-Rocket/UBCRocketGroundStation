@@ -15,6 +15,7 @@ from connections.sim.hw.clock_sim import Clock
 from connections.sim.hw.hw_sim import HWSim
 from connections.sim.hw.sensors.sensor import SensorType
 from connections.sim.hw.sensors.dummy_sensor import DummySensor
+from connections.sim.hw.sensors.voltage_sensor_sim import VoltageSensor
 from connections.sim.hw.ignitor_sim import Ignitor, IgnitorType
 from connections.sim.hw.sensors.sensor_sim import SensorSim
 from connections.sim.hw.rocket_sim import RocketSim, FlightDataType
@@ -60,8 +61,11 @@ class TantalusProfile(RocketProfile):
         ]
 
     @property
-    def mapping_device(self):
-        return DeviceType.TANTALUS_STAGE_1_FLARE
+    def mapping_devices(self):
+        return [
+            DeviceType.TANTALUS_STAGE_1_FLARE,
+            DeviceType.TANTALUS_STAGE_2_FLARE,
+        ]
 
     @property
     def required_device_versions(self):
@@ -108,6 +112,7 @@ class TantalusProfile(RocketProfile):
             DummySensor(SensorType.ACCELEROMETER, (1, 0, 0)),
             DummySensor(SensorType.IMU, (1, 0, 0, 0)),
             DummySensor(SensorType.TEMPERATURE, (20,)),
+            VoltageSensor()
         ]
 
         hw_sim_ignitors_stage_1 = [
@@ -128,6 +133,7 @@ class TantalusProfile(RocketProfile):
             DummySensor(SensorType.ACCELEROMETER, (1, 0, 0)),
             DummySensor(SensorType.IMU, (1, 0, 0, 0)),
             DummySensor(SensorType.TEMPERATURE, (20,)),
+            VoltageSensor()
         ]
 
         hw_sim_ignitors_stage_2 = [

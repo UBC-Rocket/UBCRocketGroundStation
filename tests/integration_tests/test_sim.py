@@ -2,13 +2,15 @@ import time
 import pytest
 import numpy as np
 from pytest import approx
+
 from profiles.rocket_profile import RocketProfile
-from profiles.rockets.hollyburn import HollyburnProfile
+from profiles.rockets.silvertip import SilvertipProfile
 from .integration_utils import test_app, valid_paramitrization, all_devices, all_profiles, only_flare, flush_packets
 from connections.sim.sim_connection import FirmwareNotFound
 from connections.sim.hw.hw_sim import HWSim, PinModes
 from connections.sim.hw.sensors.sensor import SensorType
 from connections.sim.hw.sensors.dummy_sensor import DummySensor
+from connections.sim.hw.sensors.voltage_sensor_sim import VoltageSensor
 from connections.sim.hw.rocket_sim import FlightEvent, FlightDataType
 from main_window.competition.comp_app import CompApp
 from main_window.data_entry_id import DataEntryIds, DataEntryValues
@@ -34,10 +36,13 @@ def sim_app(test_app, request) -> CompApp:
 
     return test_app(profile, connections)
 
+def get_connection_name(sim_app, device_type: DeviceType):
+    return sim_app.device_manager.get_full_address(device_type).connection_name
 
 def get_hw_sim(sim_app, device_type: DeviceType) -> HWSim:
-    connection_name = sim_app.device_manager.get_full_address(device_type).connection_name
+    connection_name = get_connection_name(sim_app, device_type)
     return sim_app.connections[connection_name]._hw_sim
+
 
 def get_profile(sim_app) -> RocketProfile:
     return sim_app.rocket_profile
@@ -50,7 +55,7 @@ def set_dummy_sensor_values(sim_app, device_type: DeviceType, sensor_type: Senso
 
 @pytest.mark.parametrize(
     "sim_app, device_type", valid_paramitrization(
-        all_profiles(excluding=['WbProfile', 'CoPilotProfile']),
+        all_profiles(excluding=['WbProfile', 'CoPilotProfile', 'HollyburnProfile']),
         only_flare(all_devices(excluding=[]))),
     indirect=['sim_app'])
 class TestFlare:
@@ -84,6 +89,24 @@ class TestFlare:
         assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.VERSION_ID) is not None
         assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.DEVICE_TYPE) == device_type
 
+    def test_config_change_gs_address(self, qtbot, sim_app, device_type):
+        flush_packets(sim_app, device_type)
+
+        snapshot = get_event_stats_snapshot()
+
+        sim_app.send_command(device_type.name + ".config")
+        flush_packets(sim_app, device_type)
+
+        assert CONFIG_EVENT.wait(snapshot) == 1
+
+        for connection in sim_app.connections.values():
+            connection._xbee.gs_address = b'\x00\x13\xa2\x00Ag\x8f\xc1'
+
+        sim_app.send_command(device_type.name + ".config")
+        flush_packets(sim_app, device_type)
+
+        assert CONFIG_EVENT.wait(snapshot, num_expected=2) == 2
+
     def test_gps_read(self, qtbot, sim_app, device_type):
         test_vals = [
             (11, 12, 13),
@@ -115,6 +138,33 @@ class TestFlare:
         assert hw.get_pin_mode(35) == PinModes.INPUT
         assert hw.get_pin_mode(17) == PinModes.INPUT
         assert hw.get_pin_mode(34) == PinModes.OUTPUT
+
+    def test_voltage_reading(self, qtbot, sim_app, device_type):
+        flush_packets(sim_app, device_type)
+
+        snapshot = get_event_stats_snapshot()
+        sim_app.send_command(device_type.name + ".VOLT")
+        assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
+
+        last_battery_voltage = sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.VOLTAGE)
+        assert(round(last_battery_voltage, 1) == VoltageSensor.NOMINAL_BATTERY_VOLTAGE)
+        assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.EVENT) is None
+
+        # The ADC level of 863 gets converted to 10.9V in battery.cpp in FLARE 21899292dc39015570f795ef9e607081aab57e3e
+        updated_voltage_sensor = VoltageSensor(dummy_adc_level=863)
+        hw = get_hw_sim(sim_app, device_type)
+        hw.replace_sensor(updated_voltage_sensor)
+
+        flush_packets(sim_app, device_type)
+
+        snapshot = get_event_stats_snapshot()
+        sim_app.send_command(device_type.name + ".VOLT")
+        assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
+
+        last_battery_voltage = sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.VOLTAGE)
+        assert(round(last_battery_voltage, 1) == 10.9)
+        assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.EVENT) \
+               == DataEntryValues.EVENT_LOW_VOLTAGE
 
     def test_baro_altitude(self, qtbot, sim_app, device_type):
         Pb = 101325
@@ -238,7 +288,7 @@ class TestFlare:
 
 @pytest.mark.parametrize(
     "sim_app, device_type", valid_paramitrization(
-        [HollyburnProfile()],
+        [SilvertipProfile()],
         only_flare(all_devices(excluding=[]))),
     indirect=['sim_app'])
 def test_full_flight(qtbot, sim_app, device_type):

@@ -3,6 +3,7 @@ import os
 from typing import Callable, Dict
 import logging
 
+from PyQt5.QtWidgets import QAction
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 from PIL import Image
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
@@ -68,6 +69,7 @@ class CompApp(MainApp, Ui_MainWindow):
         self.setup_buttons()
         self.setup_labels()
         self.setup_subwindow().showMaximized()
+        self.setup_view_menu()
 
         self.setWindowIcon(QtGui.QIcon(mapbox_utils.MARKER_PATH))
 
@@ -81,6 +83,8 @@ class CompApp(MainApp, Ui_MainWindow):
         self.MappingThread = MappingThread(self.connections, self.map_data, self.rocket_data, self.rocket_profile)
         self.MappingThread.sig_received.connect(self.receive_map)
         self.MappingThread.start()
+
+        self.setup_zoom_slider() #have to set up after mapping thread created
 
         LOGGER.info(f"Successfully started app (version = {GIT_HASH})")
 
@@ -169,6 +173,38 @@ class CompApp(MainApp, Ui_MainWindow):
         sub.show()
 
         return sub
+
+    def setup_view_menu(self) -> None:
+        # Menubar for choosing rocket device view
+        if len(self.rocket_profile.mapping_devices) > 1:
+            view_menu = self.menuBar().children()[2]
+            self.map_view_menu = view_menu.addMenu("Map")
+
+            view_all = QAction("All", self)
+            all_devices = self.rocket_profile.mapping_devices
+            view_all.triggered.connect(lambda i, all_devices = all_devices: self.set_view_device(all_devices))
+            self.map_view_menu.addAction(view_all)
+
+            for device in self.rocket_profile.mapping_devices:
+                view_device = QAction(f'{device}', self)
+                view_device.triggered.connect(lambda i, device=device: self.set_view_device([device]))
+                self.map_view_menu.addAction(view_device)
+
+    def setup_zoom_slider(self) -> None:
+        # Map zoom slider and zoom buttons
+        self.maxZoomFactor = 3 #zoom out 2**3 scale
+        self.minZoomFactor = -2
+        self.numTicksPerScale = 1
+        #currently, each tick represents a 2x scale change
+        #increase numTicksPerScale for more ticks on slider
+
+        self.horizontalSlider.setMinimum(self.minZoomFactor*self.numTicksPerScale)
+        self.horizontalSlider.setMaximum(self.maxZoomFactor*self.numTicksPerScale)
+        self.horizontalSlider.setValue(0) #default original scale
+        self.horizontalSlider.valueChanged.connect(self.map_zoomed)
+
+        self.zoom_in_button.clicked.connect(self.slider_dec)
+        self.zoom_out_button.clicked.connect(self.slider_inc)
 
     def receive_data(self) -> None:
         """
@@ -394,11 +430,12 @@ class CompApp(MainApp, Ui_MainWindow):
         self.im = self.plotWidget.canvas.ax.imshow(map_image)
 
         # updateMark UI modification
-        annotation_box = AnnotationBbox(OffsetImage(MAP_MARKER), mark, frameon=False)
-        self.plotWidget.canvas.ax.add_artist(annotation_box)
+        for i in range(len(mark)):
+            annotation_box = AnnotationBbox(OffsetImage(MAP_MARKER), mark[i], frameon=False)
+            self.plotWidget.canvas.ax.add_artist(annotation_box)
 
         # For debugging marker position
-        #self.plotWidget.canvas.ax.plot(mark[0], mark[1], marker='o', markersize=3, color="red")
+        #self.plotWidget.canvas.ax.plot(mark[1][0], mark[1][1], marker='o', markersize=3, color="red")
 
         self.plotWidget.canvas.draw()
 
@@ -411,6 +448,20 @@ class CompApp(MainApp, Ui_MainWindow):
         :type event:
         """
         self.MappingThread.setDesiredMapSize(event.width, event.height)
+
+    def set_view_device(self, viewedDevices) -> None:
+        self.MappingThread.setViewedDevice(viewedDevices)
+
+    def slider_inc(self, zoom_change) -> None:
+        self.horizontalSlider.setValue(self.horizontalSlider.value() + 1)
+
+    def slider_dec(self, zoom_change) -> None:
+        self.horizontalSlider.setValue(self.horizontalSlider.value() - 1)
+
+
+    def map_zoomed(self) -> None:
+        self.MappingThread.setMapZoom(2**(self.horizontalSlider.value()/self.numTicksPerScale))
+
 
     def shutdown(self):
         self.save_view()

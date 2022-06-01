@@ -1,3 +1,4 @@
+from main_window.data_entry_id import DataEntryIds
 from ..label import (
     Label,
     update_acceleration,
@@ -39,6 +40,27 @@ class TantalusProfile(RocketProfile):
             "Ping Stage 1": "TANTALUS_STAGE_1_FLARE.PING",
             "Arm Stage 2": "TANTALUS_STAGE_2_FLARE.ARM",
             "Ping Stage 2": "TANTALUS_STAGE_2_FLARE.PING",
+        }
+
+    @property
+    def label_to_dataID(self):
+        return {"Altitude": DataEntryIds.CALCULATED_ALTITUDE,
+               "MaxAltitude": None,
+               "State": DataEntryIds.STATE,
+               "Stage2State": DataEntryIds.STATE,
+               "Pressure": DataEntryIds.PRESSURE,
+               "Acceleration": [DataEntryIds.ACCELERATION_X, DataEntryIds.ACCELERATION_Y,
+                                DataEntryIds.ACCELERATION_Z]
+        }
+
+    @property
+    def label_unit(self):
+        return {"Altitude": "m",
+               "MaxAltitude": "m",
+               "State": "",
+               "Stage2State": "",
+               "Pressure": "" ,
+               "Acceleration": "g",
         }
 
     @property

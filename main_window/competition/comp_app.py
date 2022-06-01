@@ -3,7 +3,7 @@ import os
 from typing import Callable, Dict
 import logging
 
-from PyQt5.QtWidgets import QAction, QApplication
+from PyQt5.QtWidgets import QAction, QApplication, QCheckBox
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 from PIL import Image
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
@@ -18,6 +18,7 @@ from .mapping import map_data, mapbox_utils
 from .mapping.mapping_thread import MappingThread
 from main_window.main_app import MainApp
 from main_window.mplwidget import MplWidget
+from ..accelwidget import AccelWidget
 
 qtCreatorFile = os.path.join(BUNDLED_DATA, "qt_files", "comp_app.ui")
 
@@ -135,12 +136,15 @@ class CompApp(MainApp, Ui_MainWindow):
         for button, command in self.rocket_profile.buttons.items():
             getattr(self, button + "Button").clicked.connect(gen_send_command(command))
 
+
     def setup_labels(self):
         """Create all of the data labels for the loaded rocket profile."""
 
         def gen_clicked_callback(label: Label):
             def mousePressEvent(QMouseEvent):
                 self.selected_label = label
+                if self.plotWidget.showing_checkboxes:
+                    self.plotWidget.hide_checkboxes()
             return mousePressEvent
 
         self.selected_label = None
@@ -188,7 +192,7 @@ class CompApp(MainApp, Ui_MainWindow):
 
         #plot in other open windows
         for label_name, label_window in self.label_windows.items():
-            label = label_window[0]
+            label = label_window[0] #label object
             window = label_window[1]
             if window:
                 try: #window may have been closed
@@ -199,7 +203,8 @@ class CompApp(MainApp, Ui_MainWindow):
 
 
     def setup_subwindow(self):
-        self.plotWidget = MplWidget()
+        self.plotWidget = AccelWidget()
+
         # Hook-up Matplotlib callbacks
         self.plotWidget.canvas.fig.canvas.mpl_connect('resize_event', self.map_resized_event)
         # TODO: Also have access to click, scroll, keyboard, etc. Would be good to implement map manipulation.
@@ -489,7 +494,7 @@ class CompApp(MainApp, Ui_MainWindow):
         window = self.label_windows[label_name][1]
 
         if window == None:
-            new_window = MplWidget()
+            new_window = AccelWidget() if "Acceleration" in label_name else MplWidget()
             new_window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
             new_window.setWindowTitle(f"{label.device} {label.display_name}")
             self.label_windows[label_name][1] = new_window

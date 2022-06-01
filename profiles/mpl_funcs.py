@@ -1,5 +1,4 @@
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
-from matplotlib.animation import FuncAnimation
 
 from main_window.competition.comp_app import MAP_MARKER
 from main_window.device_manager import DeviceType
@@ -9,22 +8,7 @@ from textwrap import wrap
 
 from main_window.mplwidget import MplWidget
 
-label_to_dataID = {"Altitude": DataEntryIds.CALCULATED_ALTITUDE,
-               "MaxAltitude": None,
-               "State": DataEntryIds.STATE,
-               "Stage2State": DataEntryIds.STATE,
-               "Pressure": DataEntryIds.PRESSURE,
-               "Acceleration": [DataEntryIds.ACCELERATION_X, DataEntryIds.ACCELERATION_Y,
-                                DataEntryIds.ACCELERATION_Z]
-               }
 
-label_unit = {"Altitude": "m",
-               "MaxAltitude": "m",
-               "State": "",
-               "Stage2State": "",
-               "Pressure": "" ,
-               "Acceleration": "g",
-               }
 
 def receive_map(self, plot_widget: MplWidget, device:DeviceType, label_name:str) -> None:
     """
@@ -51,7 +35,6 @@ def receive_map(self, plot_widget: MplWidget, device:DeviceType, label_name:str)
         self.im.remove()
 
     self.im = plot_widget.canvas.ax.imshow(map_image)
-
 
     # updateMark UI modification
     for i in range(len(mark)):
@@ -83,6 +66,10 @@ def receive_time_series(self, plot_widget: MplWidget, device:DeviceType, label_n
 
     self.im = None
 
+    if label_name == "Acceleration" and not plot_widget.showing_checkboxes:
+        plot_widget.show_checkboxes()
+
+
     plot_widget.canvas.ax.set_axis_on()
     plot_widget.canvas.ax.set_aspect('auto')
 
@@ -94,14 +81,15 @@ def plot_time_series(self, plot_widget: MplWidget, device:DeviceType, label_name
             Updates the UI when time series data is available for display
     """
     plot_widget.canvas.ax.cla()
-    data_entry_id = label_to_dataID[label_name]
+    data_entry_id = self.rocket_profile.label_to_dataID[label_name]
 
     if label_name == "Acceleration":
         colors = ["Red", "Blue", "Green"]
-        for i in range(3): #plot acceleration x,y,z on same graph
-            t, y = self.rocket_data.time_series_by_device(device, data_entry_id[i])
-            plot_widget.canvas.ax.plot(t, y, color = colors[i])
-        plot_widget.canvas.ax.legend(["x", "y","z"], loc = "upper right")
+
+        for i, checkbox in enumerate(plot_widget.accel_checkboxes):
+            if checkbox.isChecked():
+                t, y = self.rocket_data.time_series_by_device(device, data_entry_id[i])
+                plot_widget.canvas.ax.plot(t, y, color=colors[i])
 
     elif data_entry_id and self.rocket_data.time_series_by_device(device, data_entry_id):
 
@@ -122,7 +110,7 @@ def plot_time_series(self, plot_widget: MplWidget, device:DeviceType, label_name
             plot_widget.canvas.ax.plot(t, y)
 
     plot_widget.canvas.ax.set_xlabel("Time (s)")
-    plot_widget.canvas.ax.set_ylabel(f"{label_name} ({label_unit[label_name]})")
+    plot_widget.canvas.ax.set_ylabel(f"{label_name} ({self.rocket_profile.label_unit[label_name]})")
 
     plot_widget.canvas.ax.set_title(f"{device.name} {label_name}", fontsize=10, pad=10, wrap=True)
     plot_widget.canvas.draw()

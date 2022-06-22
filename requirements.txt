@@ -1,6 +1,6 @@
 digi_xbee==1.1.1.1
 Pillow==7.2.0
-numpy==1.15.4
+numpy==1.22.0
 matplotlib==3.0.2
 PyQt5==5.12.1
 pyserial==3.4

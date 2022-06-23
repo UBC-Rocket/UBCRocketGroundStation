@@ -240,8 +240,7 @@ class CompApp(MainApp, Ui_MainWindow):
         # Menubar for choosing which data to plot
         self.dataplot_view_menu = view_menu.addMenu("Data Plot")
 
-        all_labels = self.rocket_profile.labels + self.rocket_profile.other_labels
-        self.label_windows = {label.display_name: [label, None] for label in all_labels}
+        self.label_windows = {label.display_name: [label, None] for label in self.rocket_profile.all_labels}
         #{label name: [label object, window object]}
 
         for label_name, label_window in self.label_windows.items():

@@ -8,6 +8,7 @@ from ..label import (
     update_pressure,
     update_state,
 )
+from ..mpl_funcs import receive_time_series, receive_map
 from ..rocket_profile import RocketProfile, FlightPoint
 from connections.serial.serial_connection import SerialConnection
 from connections.debug.debug_connection import DebugConnection
@@ -41,12 +42,12 @@ class SilvertipProfile(RocketProfile):
     @property
     def labels(self):
         return [
-            Label(DeviceType.SILVERTIP_FLARE, "Altitude", update_altitude),
-            Label(DeviceType.SILVERTIP_FLARE, "MaxAltitude", update_max_altitude, "Max Altitude"),
-            Label(DeviceType.SILVERTIP_FLARE, "GPS", update_gps),
-            Label(DeviceType.SILVERTIP_FLARE, "State", update_state),
-            Label(DeviceType.SILVERTIP_FLARE, "Pressure", update_pressure),
-            Label(DeviceType.SILVERTIP_FLARE, "Acceleration", update_acceleration),
+            Label(DeviceType.SILVERTIP_FLARE, "Altitude", update_altitude, map_fn=receive_time_series),
+            Label(DeviceType.SILVERTIP_FLARE, "MaxAltitude", update_max_altitude, "Max Altitude", map_fn=receive_time_series),
+            Label(DeviceType.SILVERTIP_FLARE, "GPS", update_gps, map_fn = receive_map),
+            Label(DeviceType.SILVERTIP_FLARE, "State", update_state, map_fn=receive_time_series),
+            Label(DeviceType.SILVERTIP_FLARE, "Pressure", update_pressure, map_fn=receive_time_series),
+            Label(DeviceType.SILVERTIP_FLARE, "Acceleration", update_acceleration, map_fn=receive_time_series),
         ]
 
     @property

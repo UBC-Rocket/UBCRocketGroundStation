@@ -3,6 +3,7 @@ from typing import Dict, List
 from collections import namedtuple
 
 from connections.connection import Connection
+from main_window.data_entry_id import DataEntryIds
 from main_window.packet_parser import PacketParser
 from main_window.device_manager import DeviceType
 from .label import Label
@@ -31,6 +32,11 @@ class RocketProfile(ABC):
         pass
 
     @property
+    # All labels for which data is available, not just those displayed in main window
+    def all_labels(self) -> List[Label]:
+        return self.labels
+
+    @property
     @abstractmethod
     def expected_devices(self) -> List[DeviceType]:
         pass
@@ -47,6 +53,25 @@ class RocketProfile(ABC):
         :return: Optional restrictions on device versions
         """
         pass
+
+    @property
+    def label_to_dataID(self):
+        return {"Altitude": DataEntryIds.CALCULATED_ALTITUDE,
+                "MaxAltitude": None,
+                "State": DataEntryIds.STATE,
+                "Pressure": DataEntryIds.PRESSURE,
+                "Acceleration": [DataEntryIds.ACCELERATION_X, DataEntryIds.ACCELERATION_Y,
+                                 DataEntryIds.ACCELERATION_Z]
+                }
+
+    @property
+    def label_unit(self):
+        return {"Altitude": "m",
+                "MaxAltitude": "m",
+                "State": "",
+                "Pressure": "",
+                "Acceleration": "g",
+                }
 
     @property
     @abstractmethod

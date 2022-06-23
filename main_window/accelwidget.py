@@ -8,8 +8,8 @@ class AccelWidget(MplWidget):
     def __init__(self):
         MplWidget.__init__(self)  # Inherit from MplWidget
         self.accel_checkboxes = [QCheckBox("Acceleration X (Red)"),
-                                 QCheckBox("Acceleration Y (Green)"),
-                                 QCheckBox("Acceleration Z (Blue)")]
+                                 QCheckBox("Acceleration Y (Blue)"),
+                                 QCheckBox("Acceleration Z (Green)")]
 
         for checkbox in self.accel_checkboxes:
             self.vbl.addWidget(checkbox)

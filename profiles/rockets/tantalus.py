@@ -44,24 +44,14 @@ class TantalusProfile(RocketProfile):
 
     @property
     def label_to_dataID(self):
-        return {"Altitude": DataEntryIds.CALCULATED_ALTITUDE,
-               "MaxAltitude": None,
-               "State": DataEntryIds.STATE,
-               "Stage2State": DataEntryIds.STATE,
-               "Pressure": DataEntryIds.PRESSURE,
-               "Acceleration": [DataEntryIds.ACCELERATION_X, DataEntryIds.ACCELERATION_Y,
-                                DataEntryIds.ACCELERATION_Z]
-        }
+        #labels unique to Tantalus
+        other_labels = {"Stage2State": DataEntryIds.STATE}
+        return {**super().label_to_dataID, **other_labels}
 
     @property
     def label_unit(self):
-        return {"Altitude": "m",
-               "MaxAltitude": "m",
-               "State": "",
-               "Stage2State": "",
-               "Pressure": "" ,
-               "Acceleration": "g",
-        }
+        other_units = {"Stage2State": ""}
+        return {**super().label_unit, **other_units}
 
     @property
     def labels(self):
@@ -105,9 +95,8 @@ class TantalusProfile(RocketProfile):
         ]
 
     @property
-    def other_labels(self):
-        #Labels for which data is available but not displayed on screen
-        return [
+    def all_labels(self):
+        return self.labels + [
             Label(DeviceType.TANTALUS_STAGE_2_FLARE,
                   "Altitude",
                   update_altitude,

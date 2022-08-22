@@ -4,7 +4,7 @@ import numpy as np
 from pytest import approx
 
 from profiles.rocket_profile import RocketProfile
-from profiles.rockets.hollyburn import HollyburnProfile
+from profiles.rockets.silvertip import SilvertipProfile
 from .integration_utils import test_app, valid_paramitrization, all_devices, all_profiles, only_flare, flush_packets
 from connections.sim.sim_connection import FirmwareNotFound
 from connections.sim.hw.hw_sim import HWSim, PinModes
@@ -55,7 +55,7 @@ def set_dummy_sensor_values(sim_app, device_type: DeviceType, sensor_type: Senso
 
 @pytest.mark.parametrize(
     "sim_app, device_type", valid_paramitrization(
-        all_profiles(excluding=['WbProfile', 'CoPilotProfile']),
+        all_profiles(excluding=['WbProfile', 'CoPilotProfile', 'HollyburnProfile']),
         only_flare(all_devices(excluding=[]))),
     indirect=['sim_app'])
 class TestFlare:
@@ -288,7 +288,7 @@ class TestFlare:
 
 @pytest.mark.parametrize(
     "sim_app, device_type", valid_paramitrization(
-        [HollyburnProfile()],
+        [SilvertipProfile()],
         only_flare(all_devices(excluding=[]))),
     indirect=['sim_app'])
 def test_full_flight(qtbot, sim_app, device_type):

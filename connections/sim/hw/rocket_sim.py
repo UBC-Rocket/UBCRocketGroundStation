@@ -21,7 +21,7 @@ class FlightState(Enum):
 class RocketSim:
 
     def __init__(self, ork_file_name: str, random_seed: int = 0,
-                 drogue_component_name: str = 'Drogue', main_component_name: str = 'Parachute'):
+                 drogue_component_name: str = 'Drogue', main_component_name: str = 'Main'):
         self._clock = Clock()
         self._ork_file = path.join(ORK_FILES_PATH, ork_file_name)
         self._random_seed = random_seed

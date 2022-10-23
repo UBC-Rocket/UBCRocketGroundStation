@@ -5,6 +5,8 @@ import subprocess
 import urllib.request
 from collections import OrderedDict
 
+raise Exception("This is not done yet!")
+
 '''
 PyInstaller settings
 '''
@@ -91,14 +93,14 @@ def parent_dir(path):
 def setup_step():
     print("Creating venv...")
 
-    _run(GLOBAL_PYTHON, ['-m', 'venv', 'venv'])
+    # _run(GLOBAL_PYTHON, ['-m', 'venv', 'venv'])
 
-    print("Printing some venv debug info...")
-    _run(VENV_PYTHON, ['--version'])
-    _run(VENV_PYTHON, ['-c', '"import sys; print(sys.executable)"'])
+    # print("Printing some venv debug info...")
+    # _run(VENV_PYTHON, ['--version'])
+    # _run(VENV_PYTHON, ['-c', '"import sys; print(sys.executable)"'])
 
-    print("Installing requirements in venv...")
-    _run(VENV_PIP, ['install', '-r', 'requirements.txt'])
+    # print("Installing requirements in venv...")
+    # _run(VENV_PIP, ['install', '-r', 'requirements.txt'])
 
     print("Downloading external requirements...")
     for url, file in EXTERNAL_DEPENDENCIES.items():
@@ -174,8 +176,8 @@ if __name__ == '__main__':
     if not (sys.version_info[0] == 3 and sys.version_info[1] == 7):
         raise Exception("Python version is not 3.7")
 
-    if _is_venv():
-        raise Exception("Running in a virtual environment")
+    # if _is_venv():
+    #     raise Exception("Running in a virtual environment")
 
     parser = argparse.ArgumentParser()
 
@@ -187,4 +189,3 @@ if __name__ == '__main__':
     cmd_args = parser.parse_args()
 
     main(cmd_args)
-

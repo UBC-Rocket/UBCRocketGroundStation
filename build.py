@@ -5,8 +5,6 @@ import subprocess
 import urllib.request
 from collections import OrderedDict
 
-raise Exception("This is not done yet!")
-
 '''
 PyInstaller settings
 '''
@@ -35,9 +33,9 @@ LOCAL = os.path.dirname(os.path.abspath(__file__))
 GLOBAL_PYTHON = sys.executable
 
 VENV_BIN_DIR = os.path.join(LOCAL, {
-    'linux': 'venv/bin/',
-    'win32': 'venv/Scripts/',
-    'darwin': 'venv/bin/'
+    'linux': 'new_venv/bin/',
+    'win32': 'new_venv/Scripts/',
+    'darwin': 'new_venv/bin/'
 }[sys.platform])
 
 EXECUTABLE_FILE_EXTENSION = {
@@ -93,14 +91,14 @@ def parent_dir(path):
 def setup_step():
     print("Creating venv...")
 
-    # _run(GLOBAL_PYTHON, ['-m', 'venv', 'venv'])
+    _run(GLOBAL_PYTHON, ['-m', 'venv', 'venv'])
 
-    # print("Printing some venv debug info...")
-    # _run(VENV_PYTHON, ['--version'])
-    # _run(VENV_PYTHON, ['-c', '"import sys; print(sys.executable)"'])
+    print("Printing some venv debug info...")
+    _run(VENV_PYTHON, ['--version'])
+    _run(VENV_PYTHON, ['-c', '"import sys; print(sys.executable)"'])
 
-    # print("Installing requirements in venv...")
-    # _run(VENV_PIP, ['install', '-r', 'requirements.txt'])
+    print("Installing requirements in venv...")
+    _run(VENV_PIP, ['install', '-r', 'requirements.txt'])
 
     print("Downloading external requirements...")
     for url, file in EXTERNAL_DEPENDENCIES.items():
@@ -173,8 +171,9 @@ def main(cmd_args):
 
 
 if __name__ == '__main__':
-    if not (sys.version_info[0] == 3 and sys.version_info[1] == 7):
-        raise Exception("Python version is not 3.7")
+    # TODO: PATCH!
+    # if not (sys.version_info[0] == 3 and sys.version_info[1] == 7):
+    #     raise Exception("Python version is not 3.7")
 
     # if _is_venv():
     #     raise Exception("Running in a virtual environment")

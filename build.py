@@ -33,9 +33,9 @@ LOCAL = os.path.dirname(os.path.abspath(__file__))
 GLOBAL_PYTHON = sys.executable
 
 VENV_BIN_DIR = os.path.join(LOCAL, {
-    'linux': 'new_venv/bin/',
-    'win32': 'new_venv/Scripts/',
-    'darwin': 'new_venv/bin/'
+    'linux': 'venv/bin/',
+    'win32': 'venv/Scripts/',
+    'darwin': 'venv/bin/'
 }[sys.platform])
 
 EXECUTABLE_FILE_EXTENSION = {
@@ -171,12 +171,11 @@ def main(cmd_args):
 
 
 if __name__ == '__main__':
-    # TODO: PATCH!
-    # if not (sys.version_info[0] == 3 and sys.version_info[1] == 7):
-    #     raise Exception("Python version is not 3.7")
+    if not (sys.version_info[0] == 3 and sys.version_info[1] <= 10):
+        raise Exception("Python version must be at minimum 3.10!")
 
-    # if _is_venv():
-    #     raise Exception("Running in a virtual environment")
+    if _is_venv():
+        raise Exception("Running in a virtual environment")
 
     parser = argparse.ArgumentParser()
 

@@ -20,8 +20,8 @@ export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
 
 # Start setting up Python for GS
 sudo apt-get install -y tk-dev
-env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.7.9
-pyenv global 3.7.9
+env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.10.8
+pyenv global 3.10.8
 python --version
 python -m pip install --upgrade pip setuptools wheel
 

@@ -8,7 +8,6 @@ set -o verbose
   #####################################
 
 sudo apt-get update -y
-sudo apt-get install python3.10
 
 # Needed for unit testing with qt https://github.com/pytest-dev/pytest-qt/issues/293
 sudo apt-get install -y xvfb libxkbcommon-x11-0
@@ -21,14 +20,15 @@ export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
 
 # Start setting up Python for GS
 sudo apt-get install -y tk-dev
-env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.10.8
-pyenv global 3.10.8
-python3.10 --version
-python3.10 -m pip install --upgrade pip setuptools wheel
+env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.7.9
+pyenv update
+pyenv global 3.7.9
+python --version
+python -m pip install --upgrade pip setuptools wheel
 
 # Initial setup of GS and venv
 echo "$MAPBOX_API_KEY" > apikey.txt
-python3.10 build.py --only setup
+python build.py --only setup
 cd ..
 
 # Clone and build FW for SIM based integration tests
@@ -66,4 +66,4 @@ head test_reports/integ-test-coverage.xml
 deactivate
 
 # Pyinstaller "build" test & GS self-test
-python3.10 build.py --skip setup
+python build.py --skip setup

@@ -175,7 +175,7 @@ class MapTile:
 
         if os.path.isfile(impath):
             self.is_tile_not_blank = True
-            return plt.imread(impath, "jpeg")
+            return (plt.imread(impath, "jpeg") * 255).astype(np.uint8)
         else:
             return np.zeros((TILE_SIZE, TILE_SIZE, 3), dtype=np.uint8) # np generates float by default, pillow doesnt support that
 
@@ -329,7 +329,7 @@ class TileGrid:
             return img
         else:
             LOGGER.debug(f"Found size {str(self.scale)} map!")
-            return plt.imread(outfile, "jpeg")
+            return (plt.imread(outfile, "jpeg") * 255).astype(np.uint8)
 
 
 def pointToTile(p: MapPoint, s: int) -> MapTile:

@@ -81,6 +81,7 @@ class TestMapTile:
         hennings_image = pyplot.imread(
             os.path.join(LOCAL, "tests", "test_mapbox_utils", "41322_89729.jpg"), "jpeg"
         )
+        hennings_image = (hennings_image * 255).astype(numpy.uint8)
         mocked_tile = mocker.patch("main_window.competition.mapping.mapbox_utils.maps.tile")
         mocked_tile.return_value.status_code = 200
         mocked_tile.return_value.content = hennings_image
@@ -149,6 +150,7 @@ class TestTileGrid:
             ),
             "jpeg",  # Needed to make sure MPL doesn't use Pillow and return decimals.
         )
+        hennings_image = (hennings_image * 255).astype(numpy.uint8)
         
         ubc_tile_grid.downloadArrayImages()
         stitched_map = ubc_tile_grid.genStitchedMap()

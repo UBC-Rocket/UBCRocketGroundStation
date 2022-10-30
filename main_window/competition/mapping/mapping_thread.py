@@ -371,8 +371,7 @@ def processMap(requestQueue, resultQueue):
                     # Downsizing the map here to the ideal size for the plot reduces the amount of work required in the
                     # main thread and thus reduces stuttering
                     # Convert np image to pil image
-                    pilImage = Image.fromarray((croppedMapImage * 255).astype(np.uint8))
-                    resizedMapImage = np.array(pilImage.resize(
+                    resizedMapImage = np.array(Image.fromarray(croppedMapImage).resize(
                         (desiredSize[0], desiredSize[1])))  # x,y order is opposite for resize
 
             resultQueue.put((resizedMapImage, x_min, x_max, y_min, y_max))

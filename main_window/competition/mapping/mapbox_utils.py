@@ -44,6 +44,20 @@ if platform == 'darwin':
     os.environ['NO_PROXY'] = '*'
 
 
+def convertImage(image):
+    # If image loaded is a png, data is stored as a float matrix
+    # Convert to integer matrix instead
+    if image.dtype == np.float32 or image.dtype == np.float64:
+        return (image * 255).astype(np.uint8)
+    elif image.dtype == np.uint8:
+        # Already an integer, dont fix.
+        return image
+    else:
+        # Not sure what is happening here. Sending back image and YOLO
+        LOGGER.warning(f"Converting Image Of Unknown Type {image.dtype}")
+        return image
+
+
 class MapPoint:
     def __init__(self, latitude: float, longitude: float) -> None:
         """
@@ -175,7 +189,7 @@ class MapTile:
 
         if os.path.isfile(impath):
             self.is_tile_not_blank = True
-            return (plt.imread(impath, "jpeg") * 255).astype(np.uint8)
+            return convertImage(plt.imread(impath, "jpeg"))
         else:
             return np.zeros((TILE_SIZE, TILE_SIZE, 3), dtype=np.uint8) # np generates float by default, pillow doesnt support that
 
@@ -315,7 +329,7 @@ class TileGrid:
             for i in self.ta:
                 row = None
                 for j in i:
-                    row = appendh(row, j.getImage())
+                    row = appendh(row, j.getImage(overwrite=overwrite))
                     if j.is_tile_not_blank is True:
                         is_img_not_blank = True
 
@@ -329,7 +343,7 @@ class TileGrid:
             return img
         else:
             LOGGER.debug(f"Found size {str(self.scale)} map!")
-            return (plt.imread(outfile, "jpeg") * 255).astype(np.uint8)
+            return convertImage(plt.imread(outfile, "jpeg"))
 
 
 def pointToTile(p: MapPoint, s: int) -> MapTile:

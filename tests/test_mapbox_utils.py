@@ -81,7 +81,7 @@ class TestMapTile:
         hennings_image = pyplot.imread(
             os.path.join(LOCAL, "tests", "test_mapbox_utils", "41322_89729.jpg"), "jpeg"
         )
-        hennings_image = (hennings_image * 255).astype(numpy.uint8)
+        hennings_image = mapbox_utils.convertImage(hennings_image)
         mocked_tile = mocker.patch("main_window.competition.mapping.mapbox_utils.maps.tile")
         mocked_tile.return_value.status_code = 200
         mocked_tile.return_value.content = hennings_image
@@ -150,10 +150,11 @@ class TestTileGrid:
             ),
             "jpeg",  # Needed to make sure MPL doesn't use Pillow and return decimals.
         )
-        hennings_image = (hennings_image * 255).astype(numpy.uint8)
+        hennings_image = mapbox_utils.convertImage(hennings_image)
         
         ubc_tile_grid.downloadArrayImages()
-        stitched_map = ubc_tile_grid.genStitchedMap()
+        stitched_map = ubc_tile_grid.genStitchedMap(overwrite = True)
+        # raise Exception(stitched_map)
 
         # assert_allclose because linux vs. windows can decode the images slightly differently
         # https://github.com/python-pillow/Pillow/issues/3833

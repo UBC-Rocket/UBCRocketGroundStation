@@ -13,6 +13,11 @@ sudo apt-get update -y
 sudo apt-get install -y xvfb libxkbcommon-x11-0
 sudo Xvfb :1 -screen 0 1024x768x24 </dev/null &
 export DISPLAY=":1"
+# Hack to get display working with QT
+# Found "solution" from an issues page for a completely different project
+# but the same error.
+# https://github.com/NVlabs/instant-ngp/discussions/300
+export QT_QPA_PLATFORM=offscreen
 
 # Setup JDK for OpenRocket
 sudo apt-get install -y openjdk-8-jre

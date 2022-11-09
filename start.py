@@ -1,5 +1,6 @@
 import os
 import sys
+import signal
 import multiprocessing
 import argparse
 import matplotlib
@@ -10,32 +11,19 @@ from profiles.rockets.tantalus import TantalusProfile
 from util.self_test import SelfTest
 from util.detail import IS_PYINSTALLER, LOGGER
 
-if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
-    QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
-
-if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
-    QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
-
 MIN_APP_FONT_POINT_SIZE = 8
 
-if __name__ == "__main__":
+def main(qt_args: list[str], self_test: bool = False):
     # Pyinstaller fix https://stackoverflow.com/questions/32672596/pyinstaller-loads-script-multiple-times
     multiprocessing.freeze_support()
 
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument("-t", "--self-test", action='store_true')
-
-    args, unparsed_args = parser.parse_known_args()
-
-    # QApplication expects the first argument to be the program name.
-    qt_args = sys.argv[:1] + unparsed_args
     app = QtWidgets.QApplication(qt_args)
 
     font = app.font()
     font.setPointSize(max(MIN_APP_FONT_POINT_SIZE, font.pointSize()))
     app.setFont(font)
 
+    # TODO: This is kinda hacky
     if IS_PYINSTALLER and '_PYIBoot_SPLASH' in os.environ:
         # Now that we are all loaded, close the splash screen
         try: # pyi_splash is not a real module, its only available if splash was successfully included in the build
@@ -44,7 +32,7 @@ if __name__ == "__main__":
         except:
             LOGGER.debug("pyi_splash module expected but not found")
 
-    if not args.self_test:
+    if not self_test:
         # Open com_window dialog to get startup details
         com_window = ComWindow()
         com_window.show()
@@ -56,6 +44,7 @@ if __name__ == "__main__":
         connection = com_window.chosen_connection
         main_window = rocket.construct_app(connection)
 
+    # TODO: fix typing issue with this.
     else:
         rocket = TantalusProfile()
         connection = rocket.construct_debug_connection()
@@ -67,3 +56,23 @@ if __name__ == "__main__":
     return_code = app.exec_()
     sys.exit(return_code)
 
+if __name__ == "__main__":
+    # Enable high DPI if supported
+    # TODO: This is a hack, find a better way to do this
+    # TAGS: PyQt5
+    if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
+        QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)  # type: ignore
+    if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
+        QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)  # type: ignore
+        
+    # Make ctl-c work for closing the app
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+    
+    # Parse arguments for --self-test
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-t", "--self-test", action='store_true')
+    args, unparsed_args = parser.parse_known_args()
+    # QApplication expects the first argument to be the program name.
+    qt_args = sys.argv[:1] + unparsed_args
+    
+    main(qt_args, self_test = args.self_test)

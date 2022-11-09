@@ -1,5 +1,5 @@
 import queue
-from typing import Dict
+from typing import Any
 from threading import RLock
 from io import BytesIO, SEEK_END
 
@@ -19,7 +19,7 @@ CONNECTION_MESSAGE_READ_EVENT = Event('connection_message_read')
 class ReadThread(QtCore.QThread):
     sig_received = pyqtSignal()
 
-    def __init__(self, connections: Dict[str, Connection], rocket_data: RocketData, packet_parser: PacketParser, device_manager: DeviceManager, parent=None) -> None:
+    def __init__(self, connections: dict[str, Connection], rocket_data: RocketData, packet_parser: PacketParser, device_manager: DeviceManager, parent=None) -> None:
         """Updates GUI, therefore needs to be a QThread and use signals/slots
 
         :param connection:
@@ -90,7 +90,7 @@ class ReadThread(QtCore.QThread):
             while byte_stream.tell() < end:
                 try:
                     self.packet_parser.set_endianness(connection.isIntBigEndian(), connection.isFloatBigEndian())
-                    parsed_data: Dict[DataEntryIds, any] = self.packet_parser.extract(byte_stream)
+                    parsed_data: dict[DataEntryIds, Any] = self.packet_parser.extract(byte_stream)
 
                     if DataEntryIds.DEVICE_TYPE in parsed_data and DataEntryIds.VERSION_ID in parsed_data:
                         self.device_manager.register_device(parsed_data[DataEntryIds.DEVICE_TYPE], parsed_data[DataEntryIds.VERSION_ID], full_address)

@@ -1,6 +1,5 @@
 from enum import Enum, auto
 from threading import RLock
-from typing import Iterable, List, Dict
 from collections import namedtuple
 from util.detail import LOGGER
 from util.event_stats import Event
@@ -36,7 +35,7 @@ def is_device_type_flare(device_type: DeviceType):
 
 class DeviceManager:
 
-    def __init__(self, expected_devices: List[DeviceType], required_versions: Dict[DeviceType, str],
+    def __init__(self, expected_devices: list[DeviceType], required_versions: dict[DeviceType, str],
                  strict_versions=True):
 
         if expected_devices is None:
@@ -53,8 +52,8 @@ class DeviceManager:
 
         self._lock = RLock()
 
-        self._device_type_to_device: Dict[DeviceType, RegisteredDevice] = dict()
-        self._full_address_to_device: Dict[FullAddress, RegisteredDevice] = dict()
+        self._device_type_to_device: dict[DeviceType, RegisteredDevice] = dict()
+        self._full_address_to_device: dict[FullAddress, RegisteredDevice] = dict()
 
     def register_device(self, device_type: DeviceType, device_version: str, full_address: FullAddress) -> None:
         with self._lock:

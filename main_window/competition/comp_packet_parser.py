@@ -1,7 +1,7 @@
 import math
 from enum import Enum
 from io import BytesIO
-from typing import Any, Dict, List
+from typing import Any
 
 from util.detail import LOGGER
 from util.event_stats import Event
@@ -52,7 +52,7 @@ class CompPacketParser(PacketParser):
         sensor_bit_field_length = 16
         other_bit_field_length = 16
 
-        data: Dict = {}
+        data: dict = {}
         curr_byte: int = byte_stream.read(1)[0]
 
         # Overall status from 6th and 7th bits
@@ -60,7 +60,7 @@ class CompPacketParser(PacketParser):
         data[DataEntryIds.OVERALL_STATUS] = BITARRAY_TO_STATUS[overall_status]
 
         # save since we do multiple passes over each byte
-        byte_list: List[int] = [b for b in byte_stream.read(2)]
+        byte_list: list[int] = [b for b in byte_stream.read(2)]
         # Sensor status
         num_assigned_bits = min(sensor_bit_field_length, len(SENSOR_TYPES))  # only go as far as is assigned
         for i in range(0, num_assigned_bits):
@@ -68,7 +68,7 @@ class CompPacketParser(PacketParser):
             relative_bit_index = 7 - (i % 8)  # get the bits left to right
             data[SENSOR_TYPES[i]] = self.bitfrombyte(byte_list[byte_index], relative_bit_index)
 
-        byte_list: List[int] = [b for b in byte_stream.read(2)]
+        byte_list: list[int] = [b for b in byte_stream.read(2)]
         # Other misc statuses
         num_assigned_bits = min(other_bit_field_length, len(OTHER_STATUS_TYPES))  # only go as far as is assigned
         for i in range(0, num_assigned_bits):
@@ -93,7 +93,7 @@ class CompPacketParser(PacketParser):
         :return:
         :rtype:
         """
-        data: Dict[DataEntryIds, Any] = {}
+        data: dict[DataEntryIds, Any] = {}
 
         data[DataEntryIds.CALCULATED_ALTITUDE] = self.fourtofloat(byte_stream.read(4))
         data[DataEntryIds.ACCELERATION_X] = self.fourtofloat(byte_stream.read(4))

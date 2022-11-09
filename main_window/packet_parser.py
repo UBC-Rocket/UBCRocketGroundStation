@@ -3,7 +3,7 @@ import struct
 from enum import Enum
 from .device_manager import DeviceType
 from io import BytesIO
-from typing import Any, Callable, Dict
+from typing import Any, Callable
 
 from util.detail import LOGGER
 from util.event_stats import Event
@@ -98,7 +98,7 @@ class PacketParser:
         self.big_endian_floats = None
 
         # Dictionary of subpacket id mapped to function to parse that data
-        self.packet_type_to_parser: Dict[int, Callable[[BytesIO, Header], Dict[Any, Any]]] = {
+        self.packet_type_to_parser: dict[int, Callable[[BytesIO, Header], dict[Any, Any]]] = {
             SubpacketIds.MESSAGE.value: self.message,
             SubpacketIds.EVENT.value: self.event,
             SubpacketIds.CONFIG.value: self.config,
@@ -126,7 +126,7 @@ class PacketParser:
         :param byte_stream:
         :type byte_stream:
         :return: parsed_data
-        :rtype: Dict[Any, Any]
+        :rtype: dict[Any, Any]
         """
         if self.big_endian_ints is None or self.big_endian_floats is None:
             raise Exception("Endianness not set before parsing")
@@ -135,7 +135,7 @@ class PacketParser:
         header: Header = self.header(byte_stream)
 
         # data extraction
-        parsed_data: Dict[Any, Any] = {}
+        parsed_data: dict[Any, Any] = {}
         try:
             parsed_data = self.parse_data(byte_stream, header)
         except Exception as e:
@@ -147,7 +147,7 @@ class PacketParser:
         self.big_endian_floats = None
         return parsed_data
 
-    def parse_data(self, byte_stream: BytesIO, header: Header) -> Dict[Any, Any]:
+    def parse_data(self, byte_stream: BytesIO, header: Header) -> dict[Any, Any]:
         """
          General data parser interface. Routes to the right parser, based on subpacket_id.
 
@@ -193,7 +193,7 @@ class PacketParser:
         :return:
         :rtype:
         """
-        data: Dict = {}
+        data: dict = {}
         length: int = byte_stream.read(1)[0]
 
         # Two step: immutable int[] -> string
@@ -213,7 +213,7 @@ class PacketParser:
         :type header:
         :return:
         """
-        data: Dict = {}
+        data: dict = {}
         event_bytes = byte_stream.read(2)
         event_int = self.bytestoint(event_bytes)
         data_entry_value = EVENT_IDS[event_int]
@@ -279,13 +279,13 @@ class PacketParser:
         # Transform int single sensor id to global DataEntryId
         data_id = DataEntryIds[SubpacketIds(header.subpacket_id).name]
 
-        data: Dict = {}
+        data: dict = {}
         data[data_id] = self.fourtofloat(byte_stream.read(4))
 
         SINGLE_SENSOR_EVENT.increment()
         return data
 
-    def register_packet(self, packetType: int, parsing_fn: Callable[[BytesIO, Header], Dict[Any, Any]]):
+    def register_packet(self, packetType: int, parsing_fn: Callable[[BytesIO, Header], dict[Any, Any]]):
         self.packet_type_to_parser[packetType] = parsing_fn
 
     # TODO Put these in utils folder/file?

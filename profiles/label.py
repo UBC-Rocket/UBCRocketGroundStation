@@ -1,5 +1,5 @@
 import math
-from typing import TYPE_CHECKING, Callable, Optional, Union
+from typing import Callable, Optional
 from main_window.data_entry_id import DataEntryIds, DataEntryValues
 from main_window.rocket_data import RocketData
 from main_window.device_manager import DeviceType
@@ -58,7 +58,7 @@ def update_gps(rocket_data: RocketData, device: DeviceType) -> str:
 
 
 def update_state(rocket_data: RocketData, device: DeviceType) -> str:
-    state: Union[DataEntryValues, None] = rocket_data.last_value_by_device(device, DataEntryIds.STATE)
+    state: Optional[DataEntryValues] = rocket_data.last_value_by_device(device, DataEntryIds.STATE)
     if state is not None:
         return state.name
     else:

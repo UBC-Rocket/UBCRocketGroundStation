@@ -1,5 +1,3 @@
-from typing import Union
-
 from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice
 from digi.xbee.models.address import XBee64BitAddress
 

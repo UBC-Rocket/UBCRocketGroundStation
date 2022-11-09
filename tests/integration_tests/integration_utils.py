@@ -1,6 +1,5 @@
 import pytest
 import logging
-from typing import List, Tuple
 
 from main_window.data_entry_id import DataEntryIds
 from profiles.rocket_profile_list import ROCKET_PROFILES, RocketProfile
@@ -74,7 +73,7 @@ def flush_packets(main_app: MainApp, device_type: DeviceType):
             received += 1
             last_time = new_time
 
-def all_profiles(excluding: List[str] = []) -> List[RocketProfile]:
+def all_profiles(excluding: list[str] = []) -> list[RocketProfile]:
     """
     Returns a list of all rocket profiles excluding those indicated
 
@@ -85,7 +84,7 @@ def all_profiles(excluding: List[str] = []) -> List[RocketProfile]:
     return [profile for profile in ROCKET_PROFILES if profile.__class__.__name__ not in excluding]
 
 
-def all_devices(excluding: List[DeviceType] = []) -> List[DeviceType]:
+def all_devices(excluding: list[DeviceType] = []) -> list[DeviceType]:
     """
     Returns a list of all DeviceTypes excluding those indicated
 
@@ -96,7 +95,7 @@ def all_devices(excluding: List[DeviceType] = []) -> List[DeviceType]:
     return [device for device in DeviceType if device not in excluding]
 
 
-def only_flare(device_types: List[DeviceType]) -> List[DeviceType]:
+def only_flare(device_types: list[DeviceType]) -> list[DeviceType]:
     """
     Filters out non-flare device types
 
@@ -107,7 +106,7 @@ def only_flare(device_types: List[DeviceType]) -> List[DeviceType]:
     return [device for device in device_types if is_device_type_flare(device)]
 
 
-def valid_paramitrization(rocket_profiles: List[RocketProfile], device_types: List[DeviceType] = None) -> List[Tuple]:
+def valid_paramitrization(rocket_profiles: list[RocketProfile], device_types: list[DeviceType] = None) -> list[tuple]:
     """
     Returns valid pytest parametrization combinations taking into account which profiles expect which device_types
 
@@ -125,5 +124,3 @@ def valid_paramitrization(rocket_profiles: List[RocketProfile], device_types: Li
                 if device in profile.expected_devices:
                     params.append(pytest.param(profile, device, id=f"{profile.__class__.__name__}-{device.name}"))
     return params
-
-

@@ -2,7 +2,7 @@ import os
 import threading
 import time
 from enum import Enum
-from typing import Dict, Union, Set, Callable, List, Optional
+from typing import Union, Callable, Optional, Any
 from collections import namedtuple
 from sortedcontainers import SortedDict
 
@@ -29,16 +29,16 @@ class RocketData:
 
         self.data_lock = threading.RLock()  # create lock ASAP since self.lock needs to be defined when autosave starts
         # Map: Time -> key-indexed list of data
-        self.timeset: SortedDict[int, Dict[DataEntryKey, Union[int, float, str, Enum]]] = SortedDict()
+        self.timeset: SortedDict[int, dict[DataEntryKey, Union[int, float, str, Enum]]] = SortedDict()
         # Map: Key -> time-indexed list of data
-        self.keyset: Dict[DataEntryKey, SortedDict[int, Union[int, float, str, Enum]]] = dict()
+        self.keyset: dict[DataEntryKey, SortedDict[int, Union[int, float, str, Enum]]] = dict()
         self.last_time = 0
-        self.highest_altitude: Dict[FullAddress, float] = dict()
+        self.highest_altitude: dict[FullAddress, float] = dict()
 
         self.session_name = os.path.join(LOGS_DIR, "autosave_" + SESSION_ID + ".csv")
 
         self.callback_lock = threading.RLock()  # Only for callback dict
-        self.callbacks: Dict[CallBackKey, List[Callable]] = {}
+        self.callbacks: dict[CallBackKey, list[Callable]] = {}
 
         self.as_cv = threading.Condition()  # Condition variable for autosave (as)
         self._as_is_shutting_down = False  # Lock in cv is used to protect this
@@ -83,7 +83,7 @@ class RocketData:
 
         self.autosave_thread.join()  # join thread
 
-    def add_bundle(self, full_address: FullAddress, incoming_data: Dict[DataEntryIds, any]):
+    def add_bundle(self, full_address: FullAddress, incoming_data: dict[DataEntryIds, Any]):
         """
         Adding a bundle of data points and trigger callbacks according to id.
         Current implementation: adds to time given, otherwise will add to the last time received.
@@ -241,7 +241,7 @@ class RocketData:
                 return
 
             # all appearing keys
-            keys: List[DataEntryKey] = list(map(
+            keys: list[DataEntryKey] = list(map(
                 lambda data_entry_key: DataEntryKey(data_entry_key.full_address, data_entry_key.data_id),
                 set(self.keyset.keys())))
 

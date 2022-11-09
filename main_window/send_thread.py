@@ -1,7 +1,6 @@
 import queue
 from enum import Enum
 from threading import RLock
-from typing import Dict
 
 from digi.xbee.exception import TimeoutException
 from PyQt5 import QtCore
@@ -16,7 +15,7 @@ COMMAND_SENT_EVENT = Event('command_sent')
 
 class SendThread(QtCore.QThread):
 
-    def __init__(self, connections: Dict[str, Connection], device_manager: DeviceManager, command_parser: CommandParser, parent=None) -> None:
+    def __init__(self, connections: dict[str, Connection], device_manager: DeviceManager, command_parser: CommandParser, parent=None) -> None:
         """Updates GUI, therefore needs to be a QThread and use signals/slots
 
         :param connections:

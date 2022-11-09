@@ -1,6 +1,5 @@
 from enum import Enum
 from collections import namedtuple
-from typing import List
 
 from .device_manager import DeviceManager, DeviceType, is_device_type_flare
 from .packet_parser import SubpacketIds
@@ -66,7 +65,7 @@ class CommandParser:
     def broadcast_data(self, command_type: CommandType):
         return bytes([command_type.value])
 
-    def available_commands(self) -> List[str]:
+    def available_commands(self) -> list[str]:
         available_commands = []
         for device in DeviceType:
             if is_device_type_flare(device) and self.device_manager.get_full_address(device) is not None:

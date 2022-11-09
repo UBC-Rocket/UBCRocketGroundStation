@@ -1,6 +1,6 @@
 import math
 import os
-from typing import Callable, Dict
+from typing import Callable
 import logging
 
 from PyQt5.QtWidgets import QAction
@@ -31,7 +31,7 @@ MAP_UPDATED_EVENT = Event('map_updated')
 
 class CompApp(MainApp, Ui_MainWindow):
 
-    def __init__(self, connections: Dict[str, Connection], rocket_profile: RocketProfile) -> None:
+    def __init__(self, connections: dict[str, Connection], rocket_profile: RocketProfile) -> None:
         """
 
         :param connections:
@@ -467,5 +467,3 @@ class CompApp(MainApp, Ui_MainWindow):
         self.save_view()
         self.MappingThread.shutdown()
         super().shutdown()
-
-

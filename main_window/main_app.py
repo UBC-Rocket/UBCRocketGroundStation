@@ -1,6 +1,5 @@
 import os
 import threading
-from typing import Dict
 
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import pyqtSignal
@@ -19,7 +18,7 @@ from main_window.command_parser import CommandParser
 class MainApp(QtWidgets.QMainWindow):
     sig_send = pyqtSignal(str)
 
-    def __init__(self, connections: Dict[str, Connection], rocket_profile: RocketProfile) -> None:
+    def __init__(self, connections: dict[str, Connection], rocket_profile: RocketProfile) -> None:
         """
 
         :param connection:

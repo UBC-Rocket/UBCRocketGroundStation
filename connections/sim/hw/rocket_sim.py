@@ -1,7 +1,7 @@
 import multiprocessing
 import numpy as np
 from os import path
-from typing import Dict, List, Union, Tuple, Iterable
+from typing import Optional, Iterable
 from enum import Enum, auto
 from orhelper import OpenRocketInstance, Helper, FlightDataType, FlightEvent
 from multiprocessing import Process, Queue
@@ -105,7 +105,7 @@ class RocketSim:
             self._state = FlightState.LANDED
         return self._state
 
-    def get_flight_events(self) -> Dict[FlightEvent, List[float]]:
+    def get_flight_events(self) -> dict[FlightEvent, list[float]]:
         if self._state == FlightState.STANDBY:
             return dict()
         else:
@@ -129,7 +129,7 @@ class RocketSim:
         assert self._launch_time is not None
         return self.get_time() - self._launch_time
 
-    def get_time_series(self, data_type: FlightDataType) -> Tuple[Iterable[float], Iterable[float]]:
+    def get_time_series(self, data_type: FlightDataType) -> tuple[Iterable[float], Iterable[float]]:
         times = self._data[FlightDataType.TYPE_TIME]
         data = self._data[data_type]
         current_time = self.get_time_since_launch()
@@ -152,13 +152,13 @@ class RocketSim:
     def get_clock(self) -> Clock:
         return self._clock
 
-    def get_launch_time(self) -> Union[float, None]:
+    def get_launch_time(self) -> Optional[float]:
         return self._launch_time
 
-    def get_drogue_deployment_time(self) -> Union[float, None]:
+    def get_drogue_deployment_time(self) -> Optional[float]:
         return self._drogue_deployment_time
 
-    def get_main_deployment_time(self) -> Union[float, None]:
+    def get_main_deployment_time(self) -> Optional[float]:
         return self._main_deployment_time
 
     def _run_simulation(self):

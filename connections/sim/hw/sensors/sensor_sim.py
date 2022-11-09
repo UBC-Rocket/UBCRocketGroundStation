@@ -1,4 +1,4 @@
-from typing import Iterable, Tuple
+from typing import Iterable
 import numpy as np
 
 from connections.sim.hw.sensors.sensor import Sensor, SensorType, REQUIRED_SENSOR_FLOATS
@@ -19,7 +19,7 @@ class SensorSim(Sensor):
         self.rocket_sim = rocket_sim
         self._error_stdev = error_stdev
 
-    def read(self) -> Tuple[float]:
+    def read(self) -> float:
         """
         :brief: return data for sensor
         :return: the sensor data

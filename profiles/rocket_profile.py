@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Dict, List
 from collections import namedtuple
 
 from connections.connection import Connection
@@ -22,27 +21,27 @@ class RocketProfile(ABC):
 
     @property
     @abstractmethod
-    def buttons(self) -> Dict[str, str]:
+    def buttons(self) -> dict[str, str]:
         pass
 
     @property
     @abstractmethod
-    def labels(self) -> List[Label]:
+    def labels(self) -> list[Label]:
         pass
 
     @property
     @abstractmethod
-    def expected_devices(self) -> List[DeviceType]:
+    def expected_devices(self) -> list[DeviceType]:
         pass
 
     @property
     @abstractmethod
-    def mapping_devices(self) -> List[DeviceType]:
+    def mapping_devices(self) -> list[DeviceType]:
         pass
 
     @property
     @abstractmethod
-    def required_device_versions(self) -> Dict[DeviceType, str]:
+    def required_device_versions(self) -> dict[DeviceType, str]:
         """
         :return: Optional restrictions on device versions
         """
@@ -68,22 +67,22 @@ class RocketProfile(ABC):
     Factory pattern for objects that should only be constructed if needed
     '''
     @abstractmethod
-    def construct_serial_connection(self, com_port: str, baud_rate: int) -> Dict[str, Connection]:
+    def construct_serial_connection(self, com_port: str, baud_rate: int) -> dict[str, Connection]:
         pass
 
     @abstractmethod
-    def construct_debug_connection(self) -> Dict[str, Connection]:
+    def construct_debug_connection(self) -> dict[str, Connection]:
         pass
 
     @abstractmethod
-    def construct_sim_connection(self) -> Dict[str, Connection]:
+    def construct_sim_connection(self) -> dict[str, Connection]:
         # Here we can define HW Sim and all its sensors etc. without them being constructed if we aren't running SIM.
         # This is useful as HW Sim may be multi-threaded or do something upon construction that we dont want to
         # happen during regular flight.
         pass
 
     @abstractmethod
-    def construct_app(self, connections: Dict[str, Connection]):
+    def construct_app(self, connections: dict[str, Connection]):
         pass
 
     @abstractmethod

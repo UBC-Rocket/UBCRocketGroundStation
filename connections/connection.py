@@ -39,4 +39,3 @@ class Connection(ABC):
     @abstractmethod
     def isFloatBigEndian(self) -> bool:
         pass
-

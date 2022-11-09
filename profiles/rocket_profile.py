@@ -2,6 +2,9 @@ from abc import ABC, abstractmethod
 from collections import namedtuple
 
 from connections.connection import Connection
+from connections.serial.serial_connection import SerialConnection
+from connections.debug.debug_connection import DebugConnection
+from connections.sim.sim_connection import SimConnection
 from main_window.packet_parser import PacketParser
 from main_window.device_manager import DeviceType
 from .label import Label
@@ -67,15 +70,15 @@ class RocketProfile(ABC):
     Factory pattern for objects that should only be constructed if needed
     '''
     @abstractmethod
-    def construct_serial_connection(self, com_port: str, baud_rate: int) -> dict[str, Connection]:
+    def construct_serial_connection(self, com_port: str, baud_rate: int) -> dict[str, SerialConnection]:
         pass
 
     @abstractmethod
-    def construct_debug_connection(self) -> dict[str, Connection]:
+    def construct_debug_connection(self) -> dict[str, DebugConnection]:
         pass
 
     @abstractmethod
-    def construct_sim_connection(self) -> dict[str, Connection]:
+    def construct_sim_connection(self) -> dict[str, SimConnection]:
         # Here we can define HW Sim and all its sensors etc. without them being constructed if we aren't running SIM.
         # This is useful as HW Sim may be multi-threaded or do something upon construction that we dont want to
         # happen during regular flight.

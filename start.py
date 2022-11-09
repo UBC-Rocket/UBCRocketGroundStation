@@ -6,6 +6,7 @@ import argparse
 import matplotlib
 matplotlib.use('QT5Agg') # Ensures that the Qt5 backend is used, otherwise there might be some issues on some OSs (Mac)
 from com_window.main import ComWindow
+from connections.connection import Connection
 from PyQt5 import QtWidgets, QtCore
 from profiles.rockets.tantalus import TantalusProfile
 from util.self_test import SelfTest
@@ -42,15 +43,19 @@ def main(qt_args: list[str], self_test: bool = False):
 
         rocket = com_window.chosen_rocket
         connection = com_window.chosen_connection
-        main_window = rocket.construct_app(connection)
+        main_window = rocket.construct_app(connection)  # type: ignore
 
     # TODO: fix typing issue with this.
     else:
         rocket = TantalusProfile()
         connection = rocket.construct_debug_connection()
-        main_window = rocket.construct_app(connection)
+        main_window = rocket.construct_app(connection)  # type: ignore
         test = SelfTest(main_window)
         test.start()
+        
+    # Sanity Check if Window is Created
+    if not main_window:
+        raise Exception("Main Window was not created properly.")
 
     main_window.show()
     return_code = app.exec_()

@@ -1,5 +1,6 @@
 import multiprocessing
 import numpy as np
+import traceback
 from os import path
 from typing import Optional, Iterable
 from enum import Enum, auto
@@ -232,8 +233,9 @@ def _process_simulation(
                 result_queue.put(Exception(f"Error inside JVM: {ex}"))
                 return
 
-    except Exception:
+    except Exception as e:
         result_queue.put(Exception("Error starting OpenRocket"))
+        traceback.print_exc()
         return
 
     # JVM shut down on `while` statement exit

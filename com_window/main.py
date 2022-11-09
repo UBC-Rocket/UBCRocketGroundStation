@@ -27,7 +27,7 @@ class ComWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         super().__init__()
         Ui_MainWindow.__init__(self)
 
-        self.RocketProfiles = {p.rocket_name:p for p in ROCKET_PROFILES}
+        self.RocketProfiles = {p.rocket_name: p for p in ROCKET_PROFILES}
 
         self.chosen_connection = None
         self.chosen_rocket = None

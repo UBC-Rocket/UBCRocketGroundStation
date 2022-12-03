@@ -28,7 +28,7 @@ jobs:
           if [[ -f $file && $file == *.py ]]
             then
               PYTHONFILES="${PYTHONFILES} $file"
+              echo $PYTHONFILES
+              pylint $PYTHONFILES
             fi
         done
-        echo $PYTHONFILES
-        pylint $PYTHONFILES

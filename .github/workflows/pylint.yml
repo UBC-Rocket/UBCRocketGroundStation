@@ -23,12 +23,10 @@ jobs:
       uses: tj-actions/changed-files@v11.5
     - name: Analysing the code with pylint
       run: |
-        PYTHONFILES=""
         for file in ${{ steps.changed-files.outputs.all_modified_files }}; do
           if [[ -f $file && $file == *.py ]]
             then
-              PYTHONFILES="${PYTHONFILES} $file"
-              echo $PYTHONFILES
-              pylint $PYTHONFILES
+              echo $file
+              pylint $file
             fi
         done

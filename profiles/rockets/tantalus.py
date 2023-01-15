@@ -6,6 +6,7 @@ from ..label import (
     update_max_altitude,
     update_pressure,
     update_state,
+    update_signal_strength
 )
 from ..rocket_profile import RocketProfile, FlightPoint
 from connections.serial.serial_connection import SerialConnection
@@ -51,6 +52,7 @@ class TantalusProfile(RocketProfile):
             Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Pressure", update_pressure),
             Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Acceleration", update_acceleration),
             Label(DeviceType.TANTALUS_STAGE_2_FLARE, "Stage2State", update_state, "Stage 2 State"),
+            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "SignalStrength", update_signal_strength, "Signal Strength")
         ]
 
     @property

@@ -37,6 +37,8 @@ class DataEntryIds(Enum):
     ACCELEROMETER = auto()
     IMU = auto()
 
+    SIGNAL_STRENGTH = auto()
+
     # Status
     OVERALL_STATUS = auto()
     DROGUE_IGNITER_CONTINUITY = auto()

@@ -59,17 +59,18 @@ class DebugConnection(Connection):
                 # full_arr.extend(self.bad_subpacket_id_mock()) # bad id, to see handling of itself and remaining data
                 full_arr.extend(self.gps_mock_random())
                 full_arr.extend(self.orientation_mock_random())
-                self.receive(full_arr)
+                signal_strength = random.uniform(0,255)
+                self.receive(full_arr,signal_strength)
 
             LOGGER.warning(f"Debug connection thread shut down (device_address={self.device_address})")
 
-    def receive(self, data):
+    def receive(self, data, signal_strength):
         with self.lock:
 
             if not self.callback:
                 raise Exception("Can't receive data. Callback not set.")
 
-            message = ConnectionMessage(device_address=self.device_address, connection=self, data=data)
+            message = ConnectionMessage(device_address=self.device_address, connection=self, data=data, signal_strength=signal_strength)
 
             self.callback(message)
 
@@ -196,9 +197,9 @@ class DebugConnection(Connection):
             elif data == bytes([0x44]):
                 DISARMED_EVENT.increment()
             elif data == bytes([0x50]):
-                self.receive(self.status_ping_mock_set_values())
+                self.receive(self.status_ping_mock_set_values(),25) #TODO: FIX THIS 25 SHOUDL BE STRENGTH
             elif data == bytes([0x43]):
-                self.receive(self.config_mock_set_values())
+                self.receive(self.config_mock_set_values(),25)
 
     def shutdown(self) -> None:
         if not self.connectionThread.is_alive():

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections import namedtuple
 from typing import Callable
 
-ConnectionMessage = namedtuple('ConnectionMessage', ['device_address', 'connection', 'data'])
+ConnectionMessage = namedtuple('ConnectionMessage', ['device_address', 'connection', 'data','signal_strength'])
 
 
 class Connection(ABC):

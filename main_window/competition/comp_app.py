@@ -3,8 +3,7 @@ import os
 from typing import Callable, Dict
 import logging
 
-from PyQt5.QtWidgets import QAction, QApplication, QCheckBox
-from matplotlib.offsetbox import AnnotationBbox, OffsetImage
+from PyQt5.QtWidgets import QAction
 from PIL import Image
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
@@ -41,6 +40,7 @@ class CompApp(MainApp, Ui_MainWindow):
         """
         super().__init__(connections, rocket_profile)
 
+        self.plotWidget = AccelWidget()
         self.map_data = map_data.MapData()
         self.im = None  # Plot im
 
@@ -136,7 +136,6 @@ class CompApp(MainApp, Ui_MainWindow):
         for button, command in self.rocket_profile.buttons.items():
             getattr(self, button + "Button").clicked.connect(gen_send_command(command))
 
-
     def setup_labels(self):
         """Create all of the data labels for the loaded rocket profile."""
 
@@ -145,6 +144,7 @@ class CompApp(MainApp, Ui_MainWindow):
                 self.selected_label = label
                 if self.plotWidget.showing_checkboxes:
                     self.plotWidget.hide_checkboxes()
+
             return mousePressEvent
 
         self.selected_label = None
@@ -170,7 +170,6 @@ class CompApp(MainApp, Ui_MainWindow):
             if label.name == "GPS":
                 self.selected_label = label
 
-
         if self.selected_label is None:
             self.selected_label = self.rocket_profile.labels[0]
 
@@ -182,35 +181,32 @@ class CompApp(MainApp, Ui_MainWindow):
                 QtCore.QCoreApplication.translate("MainWindow", label.display_name + ":"))
             getattr(self, name + "Label").setText(QtCore.QCoreApplication.translate("MainWindow", ""))
 
-
     def map_callback(self):
-        #plot in main window
-        self.selected_label.map_fn(self, self.plotWidget, self.selected_label.device, self.selected_label.name)
-
+        # plot in main window
         if "GPS" in self.selected_label.name:
             MAP_UPDATED_EVENT.increment()
+            self.selected_label.map_fn(self)
+        else:
+            self.selected_label.map_fn(self, self.plotWidget, self.selected_label.device, self.selected_label.name)
 
-        #plot in other open windows
+        # plot in other open windows
         for label_name, label_window in self.label_windows.items():
-            label = label_window[0] #label object
+            label = label_window[0]  # label object
             window = label_window[1]
             if window:
-                try: #window may have been closed
+                try:  # window may have been closed
                     label.map_fn(self, window, label.device, label.name)
 
-                except Exception as e: #catches canvas deleted exception
+                except Exception as e:  # catches canvas deleted exception
                     label_window[1] = None
 
-
     def setup_subwindow(self):
-        self.plotWidget = AccelWidget()
-
         # Hook-up Matplotlib callbacks
         self.plotWidget.canvas.fig.canvas.mpl_connect('resize_event', self.map_resized_event)
         # TODO: Also have access to click, scroll, keyboard, etc. Would be good to implement map manipulation.
 
         sub = QtWidgets.QMdiSubWindow()
-        sub.layout().setContentsMargins(0,0,0,0)
+        sub.layout().setContentsMargins(0, 0, 0, 0)
         sub.setWidget(self.plotWidget)
         sub.setWindowTitle("Data Plot")
         sub.setWindowIcon(QtGui.QIcon(mapbox_utils.MARKER_PATH))
@@ -229,7 +225,7 @@ class CompApp(MainApp, Ui_MainWindow):
 
             view_all = QAction("All", self)
             all_devices = self.rocket_profile.mapping_devices
-            view_all.triggered.connect(lambda i, all_devices = all_devices: self.set_view_device(all_devices))
+            view_all.triggered.connect(lambda i, all_devices=all_devices: self.set_view_device(all_devices))
             self.map_view_menu.addAction(view_all)
 
             for device in self.rocket_profile.mapping_devices:
@@ -241,7 +237,7 @@ class CompApp(MainApp, Ui_MainWindow):
         self.dataplot_view_menu = view_menu.addMenu("Data Plot")
 
         self.label_windows = {label.display_name: [label, None] for label in self.rocket_profile.all_labels}
-        #{label name: [label object, window object]}
+        # {label name: [label object, window object]}
 
         for label_name, label_window in self.label_windows.items():
             data_label = QAction(f'{label_name}', self)
@@ -471,7 +467,6 @@ class CompApp(MainApp, Ui_MainWindow):
         self.windowWidth = event.width
         self.windowHeight = event.height
 
-
     def set_view_device(self, viewedDevices) -> None:
         self.MappingThread.setViewedDevice(viewedDevices)
 
@@ -492,7 +487,7 @@ class CompApp(MainApp, Ui_MainWindow):
         label = self.label_windows[label_name][0]
         window = self.label_windows[label_name][1]
 
-        if window == None:
+        if window is None:
             new_window = AccelWidget() if "Acceleration" in label_name else MplWidget()
             new_window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
             new_window.setWindowTitle(f"{label.device} {label.display_name}")
@@ -502,6 +497,8 @@ class CompApp(MainApp, Ui_MainWindow):
     def shutdown(self):
         self.save_view()
         self.MappingThread.shutdown()
+        for label_name, label_window in self.label_windows.items():
+            window = label_window[1]
+            if window:
+                window.close()
         super().shutdown()
-        QApplication.closeAllWindows()
-

@@ -21,8 +21,8 @@ class MainApp(QtWidgets.QMainWindow):
     def __init__(self, connections: Dict[str, Connection], rocket_profile) -> None:
         """
 
-        :param connection:
-        :type connection: Connection
+        :param connections:
+        :type connections: Dict[str, Connection]
         :param rocket_profile:
         :type rocket_profile: RocketProfile
         """

@@ -70,11 +70,12 @@ class CompApp(MainApp, Ui_MainWindow):
 
         # Setup dynamic UI elements
         self.setup_buttons()
+        self.selected_label = None
         self.setup_labels()
+        self.label_windows = {label.display_name: [label, None] for label in self.rocket_profile.all_labels}
+        # {label name: [label object, window object]}
         self.setup_subwindow().showMaximized()
-
         self.setup_view_menu()
-
         self.setWindowIcon(QtGui.QIcon(mapbox_utils.MARKER_PATH))
 
         # Setup user window preferences
@@ -104,9 +105,9 @@ class CompApp(MainApp, Ui_MainWindow):
         for button in self.rocket_profile.buttons:
             qt_button = QtWidgets.QPushButton(self.centralwidget)
             setattr(self, button + "Button", qt_button)
-            sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
-            sizePolicy.setHeightForWidth(getattr(self, button + "Button").sizePolicy().hasHeightForWidth())
-            qt_button.setSizePolicy(sizePolicy)
+            size_policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+            size_policy.setHeightForWidth(getattr(self, button + "Button").sizePolicy().hasHeightForWidth())
+            qt_button.setSizePolicy(size_policy)
             font = QtGui.QFont()
             font.setPointSize(16)
             font.setKerning(True)
@@ -146,8 +147,6 @@ class CompApp(MainApp, Ui_MainWindow):
                     self.plotWidget.hide_checkboxes()
 
             return mousePressEvent
-
-        self.selected_label = None
 
         # Trying to replicate PyQt's generated code from a .ui file as closely as possible. This is why setattr is
         # being used to keep all of the buttons as named labels of MainApp and not elements of a list.
@@ -197,7 +196,7 @@ class CompApp(MainApp, Ui_MainWindow):
                 try:  # window may have been closed
                     label.map_fn(self, window, label.device, label.name)
 
-                except Exception as e:  # catches canvas deleted exception
+                except Exception:  # catches canvas deleted exception
                     label_window[1] = None
 
     def setup_subwindow(self):
@@ -219,41 +218,39 @@ class CompApp(MainApp, Ui_MainWindow):
     def setup_view_menu(self) -> None:
         view_menu = self.menuBar().children()[2]
 
-        # Menubar for choosing rocket device view
+        # Menu bar for choosing rocket device view
         if len(self.rocket_profile.mapping_devices) > 1:
-            self.map_view_menu = view_menu.addMenu("Map")
+            map_view_menu = view_menu.addMenu("Map")
 
             view_all = QAction("All", self)
             all_devices = self.rocket_profile.mapping_devices
-            view_all.triggered.connect(lambda i, all_devices=all_devices: self.set_view_device(all_devices))
-            self.map_view_menu.addAction(view_all)
+            view_all.triggered.connect(lambda i, devices=all_devices: self.set_view_device(devices))
+            map_view_menu.addAction(view_all)
 
             for device in self.rocket_profile.mapping_devices:
                 view_device = QAction(f'{device}', self)
-                view_device.triggered.connect(lambda i, device=device: self.set_view_device([device]))
-                self.map_view_menu.addAction(view_device)
+                view_device.triggered.connect(lambda i, mapping_device=device: self.set_view_device([mapping_device]))
+                map_view_menu.addAction(view_device)
 
-        # Menubar for choosing which data to plot
-        self.dataplot_view_menu = view_menu.addMenu("Data Plot")
-
-        self.label_windows = {label.display_name: [label, None] for label in self.rocket_profile.all_labels}
-        # {label name: [label object, window object]}
+        # Menu bar for choosing which data to plot
+        dataplot_view_menu = view_menu.addMenu("Data Plot")
 
         for label_name, label_window in self.label_windows.items():
-            data_label = QAction(f'{label_name}', self)
-            data_label.triggered.connect(lambda i, label_name=label_name: self.open_plot_window(label_name))
-            self.dataplot_view_menu.addAction(data_label)
+            if label_name != "GPS":
+                data_label = QAction(f'{label_name}', self)
+                data_label.triggered.connect(lambda i, label=label_name: self.open_plot_window(label))
+                dataplot_view_menu.addAction(data_label)
 
     def setup_zoom_slider(self) -> None:
         # Map zoom slider and zoom buttons
-        self.maxZoomFactor = 3  # zoom out 2**3 scale
-        self.minZoomFactor = -2
-        self.numTicksPerScale = 1
+        max_zoom_factor = 3  # zoom out 2**3 scale
+        min_zoom_factor = -2
+        num_ticks_per_scale = 1
         # currently, each tick represents a 2x scale change
         # increase numTicksPerScale for more ticks on slider
 
-        self.horizontalSlider.setMinimum(self.minZoomFactor * self.numTicksPerScale)
-        self.horizontalSlider.setMaximum(self.maxZoomFactor * self.numTicksPerScale)
+        self.horizontalSlider.setMinimum(min_zoom_factor * num_ticks_per_scale)
+        self.horizontalSlider.setMaximum(max_zoom_factor * num_ticks_per_scale)
         self.horizontalSlider.setValue(0)  # default original scale
         self.horizontalSlider.valueChanged.connect(self.map_zoomed)
 
@@ -467,13 +464,13 @@ class CompApp(MainApp, Ui_MainWindow):
         self.windowWidth = event.width
         self.windowHeight = event.height
 
-    def set_view_device(self, viewedDevices) -> None:
-        self.MappingThread.setViewedDevice(viewedDevices)
+    def set_view_device(self, viewed_devices) -> None:
+        self.MappingThread.setViewedDevice(viewed_devices)
 
-    def slider_inc(self, zoom_change) -> None:
+    def slider_inc(self) -> None:
         self.horizontalSlider.setValue(self.horizontalSlider.value() + 1)
 
-    def slider_dec(self, zoom_change) -> None:
+    def slider_dec(self) -> None:
         self.horizontalSlider.setValue(self.horizontalSlider.value() - 1)
 
     def map_zoomed(self) -> None:
@@ -482,7 +479,7 @@ class CompApp(MainApp, Ui_MainWindow):
     def open_plot_window(self, label_name) -> None:
         """
         Opens new window for plotting data when selected from menu bar
-        :param label:
+        :param label_name:
         """
         label = self.label_windows[label_name][0]
         window = self.label_windows[label_name][1]

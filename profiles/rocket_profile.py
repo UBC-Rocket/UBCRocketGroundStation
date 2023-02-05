@@ -15,6 +15,7 @@ FlightPoint = namedtuple('FlightPoint', (
     'altitude_tolerance'
 ))
 
+
 class RocketProfile(ABC):
     @property
     @abstractmethod
@@ -95,7 +96,7 @@ class RocketProfile(ABC):
 
     @abstractmethod
     def construct_serial_connection(
-        self, com_port: str, baud_rate: int
+            self, com_port: str, baud_rate: int
     ) -> Dict[str, Connection]:
         pass
 

@@ -72,8 +72,7 @@ class CompApp(MainApp, Ui_MainWindow):
         self.setup_buttons()
         self.selected_label = None
         self.setup_labels()
-        self.label_windows = {label.display_name: [label, None] for label in self.rocket_profile.all_labels}
-        # {label name: [label object, window object]}
+        self.label_windows = {label: None for label in self.rocket_profile.all_labels}
         self.setup_subwindow().showMaximized()
         self.setup_view_menu()
         self.setWindowIcon(QtGui.QIcon(mapbox_utils.MARKER_PATH))
@@ -186,18 +185,16 @@ class CompApp(MainApp, Ui_MainWindow):
             MAP_UPDATED_EVENT.increment()
             self.selected_label.map_fn(self)
         else:
-            self.selected_label.map_fn(self, self.plotWidget, self.selected_label.device, self.selected_label.name)
+            self.selected_label.map_fn(self, self.plotWidget, self.selected_label)
 
         # plot in other open windows
-        for label_name, label_window in self.label_windows.items():
-            label = label_window[0]  # label object
-            window = label_window[1]
+        for label in self.label_windows:
+            window = self.label_windows[label]
             if window:
                 try:  # window may have been closed
-                    label.map_fn(self, window, label.device, label.name)
-
+                    label.map_fn(self, window, label)
                 except Exception:  # catches canvas deleted exception
-                    label_window[1] = None
+                    self.label_windows[label] = None
 
     def setup_subwindow(self):
         # Hook-up Matplotlib callbacks
@@ -235,10 +232,10 @@ class CompApp(MainApp, Ui_MainWindow):
         # Menu bar for choosing which data to plot
         dataplot_view_menu = view_menu.addMenu("Data Plot")
 
-        for label_name, label_window in self.label_windows.items():
-            if label_name != "GPS":
-                data_label = QAction(f'{label_name}', self)
-                data_label.triggered.connect(lambda i, label=label_name: self.open_plot_window(label))
+        for label in self.label_windows:
+            if label.name != "GPS":
+                data_label = QAction(f'{label.name}', self)
+                data_label.triggered.connect(lambda i, label_name=label: self.open_plot_window(label_name))
                 dataplot_view_menu.addAction(data_label)
 
     def setup_zoom_slider(self) -> None:
@@ -461,8 +458,6 @@ class CompApp(MainApp, Ui_MainWindow):
         :type event:
         """
         self.MappingThread.setDesiredMapSize(event.width, event.height)
-        self.windowWidth = event.width
-        self.windowHeight = event.height
 
     def set_view_device(self, viewed_devices) -> None:
         self.MappingThread.setViewedDevice(viewed_devices)
@@ -476,26 +471,24 @@ class CompApp(MainApp, Ui_MainWindow):
     def map_zoomed(self) -> None:
         self.MappingThread.setMapZoom(2 ** (self.horizontalSlider.value() / self.numTicksPerScale))
 
-    def open_plot_window(self, label_name) -> None:
+    def open_plot_window(self, label) -> None:
         """
         Opens new window for plotting data when selected from menu bar
-        :param label_name:
+        :param label:
         """
-        label = self.label_windows[label_name][0]
-        window = self.label_windows[label_name][1]
+        window = self.label_windows[label]
 
         if window is None:
-            new_window = AccelWidget() if "Acceleration" in label_name else MplWidget()
+            new_window = AccelWidget() if "Acceleration" in label.name else MplWidget()
             new_window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
             new_window.setWindowTitle(f"{label.device} {label.display_name}")
-            self.label_windows[label_name][1] = new_window
+            self.label_windows[label] = new_window
             new_window.show()
 
     def shutdown(self):
         self.save_view()
         self.MappingThread.shutdown()
-        for label_name, label_window in self.label_windows.items():
-            window = label_window[1]
+        for window in self.label_windows.values():
             if window:
                 window.close()
         super().shutdown()

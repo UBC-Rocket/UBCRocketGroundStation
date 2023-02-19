@@ -1,10 +1,10 @@
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 
 from main_window.competition.comp_app import MAP_MARKER
-from main_window.device_manager import DeviceType
 from textwrap import wrap
 
 from main_window.mplwidget import MplWidget
+from profiles.label import Label
 
 
 def receive_map(self) -> None:
@@ -41,7 +41,7 @@ def receive_map(self) -> None:
     self.plotWidget.canvas.draw()
 
 
-def receive_time_series(self, plot_widget: MplWidget, device: DeviceType, label_name: str) -> None:
+def receive_time_series(self, plot_widget: MplWidget, label: Label) -> None:
     """
         Setup for plotting time series
         Clear previous plot, change subplot settings
@@ -62,33 +62,27 @@ def receive_time_series(self, plot_widget: MplWidget, device: DeviceType, label_
 
     self.im = None
 
-    if label_name == "Acceleration" and not plot_widget.showing_checkboxes:
+    if label.name == "Acceleration" and not plot_widget.showing_checkboxes:
         plot_widget.show_checkboxes()
 
+    # Plot data on graph
     plot_widget.canvas.ax.set_axis_on()
     plot_widget.canvas.ax.set_aspect('auto')
 
-    plot_time_series(self, plot_widget, device, label_name)
-
-
-def plot_time_series(self, plot_widget: MplWidget, device: DeviceType, label_name: str) -> None:
-    """
-            Updates the UI when time series data is available for display
-    """
     plot_widget.canvas.ax.cla()
-    data_entry_id = self.rocket_profile.label_to_dataID[label_name]
+    data_entry_id = self.rocket_profile.label_to_dataID[label.name]
 
-    if label_name == "Acceleration":
+    if label.name == "Acceleration":
         colors = ["Red", "Blue", "Green"]
 
         for i, checkbox in enumerate(plot_widget.accel_checkboxes):
             if checkbox.isChecked():
-                t, y = self.rocket_data.time_series_by_device(device, data_entry_id[i])
+                t, y = self.rocket_data.time_series_by_device(label.device, data_entry_id[i])
                 plot_widget.canvas.ax.plot(t, y, color=colors[i])
 
-    elif data_entry_id and self.rocket_data.time_series_by_device(device, data_entry_id):
+    elif data_entry_id and self.rocket_data.time_series_by_device(label.device, data_entry_id):
 
-        t, y = self.rocket_data.time_series_by_device(device, data_entry_id)
+        t, y = self.rocket_data.time_series_by_device(label.device, data_entry_id)
 
         if y is None:
             pass  # possible edit: log if no data found
@@ -106,7 +100,7 @@ def plot_time_series(self, plot_widget: MplWidget, device: DeviceType, label_nam
             plot_widget.canvas.ax.plot(t, y)
 
     plot_widget.canvas.ax.set_xlabel("Time (s)")
-    plot_widget.canvas.ax.set_ylabel(f"{label_name} ({self.rocket_profile.label_unit[label_name]})")
+    plot_widget.canvas.ax.set_ylabel(f"{label.name} ({self.rocket_profile.label_unit[label.name]})")
 
-    plot_widget.canvas.ax.set_title(f"{device.name} {label_name}", fontsize=10, pad=10, wrap=True)
+    plot_widget.canvas.ax.set_title(f"{label.device.name} {label.name}", fontsize=10, pad=10, wrap=True)
     plot_widget.canvas.draw()

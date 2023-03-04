@@ -1,8 +1,9 @@
+"""Receive and plot data"""
+
+from textwrap import wrap
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 
 from main_window.competition.comp_app import MAP_MARKER
-from textwrap import wrap
-
 from main_window.mplwidget import MplWidget
 from profiles.label import Label
 
@@ -11,7 +12,7 @@ def receive_map(self) -> None:
     """
     Updates the UI when a new map is available for display
     """
-    children = self.plotWidget.canvas.ax.get_children()
+    children = self.plot_widget.canvas.ax.get_children()
     for c in children:
         if isinstance(c, AnnotationBbox):
             c.remove()
@@ -19,26 +20,27 @@ def receive_map(self) -> None:
     zoom, radius, map_image, mark = self.map_data.get_map_value()
 
     # plotMap UI modification
-    self.plotWidget.canvas.ax.set_axis_off()
-    self.plotWidget.canvas.ax.set_ylim(map_image.shape[0], 0)
-    self.plotWidget.canvas.ax.set_xlim(0, map_image.shape[1])
+    self.plot_widget.canvas.ax.set_axis_off()
+    self.plot_widget.canvas.ax.set_ylim(map_image.shape[0], 0)
+    self.plot_widget.canvas.ax.set_xlim(0, map_image.shape[1])
 
     # Removes pesky white boarder
-    self.plotWidget.canvas.fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
+    self.plot_widget.canvas.fig.subplots_adjust(
+        left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
 
     if self.im:
         # Required because plotting images over old ones creates memory leak
         # NOTE: im.set_data() can also be used
         self.im.remove()
 
-    self.im = self.plotWidget.canvas.ax.imshow(map_image)
+    self.im = self.plot_widget.canvas.ax.imshow(map_image)
 
     # updateMark UI modification
-    for i in range(len(mark)):
-        annotation_box = AnnotationBbox(OffsetImage(MAP_MARKER), mark[i], frameon=False)
-        self.plotWidget.canvas.ax.add_artist(annotation_box)
+    for i, m in enumerate(mark):
+        annotation_box = AnnotationBbox(OffsetImage(MAP_MARKER), m, frameon=False)
+        self.plot_widget.canvas.ax.add_artist(annotation_box)
 
-    self.plotWidget.canvas.draw()
+    self.plot_widget.canvas.draw()
 
 
 def receive_time_series(self, plot_widget: MplWidget, label: Label) -> None:
@@ -53,7 +55,8 @@ def receive_time_series(self, plot_widget: MplWidget, label: Label) -> None:
         if isinstance(c, AnnotationBbox):
             c.remove()
 
-    plot_widget.canvas.fig.subplots_adjust(left=0.2, bottom=0.1, right=0.95, top=0.9, wspace=0, hspace=0)
+    plot_widget.canvas.fig.subplots_adjust(
+        left=0.2, bottom=0.1, right=0.95, top=0.9, wspace=0, hspace=0)
 
     if self.im:
         # Required because plotting images over old ones creates memory leak
@@ -70,7 +73,7 @@ def receive_time_series(self, plot_widget: MplWidget, label: Label) -> None:
     plot_widget.canvas.ax.set_aspect('auto')
 
     plot_widget.canvas.ax.cla()
-    data_entry_id = self.rocket_profile.label_to_dataID[label.name]
+    data_entry_id = self.rocket_profile.label_to_data_id[label.name]
 
     if label.name == "Acceleration":
         colors = ["Red", "Blue", "Green"]
@@ -85,13 +88,12 @@ def receive_time_series(self, plot_widget: MplWidget, label: Label) -> None:
         t, y = self.rocket_data.time_series_by_device(label.device, data_entry_id)
 
         if y is None:
-            pass  # possible edit: log if no data found
+            pass  # possible TODO: log if no data found
 
         elif data_entry_id == data_entry_id.STATE:
-
-            # Trim state name (STATE_LANDED -> LANDED), wrap state labels so they fit within the window
-            fig_width = plot_widget.canvas.fig.get_size_inches()[
-                            0] * plot_widget.canvas.fig.dpi  # figure width in pixels
+            # Figure width in pixels
+            fig_width = plot_widget.canvas.fig.get_size_inches()[0] * plot_widget.canvas.fig.dpi
+            # Trim state name (STATE_LANDED -> LANDED)
             plot_widget.canvas.ax.plot(t, ['\n'.join(wrap(e.name[6:], int(fig_width * 0.015))) for e in y])
 
             plot_widget.canvas.ax.tick_params(axis='y', labelsize=6)

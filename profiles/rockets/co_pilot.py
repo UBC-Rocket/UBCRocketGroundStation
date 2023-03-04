@@ -1,3 +1,11 @@
+"""Profile for Co Pilot"""
+
+from connections.debug.debug_connection import DebugConnection
+from main_window.competition.comp_app import CompApp
+from main_window.competition.comp_packet_parser import CompPacketParser
+from main_window.device_manager import DeviceType
+from main_window.packet_parser import DEVICE_TYPE_TO_ID
+from util.detail import REQUIRED_FLARE
 from ..label import (
     Label,
     update_acceleration,
@@ -11,15 +19,10 @@ from ..label import (
     update_tank_pressure,
 )
 from ..rocket_profile import RocketProfile
-from connections.debug.debug_connection import DebugConnection
-from main_window.competition.comp_app import CompApp
-from main_window.competition.comp_packet_parser import CompPacketParser
-from main_window.device_manager import DeviceType
-from main_window.packet_parser import DEVICE_TYPE_TO_ID
-from util.detail import REQUIRED_FLARE
 
 
 class CoPilotProfile(RocketProfile):
+    """Co Pilot"""
     @property
     def rocket_name(self):
         return "Co-Pilot"

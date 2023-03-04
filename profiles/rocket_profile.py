@@ -33,18 +33,26 @@ class RocketProfile(ABC):
         pass
 
     @property
-    # All labels for which data is available, not just those displayed in main window
     def all_labels(self) -> List[Label]:
+        """
+        :return: All labels with data, not just those displayed in main window
+        """
         return self.labels
 
     @property
     @abstractmethod
     def expected_devices(self) -> List[DeviceType]:
+        """
+        :return: Devices of rocket
+        """
         pass
 
     @property
     @abstractmethod
     def mapping_devices(self) -> List[DeviceType]:
+        """
+        :return: Devices to put on map
+        """
         pass
 
     @property
@@ -56,7 +64,10 @@ class RocketProfile(ABC):
         pass
 
     @property
-    def label_to_dataID(self):
+    def label_to_data_id(self):
+        """
+        Convert label name to DataEntryId
+        """
         return {"Altitude": DataEntryIds.CALCULATED_ALTITUDE,
                 "MaxAltitude": None,
                 "State": DataEntryIds.STATE,
@@ -67,6 +78,9 @@ class RocketProfile(ABC):
 
     @property
     def label_unit(self):
+        """
+        Units for labels
+        """
         return {"Altitude": "m",
                 "MaxAltitude": "m",
                 "State": "",
@@ -106,9 +120,10 @@ class RocketProfile(ABC):
 
     @abstractmethod
     def construct_sim_connection(self) -> Dict[str, Connection]:
-        # Here we can define HW Sim and all its sensors etc. without them being constructed if we aren't running SIM.
-        # This is useful as HW Sim may be multi-threaded or do something upon construction that we dont want to
-        # happen during regular flight.
+        # Here we can define HW Sim and all its sensors etc.
+        # without them being constructed if we aren't running SIM.
+        # This is useful as HW Sim may be multi-threaded or do something
+        # upon construction that we dont want to happen during regular flight.
         pass
 
     @abstractmethod

@@ -15,17 +15,18 @@ class Label:
     :type name: str
     :param update_func: A function that creates the label's value from a MainApp object.
     :type update_func: Callable[[RocketData], str]
-    :param display_name: The label name that is display on the front-end. Should support most characters.
+    :param display_name: The label name that is display on the front-end.
+                         Should support most characters.
     :type display_name: str
     """
 
     def __init__(
-        self,
-        device: DeviceType,
-        name: str,
-        update_func: Callable[[RocketData, DeviceType], str],
-        display_name: Optional[str] = None,
-        map_fn: Optional[Callable[[MainApp], None]] = None,
+            self,
+            device: DeviceType,
+            name: str,
+            update_func: Callable[[RocketData, DeviceType], str],
+            display_name: Optional[str] = None,
+            map_fn: Optional[Callable[[MainApp], None]] = None,
     ):
         self.device = device
         self.name = name
@@ -69,7 +70,8 @@ def update_gps(rocket_data: RocketData, device: DeviceType) -> str:
 
 
 def update_state(rocket_data: RocketData, device: DeviceType) -> str:
-    state: Union[DataEntryValues, None] = rocket_data.last_value_by_device(device, DataEntryIds.STATE)
+    state: Union[DataEntryValues, None] = rocket_data.last_value_by_device(
+                                            device, DataEntryIds.STATE)
     if state is not None:
         return state.name
     else:

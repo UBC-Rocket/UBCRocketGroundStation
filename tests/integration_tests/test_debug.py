@@ -90,7 +90,7 @@ def test_bulk_sensor_packet(qtbot, single_connection_tantalus):
     state_val = get_val(DataEntryIds.STATE)
     assert STATE_IDS[state_input] == state_val
 
-    assert LABLES_UPDATED_EVENT.wait(snapshot) >= 1
+    assert LABELS_UPDATED_EVENT.wait(snapshot) >= 1
 
     assert app.AltitudeLabel.text() == '2.00 m'
     assert app.GPSLabel.text() == '9.00000\xb0, 10.00000\xb0'

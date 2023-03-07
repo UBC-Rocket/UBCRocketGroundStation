@@ -81,16 +81,17 @@ class SilvertipProfile(RocketProfile):
             altitude_tolerance=50
         )
 
-    def construct_serial_connection(self, com_port, baud_rate):
+    def construct_serial_connection(self, com_port: str, baud_rate: int, kiss_address: str):
         return {
-            'XBEE_RADIO': SerialConnection(com_port, baud_rate),
+            'XBEE_RADIO': SerialConnection(com_port, baud_rate, kiss_address),
         }
 
-    def construct_debug_connection(self):
+    def construct_debug_connection(self, kiss_address: str):
         return {
             'SILVERTIP_FLARE_CONNECTION': DebugConnection('SILVERTIP_FLARE_RADIO_ADDRESS',
                                                            DEVICE_TYPE_TO_ID[DeviceType.SILVERTIP_FLARE],
-                                                           generate_radio_packets=True),
+                                                           generate_radio_packets=True,
+                                                           kiss_address=kiss_address),
         }
 
     def construct_sim_connection(self):

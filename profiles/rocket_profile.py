@@ -68,11 +68,11 @@ class RocketProfile(ABC):
     Factory pattern for objects that should only be constructed if needed
     '''
     @abstractmethod
-    def construct_serial_connection(self, com_port: str, baud_rate: int) -> Dict[str, Connection]:
+    def construct_serial_connection(self, com_port: str, baud_rate: int, kiss_address: str) -> Dict[str, Connection]:
         pass
 
     @abstractmethod
-    def construct_debug_connection(self) -> Dict[str, Connection]:
+    def construct_debug_connection(self, kiss_address: str) -> Dict[str, Connection]:
         pass
 
     @abstractmethod

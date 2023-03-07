@@ -8,7 +8,7 @@ from ..connection import Connection, ConnectionMessage
 
 class SerialConnection(Connection):
 
-    def __init__(self, comPort: str, baudRate: int):
+    def __init__(self, comPort: str, baudRate: int, kiss_address: str):
         self.device = XBeeDevice(comPort, baudRate)
         self.device.set_sync_ops_timeout(5)  # 5 seconds
         self.device.open()

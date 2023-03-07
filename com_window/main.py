@@ -18,12 +18,12 @@ qtCreatorFile = os.path.join(BUNDLED_DATA, "qt_files", "com_window.ui")
 
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
-ConnectionRequirements = namedtuple('ConnectionRequirements', ['com_port', 'baud_rate'])
+ConnectionRequirements = namedtuple('ConnectionRequirements', ['com_port', 'baud_rate', 'kiss_address'])
 
 CONNECTIONS = {
-    'Serial': ConnectionRequirements(com_port=True, baud_rate=True),
-    'Debug': ConnectionRequirements(com_port=False, baud_rate=False),
-    'SIM': ConnectionRequirements(com_port=False, baud_rate=False),
+    'Serial': ConnectionRequirements(com_port=True, baud_rate=True, kiss_address=True),
+    'Debug': ConnectionRequirements(com_port=False, baud_rate=False, kiss_address=True),
+    'SIM': ConnectionRequirements(com_port=False, baud_rate=False, kiss_address=False),
 }
 
 class ComWindow(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -66,15 +66,18 @@ class ComWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         connection = self.typeBox.currentText()
         baud_rate = int(self.baudBox.currentText())
         com_port = self.comBox.currentText()
+        kiss_address = self.kissAddress.text().strip()
 
-        LOGGER.debug(f"User has selected rocket={rocket}, connection={connection}, com_port={com_port}, baud_rate={baud_rate}")
+        # Fun little known feature with f-strings. Using {var=} will print
+        # the variable name as well as the value, such as `var=1`
+        LOGGER.debug(f"User has selected {rocket=}, {connection=}, {com_port=}, {baud_rate=}, {kiss_address=}")
 
         self.chosen_rocket = self.RocketProfiles[rocket]
 
         if connection == 'Serial':
-            self.chosen_connection = self.chosen_rocket.construct_serial_connection(com_port, int(baud_rate))
+            self.chosen_connection = self.chosen_rocket.construct_serial_connection(com_port, baud_rate, kiss_address)
         elif connection == 'Debug':
-            self.chosen_connection = self.chosen_rocket.construct_debug_connection()
+            self.chosen_connection = self.chosen_rocket.construct_debug_connection(kiss_address)
         elif connection == 'SIM':
             self.chosen_connection = self.chosen_rocket.construct_sim_connection()
         else:
@@ -91,3 +94,4 @@ class ComWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.comBox.setEnabled(requirements.com_port)
         self.baudBox.setEnabled(requirements.baud_rate)
+        self.kissAddress.setEnabled(requirements.kiss_address)

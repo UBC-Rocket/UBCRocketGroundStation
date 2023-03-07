@@ -5,6 +5,7 @@ import time
 
 import connections.debug.radio_packets as radio_packets
 from main_window.packet_parser import VERSION_ID_LEN
+from main_window.kiss_server import KissServer
 from ..connection import Connection, ConnectionMessage
 from util.detail import LOGGER, REQUIRED_FLARE
 from util.event_stats import Event
@@ -16,10 +17,11 @@ PACKET_INTERVAL_S = 2
 
 class DebugConnection(Connection):
 
-    def __init__(self, device_address: str, device_id: int, generate_radio_packets=True) -> None:
+    def __init__(self, device_address: str, device_id: int, generate_radio_packets: bool = True, kiss_address: str = "") -> None:
         """
 
         """
+        self.kiss_server = KissServer(kiss_address)
         self.device_address = device_address
         self.device_id = device_id
         self.start_time = time.time()
@@ -33,6 +35,9 @@ class DebugConnection(Connection):
         self.connectionThread = threading.Thread(target=self._run, daemon=True, name="DebugConnectionThread")
         if generate_radio_packets:
             self.connectionThread.start()
+            
+        # TODO: THIS IS FOR TESTING ONLY!
+        self.kiss_server.subscribers.append(lambda x: print(f"APRS PACKET: {x}"))
 
     # Thread loop that creates fake data at constant interval and returns it via callback
     def _run(self) -> None:

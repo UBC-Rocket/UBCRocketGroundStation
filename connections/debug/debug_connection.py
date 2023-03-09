@@ -32,12 +32,12 @@ class DebugConnection(Connection):
         self.lock = threading.RLock()  # Protects callback variable and any other "state" variables
         
         # Setup KISS APRS server
-        if kiss_address == "generate":
-            self.kiss_server = None
-            self.aprs_parser = None
-        else:
+        if kiss_address != "" or kiss_address == "direwolf":
             self.kiss_server = KissServer(kiss_address)
             self.aprs_parser = APRSParser(self.kiss_server)
+        else:
+            self.kiss_server = None
+            self.aprs_parser = None
 
         self.cv = threading.Condition(self.lock)
         self._is_shutting_down = False
@@ -96,6 +96,28 @@ class DebugConnection(Connection):
         :rtype: bytearray
         """
 
+        # TODO: DO NOT KEEP THIS
+        # THIS IS A QUICK HACK
+        
+        if self.aprs_parser is None:
+            raise Exception("Trying to use gps_get_aprs when aprs_parser is not set up")
+        
+        latitude, longitude, altitude = self.aprs_parser.get_gps_coordinates()
+        
+        '''
+        return radio_packets.bulk_sensor(self._current_millis(),
+                                         altitude,
+                                         random.uniform(0, 1e6),
+                                         random.uniform(0, 1e6),
+                                         random.uniform(0, 1e6),
+                                         random.uniform(0, 1e6),
+                                         random.uniform(0, 1e6),
+                                         random.uniform(0, 1e6),
+                                         latitude,
+                                         longitude,
+                                         random.randint(0, 0x09))
+        '''
+        
         return radio_packets.bulk_sensor(self._current_millis(),
                                          random.uniform(0, 1e6),
                                          random.uniform(0, 1e6),

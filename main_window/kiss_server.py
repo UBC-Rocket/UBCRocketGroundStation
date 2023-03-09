@@ -18,11 +18,13 @@ class KissServer():
         self.subscribers: List[Callable[[Dict[str, Any]], None]] = []
         
         # Determine if we should launch a KISS server
-        if kiss_address is None or kiss_address == "":
+        if kiss_address is None or kiss_address == "direwolf":
+            # Start Direwolf
             self.start_kiss = True
             self.address = "localhost"
             self.port = DEFAULT_KISS_PORT
         else:
+            # Use given KISS server
             self.start_kiss = False
             # TODO: Fix This!
             # Hacky way to check if address is valid

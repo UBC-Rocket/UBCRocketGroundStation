@@ -6,6 +6,7 @@ import time
 import connections.debug.radio_packets as radio_packets
 from main_window.packet_parser import VERSION_ID_LEN
 from main_window.kiss_server import KissServer
+from main_window.aprs_parser import APRSParser
 from ..connection import Connection, ConnectionMessage
 from util.detail import LOGGER, REQUIRED_FLARE
 from util.event_stats import Event
@@ -21,13 +22,22 @@ class DebugConnection(Connection):
         """
 
         """
-        self.kiss_server = KissServer(kiss_address)
+        
+        # Set Base Class Variables
         self.device_address = device_address
         self.device_id = device_id
         self.start_time = time.time()
         self.lastSend = time.time()
         self.callback = None
         self.lock = threading.RLock()  # Protects callback variable and any other "state" variables
+        
+        # Setup KISS APRS server
+        if kiss_address == "generate":
+            self.kiss_server = None
+            self.aprs_parser = None
+        else:
+            self.kiss_server = KissServer(kiss_address)
+            self.aprs_parser = APRSParser(self.kiss_server)
 
         self.cv = threading.Condition(self.lock)
         self._is_shutting_down = False
@@ -35,9 +45,6 @@ class DebugConnection(Connection):
         self.connectionThread = threading.Thread(target=self._run, daemon=True, name="DebugConnectionThread")
         if generate_radio_packets:
             self.connectionThread.start()
-            
-        # TODO: THIS IS FOR TESTING ONLY!
-        self.kiss_server.subscribers.append(lambda x: print(f"APRS PACKET: {x}"))
 
     # Thread loop that creates fake data at constant interval and returns it via callback
     def _run(self) -> None:
@@ -62,7 +69,11 @@ class DebugConnection(Connection):
                 # full_arr.extend(self.event_mock_set_values())
                 # full_arr.extend(self.state_mock_set_values())
                 # full_arr.extend(self.bad_subpacket_id_mock()) # bad id, to see handling of itself and remaining data
-                full_arr.extend(self.gps_mock_random())
+                if self.aprs_parser:
+                    full_arr.extend(self.gps_get_aprs())
+                else:
+                    print("wtf")
+                    full_arr.extend(self.gps_mock_random())
                 full_arr.extend(self.orientation_mock_random())
                 self.receive(full_arr)
 
@@ -146,6 +157,23 @@ class DebugConnection(Connection):
                                  random.uniform(49.260565, 49.263859),
                                  random.uniform(-123.250990, -123.246956),
                                  random.randint(0, 10000))
+        
+    def gps_get_aprs(self) -> bytearray:
+        """
+
+        :return:
+        :rtype: bytearray
+        """
+        
+        if self.aprs_parser is None:
+            raise Exception("Trying to use gps_get_aprs when aprs_parser is not set up")
+        
+        latitude, longitude, altitude = self.aprs_parser.get_gps_coordinates()
+        
+        return radio_packets.gps(self._current_millis(),
+                                 latitude,
+                                 longitude,
+                                 altitude)
 
     def orientation_mock_random(self) -> bytearray:
         """

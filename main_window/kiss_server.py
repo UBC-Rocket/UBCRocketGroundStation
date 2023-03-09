@@ -2,13 +2,14 @@ import kiss
 import aprs
 import aprslib
 import subprocess
-import socket
 from threading import Thread
 from typing import Optional, Callable, List, Dict, Any
 from util.detail import LOGGER
 
 DEFAULT_KISS_PORT = 8001
+CALLSIGN = "KD2ZWJ-2"
 
+# 172.25.144.1:8001
 
 class KissServer():
     def __init__(self, kiss_address: Optional[str] = None):
@@ -34,13 +35,7 @@ class KissServer():
         if self.start_kiss:
             LOGGER.info(f"Launching Direwolf Instance for KISS Server")
             self.direwolf = subprocess.Popen(["direwolf", "-t", "0", "-c", "direwolf.conf", "-p", str(self.port)])
-        
-        # Test Socket Connection
-        # Kinda hacky, but this is because TCPKISS sometimes doenst give any errors if the ip is incorrect
-        # s = socket.socket()
-        # s.connect((self.address, self.port))
-        # s.close()
-        
+
         # Create Kiss Connection
         LOGGER.info(f"Connecting to KISS Server at {self.address}:{self.port}")
         self.kiss_connection = kiss.TCPKISS(self.address, self.port)
@@ -66,6 +61,7 @@ class KissServer():
             LOGGER.error(f"Error While Parsing APRS Packet: {e}")
             
     def add_subscriber(self, subscriber: Callable[[Dict[str, Any]], None]):
+        # Subscribers are functions that take in a raw KISS packet and parses them.
         # Add subscriber to list
         self.subscribers.append(subscriber)
         

@@ -11,9 +11,9 @@ class AccelWidget(MplWidget):
     """
     def __init__(self):
         MplWidget.__init__(self)
-        self.accel_checkboxes = [QtWidgets.QCheckBox("Acceleration X (Red)"),
-                                 QtWidgets.QCheckBox("Acceleration Y (Blue)"),
-                                 QtWidgets.QCheckBox("Acceleration Z (Green)")]
+        self.accel_checkboxes = [QtWidgets.QCheckBox("Acceleration X"),
+                                 QtWidgets.QCheckBox("Acceleration Y"),
+                                 QtWidgets.QCheckBox("Acceleration Z")]
         self.showing_checkboxes = False
 
         for checkbox in self.accel_checkboxes:

@@ -76,12 +76,18 @@ def receive_time_series(self, plot_widget: MplWidget, label: Label) -> None:
     data_entry_id = self.rocket_profile.label_to_data_id[label.name]
 
     if label.name == "Acceleration":
+        labels = ["X", "Y", "Z"]
         colors = ["Red", "Blue", "Green"]
+        plot_data = False
 
         for i, checkbox in enumerate(plot_widget.accel_checkboxes):
             if checkbox.isChecked():
+                plot_data = True  # there is data to plot
                 t, y = self.rocket_data.time_series_by_device(label.device, data_entry_id[i])
-                plot_widget.canvas.ax.plot(t, y, color=colors[i])
+                plot_widget.canvas.ax.plot(t, y, color=colors[i], label=labels[i])
+
+        if plot_data:
+            plot_widget.canvas.ax.legend(loc="upper right")
 
     elif data_entry_id and self.rocket_data.time_series_by_device(label.device, data_entry_id):
 
@@ -100,8 +106,9 @@ def receive_time_series(self, plot_widget: MplWidget, label: Label) -> None:
 
         else:
             plot_widget.canvas.ax.plot(t, y)
+            plot_widget.canvas.ax.grid()
 
-    plot_widget.canvas.ax.set_xlabel("Time (s)")
+    plot_widget.canvas.ax.set_xlabel("Time (ms)")
     plot_widget.canvas.ax.set_ylabel(f"{label.name} ({self.rocket_profile.label_unit[label.name]})")
 
     plot_widget.canvas.ax.set_title(f"{label.device.name} {label.name}", fontsize=10, pad=10, wrap=True)

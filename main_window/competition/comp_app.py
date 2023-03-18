@@ -269,12 +269,12 @@ class CompApp(MainApp, Ui_MainWindow):
         """Set up slider and buttons for map zooming"""
         max_zoom_factor = 3  # zoom out 2**3 scale
         min_zoom_factor = -2
-        num_ticks_per_scale = 1
+        self.num_ticks_per_scale = 1
         # each tick represents a 2x scale change
-        # increase numTicksPerScale for more ticks on slider
+        # increase num_ticks_per_scale for more ticks on slider
 
-        self.horizontalSlider.setMinimum(min_zoom_factor * num_ticks_per_scale)
-        self.horizontalSlider.setMaximum(max_zoom_factor * num_ticks_per_scale)
+        self.horizontalSlider.setMinimum(min_zoom_factor * self.num_ticks_per_scale)
+        self.horizontalSlider.setMaximum(max_zoom_factor * self.num_ticks_per_scale)
         self.horizontalSlider.setValue(0)  # default original scale
         self.horizontalSlider.valueChanged.connect(self.map_zoomed)
 
@@ -507,7 +507,7 @@ class CompApp(MainApp, Ui_MainWindow):
 
     def map_zoomed(self) -> None:
         """Set zoom setting"""
-        self.MappingThread.setMapZoom(2 ** (self.horizontalSlider.value() / self.numTicksPerScale))
+        self.MappingThread.setMapZoom(2 ** (self.horizontalSlider.value() / self.num_ticks_per_scale))
 
     def open_plot_window(self, label) -> None:
         """

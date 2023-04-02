@@ -1,22 +1,27 @@
+"""
+Competition app
+"""
+
 import math
 import os
 from typing import Callable, Dict
 import logging
 
 from PyQt5.QtWidgets import QAction
-from matplotlib.offsetbox import AnnotationBbox, OffsetImage
-from PIL import Image
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
+from PIL import Image
 
 from connections.connection import Connection
+from profiles.label import Label
+from profiles.rocket_profile import RocketProfile
 from util.detail import LOCAL, BUNDLED_DATA, LOGGER, qtSignalLogHandler, qtHook, GIT_HASH
 from util.event_stats import Event
-from profiles.rocket_profile import RocketProfile
 
-from .mapping import map_data, mapbox_utils
-from .mapping.mapping_thread import MappingThread
 from main_window.main_app import MainApp
 from main_window.mplwidget import MplWidget
+from .mapping import map_data, mapbox_utils
+from .mapping.mapping_thread import MappingThread
+from ..accel_widget import AccelWidget
 
 qtCreatorFile = os.path.join(BUNDLED_DATA, "qt_files", "comp_app.ui")
 
@@ -25,11 +30,14 @@ Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 # The marker image, used to show where the rocket is on the map UI
 MAP_MARKER = Image.open(mapbox_utils.MARKER_PATH).resize((12, 12), Image.LANCZOS)
 
-LABLES_UPDATED_EVENT = Event('lables_updated')
+LABELS_UPDATED_EVENT = Event('labels_updated')
 MAP_UPDATED_EVENT = Event('map_updated')
 
 
 class CompApp(MainApp, Ui_MainWindow):
+    """
+    Comp app
+    """
 
     def __init__(self, connections: Dict[str, Connection], rocket_profile: RocketProfile) -> None:
         """
@@ -39,6 +47,7 @@ class CompApp(MainApp, Ui_MainWindow):
         """
         super().__init__(connections, rocket_profile)
 
+        self.plot_widget = AccelWidget()
         self.map_data = map_data.MapData()
         self.im = None  # Plot im
 
@@ -52,7 +61,8 @@ class CompApp(MainApp, Ui_MainWindow):
         self.actionReset.triggered.connect(self.reset_view)
 
         # Hook into some of commandEdit's events
-        qtHook(self.commandEdit, 'focusNextPrevChild', lambda _: False, override_return=True)  # Prevents tab from changing focus
+        qtHook(self.commandEdit, 'focusNextPrevChild', lambda _: False,
+               override_return=True)  # Prevents tab from changing focus
         qtHook(self.commandEdit, 'keyPressEvent', self.command_edit_key_pressed)
         qtHook(self.commandEdit, 'showPopup', self.command_edit_show_popup)
 
@@ -67,10 +77,11 @@ class CompApp(MainApp, Ui_MainWindow):
 
         # Setup dynamic UI elements
         self.setup_buttons()
+        self.selected_label = None
         self.setup_labels()
+        self.label_windows = {label: None for label in self.rocket_profile.all_labels}
         self.setup_subwindow().showMaximized()
         self.setup_view_menu()
-
         self.setWindowIcon(QtGui.QIcon(mapbox_utils.MARKER_PATH))
 
         # Setup user window preferences
@@ -80,11 +91,12 @@ class CompApp(MainApp, Ui_MainWindow):
         self.restore_view()
 
         # Init and connection of MappingThread
-        self.MappingThread = MappingThread(self.connections, self.map_data, self.rocket_data, self.rocket_profile)
-        self.MappingThread.sig_received.connect(self.receive_map)
+        self.MappingThread = MappingThread(
+            self.connections, self.map_data, self.rocket_data, self.rocket_profile)
+        self.MappingThread.sig_received.connect(self.map_callback)
         self.MappingThread.start()
 
-        self.setup_zoom_slider() #have to set up after mapping thread created
+        self.setup_zoom_slider()  # have to set up after mapping thread created
 
         LOGGER.info(f"Successfully started app (version = {GIT_HASH})")
 
@@ -93,16 +105,20 @@ class CompApp(MainApp, Ui_MainWindow):
 
         grid_width = math.ceil(math.sqrt(len(self.rocket_profile.buttons)))
 
-        # Trying to replicate PyQt's generated code from a .ui file as closely as possible. This is why setattr is
-        # being used to keep all of the buttons as named attributes of MainApp and not elements of a list.
+        # Trying to replicate PyQt's generated code from a .ui file
+        # as closely as possible. This is why setattr is being used to
+        # keep all of the buttons as named attributes of MainApp
+        # and not elements of a list.
         row = 0
         col = 0
         for button in self.rocket_profile.buttons:
             qt_button = QtWidgets.QPushButton(self.centralwidget)
             setattr(self, button + "Button", qt_button)
-            sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
-            sizePolicy.setHeightForWidth(getattr(self, button + "Button").sizePolicy().hasHeightForWidth())
-            qt_button.setSizePolicy(sizePolicy)
+            size_policy = QtWidgets.QSizePolicy(
+                QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+            size_policy.setHeightForWidth(
+                getattr(self, button + "Button").sizePolicy().hasHeightForWidth())
+            qt_button.setSizePolicy(size_policy)
             font = QtGui.QFont()
             font.setPointSize(16)
             font.setKerning(True)
@@ -114,10 +130,13 @@ class CompApp(MainApp, Ui_MainWindow):
             else:
                 col = 0
                 row += 1
-        # A .py file created from a .ui file will have the labels all defined at the end, for some reason. Two for loops
-        # are being used to be consistent with the PyQt5 conventions.
+        # A .py file created from a .ui file will have the labels all
+        # defined at the end, for some reason. Two for loops are being
+        # used to be consistent with the PyQt5 conventions.
+
         for button in self.rocket_profile.buttons:
-            getattr(self, button + "Button").setText(QtCore.QCoreApplication.translate('MainWindow', button))
+            getattr(self, button + "Button").setText(
+                QtCore.QCoreApplication.translate('MainWindow', button))
 
         def gen_send_command(cmd: str) -> Callable[[], None]:
             """Creates a function that sends the given command to the console."""
@@ -127,16 +146,26 @@ class CompApp(MainApp, Ui_MainWindow):
 
             return send
 
-        # Connecting to a more traditional lambda expression would not work in this for loop. It would cause all of the
-        # buttons to map to the last command in the list, hence the workaround with the higher order function.
+        # Connecting to a more traditional lambda expression would not work in this for loop.
+        # It would cause all of the buttons to map to the last command in the list,
+        # hence the workaround with the higher order function.
         for button, command in self.rocket_profile.buttons.items():
             getattr(self, button + "Button").clicked.connect(gen_send_command(command))
 
     def setup_labels(self):
         """Create all of the data labels for the loaded rocket profile."""
 
-        # Trying to replicate PyQt's generated code from a .ui file as closely as possible. This is why setattr is
-        # being used to keep all of the buttons as named labels of MainApp and not elements of a list.
+        def gen_clicked_callback(label: Label):
+            def mousePressEvent(QMouseEvent):
+                self.selected_label = label
+                if self.plot_widget.showing_checkboxes:
+                    self.plot_widget.hide_checkboxes()
+
+            return mousePressEvent
+
+        # Trying to replicate PyQt's generated code from a .ui file as closely as possible.
+        # This is why setattr is being used to keep all of the buttons as named labels of
+        # MainApp and not elements of a list.
         for label in self.rocket_profile.labels:
             name = label.name
 
@@ -150,22 +179,55 @@ class CompApp(MainApp, Ui_MainWindow):
 
             self.dataLabelFormLayout.addRow(qt_text, qt_label)
 
-        # A .py file created from a .ui file will have the labels all defined at the end, for some reason. Two for loops
-        # are being used to be consistent with the PyQt5 conventions.
+            if label.map_fn is not None:
+                qt_text.mousePressEvent = gen_clicked_callback(label)
+
+            if label.name == "GPS":
+                self.selected_label = label
+
+        if self.selected_label is None:
+            self.selected_label = self.rocket_profile.labels[0]
+
+        # A .py file created from a .ui file will have the labels all defined at
+        # the end, for some reason. Two for loops are being used to be consistent
+        # with the PyQt5 conventions.
         for label in self.rocket_profile.labels:
             name = label.name
-            getattr(self, name + "Text").setText(QtCore.QCoreApplication.translate("MainWindow", label.display_name + ":"))
-            getattr(self, name + "Label").setText(QtCore.QCoreApplication.translate("MainWindow", ""))
+            getattr(self, name + "Text").setText(
+                QtCore.QCoreApplication.translate("MainWindow", label.display_name + ":"))
+            getattr(self, name + "Label").setText(
+                QtCore.QCoreApplication.translate("MainWindow", ""))
+
+    def map_callback(self):
+        """
+        Update map and data plots
+        """
+        # plot in main window
+        if "GPS" in self.selected_label.name:
+            MAP_UPDATED_EVENT.increment()
+            self.selected_label.map_fn(self)
+        else:
+            self.selected_label.map_fn(self, self.plot_widget, self.selected_label)
+
+        # plot in other open windows
+        for label in self.label_windows:
+            window = self.label_windows[label]
+            if window:
+                try:  # window may have been closed
+                    label.map_fn(self, window, label)
+                except RuntimeError as e:  # catches canvas deleted exception
+                    self.label_windows[label] = None
 
     def setup_subwindow(self):
-        self.plotWidget = MplWidget()
+        """Create subwindows for plotting time series data"""
         # Hook-up Matplotlib callbacks
-        self.plotWidget.canvas.fig.canvas.mpl_connect('resize_event', self.map_resized_event)
-        # TODO: Also have access to click, scroll, keyboard, etc. Would be good to implement map manipulation.
+        self.plot_widget.canvas.fig.canvas.mpl_connect('resize_event', self.map_resized_event)
+        #TODO: Also have access to click, scroll, keyboard, etc.
+        # Would be good to implement map manipulation.
 
         sub = QtWidgets.QMdiSubWindow()
         sub.layout().setContentsMargins(0, 0, 0, 0)
-        sub.setWidget(self.plotWidget)
+        sub.setWidget(self.plot_widget)
         sub.setWindowTitle("Data Plot")
         sub.setWindowIcon(QtGui.QIcon(mapbox_utils.MARKER_PATH))
 
@@ -175,32 +237,45 @@ class CompApp(MainApp, Ui_MainWindow):
         return sub
 
     def setup_view_menu(self) -> None:
-        # Menubar for choosing rocket device view
+        """Create menu used to choose data for plot"""
+        view_menu = self.menuBar().children()[2]
+
+        # Menu bar for choosing rocket device view
         if len(self.rocket_profile.mapping_devices) > 1:
-            view_menu = self.menuBar().children()[2]
-            self.map_view_menu = view_menu.addMenu("Map")
+            map_view_menu = view_menu.addMenu("Map")
 
             view_all = QAction("All", self)
             all_devices = self.rocket_profile.mapping_devices
-            view_all.triggered.connect(lambda i, all_devices = all_devices: self.set_view_device(all_devices))
-            self.map_view_menu.addAction(view_all)
+            view_all.triggered.connect(lambda i, devices=all_devices: self.set_view_device(devices))
+            map_view_menu.addAction(view_all)
 
             for device in self.rocket_profile.mapping_devices:
                 view_device = QAction(f'{device}', self)
-                view_device.triggered.connect(lambda i, device=device: self.set_view_device([device]))
-                self.map_view_menu.addAction(view_device)
+                view_device.triggered.connect(
+                    lambda i, mapping_device=device: self.set_view_device([mapping_device]))
+                map_view_menu.addAction(view_device)
+
+        # Menu bar for choosing which data to plot
+        dataplot_view_menu = view_menu.addMenu("Data Plot")
+
+        for label in self.label_windows:
+            if label.name != "GPS":
+                data_label = QAction(f'{label.name}', self)
+                data_label.triggered.connect(
+                    lambda i, label_name=label: self.open_plot_window(label_name))
+                dataplot_view_menu.addAction(data_label)
 
     def setup_zoom_slider(self) -> None:
-        # Map zoom slider and zoom buttons
-        self.maxZoomFactor = 3 #zoom out 2**3 scale
-        self.minZoomFactor = -2
-        self.numTicksPerScale = 1
-        #currently, each tick represents a 2x scale change
-        #increase numTicksPerScale for more ticks on slider
+        """Set up slider and buttons for map zooming"""
+        max_zoom_factor = 3  # zoom out 2**3 scale
+        min_zoom_factor = -2
+        self.num_ticks_per_scale = 1
+        # each tick represents a 2x scale change
+        # increase num_ticks_per_scale for more ticks on slider
 
-        self.horizontalSlider.setMinimum(self.minZoomFactor*self.numTicksPerScale)
-        self.horizontalSlider.setMaximum(self.maxZoomFactor*self.numTicksPerScale)
-        self.horizontalSlider.setValue(0) #default original scale
+        self.horizontalSlider.setMinimum(min_zoom_factor * self.num_ticks_per_scale)
+        self.horizontalSlider.setMaximum(max_zoom_factor * self.num_ticks_per_scale)
+        self.horizontalSlider.setValue(0)  # default original scale
         self.horizontalSlider.valueChanged.connect(self.map_zoomed)
 
         self.zoom_in_button.clicked.connect(self.slider_dec)
@@ -219,13 +294,13 @@ class CompApp(MainApp, Ui_MainWindow):
                     label.update(self.rocket_data)
                 )
             except:
-                LOGGER.exception(f'Failed to update {label.name}Label:')
+                LOGGER.exception('Failed to update %s Label:', label.name)
 
-        LABLES_UPDATED_EVENT.increment()
+        LABELS_UPDATED_EVENT.increment()
 
     def send_button_pressed(self) -> None:
         """
-
+        Update command history
         """
         command = self.commandEdit.currentText()
         self.send_command(command)
@@ -290,8 +365,10 @@ class CompApp(MainApp, Ui_MainWindow):
                     self.commandEdit.setCurrentText('')
                 else:
                     # Go forward one item in history
-                    self.command_history_index = min(self.command_history_index + 1, len(self.command_history) - 1)
-                    self.commandEdit.setCurrentText(self.command_history[self.command_history_index])
+                    self.command_history_index = min(
+                        self.command_history_index + 1, len(self.command_history) - 1)
+                    self.commandEdit.setCurrentText(
+                        self.command_history[self.command_history_index])
             return True
 
         elif event.key() == QtCore.Qt.Key_Tab:  # Tab -- Autocomplete command
@@ -305,7 +382,8 @@ class CompApp(MainApp, Ui_MainWindow):
 
                 # Figure out how many characters are common between all matching commands
                 common_index = 0
-                while all(x[common_index] == common_commands[0][common_index] if len(x) > common_index else False
+                while all(x[common_index] == common_commands[0][common_index]
+                          if len(x) > common_index else False
                           for x in common_commands):
                     common_index += 1
                 common_portion = common_commands[0][0:common_index]
@@ -362,10 +440,9 @@ class CompApp(MainApp, Ui_MainWindow):
         super().send_command(command)
 
     def save_file(self) -> None:
-        """
-
-        """
-        result = QtWidgets.QFileDialog.getSaveFileName(None, 'Save File', directory=LOCAL, filter='.csv')
+        """ Save """
+        result = QtWidgets.QFileDialog.getSaveFileName(
+            None, 'Save File', directory=LOCAL, filter='.csv')
         if result[0]:
             if result[0][-len(result[1]):] == result[1]:
                 name = result[0]
@@ -375,26 +452,31 @@ class CompApp(MainApp, Ui_MainWindow):
             self.rocket_data.save(name)
 
     def reset_view(self) -> None:
+        """Reset window"""
         original_position = self.geometry().center()
         self.restoreGeometry(self.original_geometry)
         self.restoreState(self.original_state)
 
-        # Workaround for known Qt issue. See section on X11 in https://doc.qt.io/qt-5/restoring-geometry.html
+        # Workaround for known Qt issue.
+        # See section on X11 in https://doc.qt.io/qt-5/restoring-geometry.html
         geometry = self.frameGeometry()
         geometry.moveCenter(original_position)
         self.move(geometry.topLeft())
 
         for sub in self.mdiArea.subWindowList():
             sub.close()
-            sub.deleteLater()  # Required to prevent memory leak. Also deletes window sub-objects (plot widget, etc.)
+            sub.deleteLater()
+            # Required to prevent memory leak. Also deletes window sub-objects (plot widget, etc.)
 
         self.setup_subwindow().showMaximized()
 
     def save_view(self):
+        """View settings"""
         self.settings.setValue('geometry', self.saveGeometry())
         self.settings.setValue('windowState', self.saveState())
 
     def restore_view(self):
+        """Restore view"""
         geometry = self.settings.value("geometry")
         if geometry is not None:
             self.restoreGeometry(geometry)
@@ -402,44 +484,6 @@ class CompApp(MainApp, Ui_MainWindow):
         state = self.settings.value("windowState")
         if state is not None:
             self.restoreState(state)
-
-    def receive_map(self) -> None:
-        """
-        Updates the UI when a new map is available for display
-        """
-        children = self.plotWidget.canvas.ax.get_children()
-        for c in children:
-            if isinstance(c, AnnotationBbox):
-                c.remove()
-
-        zoom, radius, map_image, mark = self.map_data.get_map_value()
-
-        # plotMap UI modification
-        self.plotWidget.canvas.ax.set_axis_off()
-        self.plotWidget.canvas.ax.set_ylim(map_image.shape[0], 0)
-        self.plotWidget.canvas.ax.set_xlim(0, map_image.shape[1])
-
-        # Removes pesky white boarder
-        self.plotWidget.canvas.fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
-
-        if self.im:
-            # Required because plotting images over old ones creates memory leak
-            # NOTE: im.set_data() can also be used
-            self.im.remove()
-
-        self.im = self.plotWidget.canvas.ax.imshow(map_image)
-
-        # updateMark UI modification
-        for i in range(len(mark)):
-            annotation_box = AnnotationBbox(OffsetImage(MAP_MARKER), mark[i], frameon=False)
-            self.plotWidget.canvas.ax.add_artist(annotation_box)
-
-        # For debugging marker position
-        #self.plotWidget.canvas.ax.plot(mark[1][0], mark[1][1], marker='o', markersize=3, color="red")
-
-        self.plotWidget.canvas.draw()
-
-        MAP_UPDATED_EVENT.increment()
 
     def map_resized_event(self, event) -> None:
         """
@@ -449,23 +493,41 @@ class CompApp(MainApp, Ui_MainWindow):
         """
         self.MappingThread.setDesiredMapSize(event.width, event.height)
 
-    def set_view_device(self, viewedDevices) -> None:
-        self.MappingThread.setViewedDevice(viewedDevices)
+    def set_view_device(self, viewed_devices) -> None:
+        """Change view device"""
+        self.MappingThread.setViewedDevice(viewed_devices)
 
-    def slider_inc(self, zoom_change) -> None:
+    def slider_inc(self) -> None:
+        """Increase zoom"""
         self.horizontalSlider.setValue(self.horizontalSlider.value() + 1)
 
-    def slider_dec(self, zoom_change) -> None:
+    def slider_dec(self) -> None:
+        """Decrease zoom"""
         self.horizontalSlider.setValue(self.horizontalSlider.value() - 1)
 
-
     def map_zoomed(self) -> None:
-        self.MappingThread.setMapZoom(2**(self.horizontalSlider.value()/self.numTicksPerScale))
+        """Set zoom setting"""
+        self.MappingThread.setMapZoom(2 ** (self.horizontalSlider.value() / self.num_ticks_per_scale))
 
+    def open_plot_window(self, label) -> None:
+        """
+        Opens new window for plotting data when selected from menu bar
+        :param label:
+        """
+        window = self.label_windows[label]
+
+        if window is None:
+            new_window = AccelWidget() if "Acceleration" in label.name else MplWidget()
+            new_window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+            new_window.setWindowTitle(f"{label.device} {label.display_name}")
+            self.label_windows[label] = new_window
+            new_window.show()
 
     def shutdown(self):
+        """Close app"""
         self.save_view()
         self.MappingThread.shutdown()
+        for window in self.label_windows.values():
+            if window:
+                window.close()
         super().shutdown()
-
-

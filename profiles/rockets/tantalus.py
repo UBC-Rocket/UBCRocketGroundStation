@@ -91,11 +91,13 @@ class TantalusProfile(RocketProfile):
         return {
             'TANTALUS_STAGE_1_CONNECTION': DebugConnection('TANTALUS_STAGE_1_RADIO_ADDRESS',
                                                            DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1_FLARE],
+                                                           stage = 1,
                                                            generate_radio_packets=True,
                                                            kiss_address=kiss_address),
 
             'TANTALUS_STAGE_2_CONNECTION': DebugConnection('TANTALUS_STAGE_2_RADIO_ADDRESS',
                                                            DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_2_FLARE],
+                                                           stage = 2,
                                                            generate_radio_packets=True,
                                                            kiss_address=kiss_address),
         }
@@ -146,8 +148,8 @@ class TantalusProfile(RocketProfile):
         hwsim_stage_2 = HWSim(rocket_sim_stage_2, hw_sim_sensors_stage_2, hw_sim_ignitors_stage_2)
 
         return {
-            'TANTALUS_STAGE_1_CONNECTION': SimConnection("TantalusStage1", "0013A20041678FC0", hwsim_stage_1),
-            'TANTALUS_STAGE_2_CONNECTION': SimConnection("TantalusStage2", "0013A20041678FC0", hwsim_stage_2),
+            'TANTALUS_STAGE_1_CONNECTION': SimConnection("TantalusStage1", "0013A20041678FC0", hwsim_stage_1, stage = 1),
+            'TANTALUS_STAGE_2_CONNECTION': SimConnection("TantalusStage2", "0013A20041678FC0", hwsim_stage_2, stage = 2),
         }
 
     def construct_app(self, connections):

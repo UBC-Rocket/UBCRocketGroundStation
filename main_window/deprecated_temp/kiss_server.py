@@ -4,7 +4,7 @@ import aprs
 import aprslib
 import subprocess
 from threading import Thread
-from typing import Optional, Callable, List, Dict, Any
+from typing import Optional, Callable, List, Dict, Any, Union
 from util.detail import LOGGER
 
 DEFAULT_KISS_PORT = 8001
@@ -18,15 +18,19 @@ class KissServer():
         # A subscriber is a function that takes a dictionary of parsed APRS data
         self.subscribers: List[Callable[[Dict[str, Any]], None]] = []
         
+        # Clean up the kiss address
+        kiss_address = kiss_address.strip() if kiss_address else kiss_address  # KEEP THIS HERE! kiss_address is sometimes None!
+        
         # Determine if we should launch a KISS server
-        if kiss_address is None or kiss_address == "direwolf":
+        if kiss_address is None or kiss_address == "direwolf" or kiss_address == "":
             # Start Direwolf
-            self.start_kiss = True
             self.address = "localhost"
             self.port = DEFAULT_KISS_PORT
+            
+            # TODO: Start Direwolf
+            LOGGER.info(f"Launching Direwolf Instance for KISS Server")
+            self.direwolf = subprocess.Popen(["direwolf", "-t", "0", "-c", "direwolf.conf", "-p", str(self.port)])
         else:
-            # Use given KISS server
-            self.start_kiss = False
             # TODO: Fix This!
             # Hacky way to check if address is valid
             if (":" not in kiss_address) or ("/" in kiss_address):
@@ -37,11 +41,6 @@ class KissServer():
             # HACK: If running on WSL, if $HOST_IP is passed, use the host ip!!
             if self.address.startswith("$"):
                 self.address = os.environ[self.address[1:]]
-        
-        # Start Kiss Server If Necessary
-        if self.start_kiss:
-            LOGGER.info(f"Launching Direwolf Instance for KISS Server")
-            self.direwolf = subprocess.Popen(["direwolf", "-t", "0", "-c", "direwolf.conf", "-p", str(self.port)])
 
         # Create Kiss Connection
         LOGGER.info(f"Connecting to KISS Server at {self.address}:{self.port}")
@@ -71,4 +70,3 @@ class KissServer():
         # Subscribers are functions that take in a raw KISS packet and parses them.
         # Add subscriber to list
         self.subscribers.append(subscriber)
-        

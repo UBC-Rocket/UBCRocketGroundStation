@@ -3,6 +3,8 @@ import sys
 import multiprocessing
 import argparse
 import matplotlib
+import platform
+import subprocess
 matplotlib.use('QT5Agg') # Ensures that the Qt5 backend is used, otherwise there might be some issues on some OSs (Mac)
 from com_window.main import ComWindow
 from PyQt5 import QtWidgets, QtCore
@@ -74,4 +76,3 @@ if __name__ == "__main__":
     main_window.show()
     return_code = app.exec_()
     sys.exit(return_code)
-

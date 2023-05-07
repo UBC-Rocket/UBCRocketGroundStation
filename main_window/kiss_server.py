@@ -1,3 +1,4 @@
+import os
 import kiss
 import aprs
 import aprslib
@@ -9,7 +10,7 @@ from util.detail import LOGGER
 DEFAULT_KISS_PORT = 8001
 CALLSIGN = "KD2ZWJ-2"
 
-# 172.25.144.1:8001
+# $HOST_IP:8001
 
 class KissServer():
     def __init__(self, kiss_address: Optional[str] = None):
@@ -32,6 +33,10 @@ class KissServer():
                 raise ValueError("Invalid KISS Address")
             self.address = kiss_address.split(":")[0]
             self.port = int(kiss_address.split(":")[1])
+            
+            # HACK: If running on WSL, if $HOST_IP is passed, use the host ip!!
+            if self.address.startswith("$"):
+                self.address = os.environ[self.address[1:]]
         
         # Start Kiss Server If Necessary
         if self.start_kiss:

@@ -8,7 +8,6 @@ from typing import Optional, Callable, List, Dict, Any, Union
 from util.detail import LOGGER
 
 DEFAULT_KISS_PORT = 8001
-CALLSIGN = "KD2ZWJ-2"
 
 # $HOST_IP:8001
 
@@ -22,7 +21,12 @@ class KissServer():
         kiss_address = kiss_address.strip() if kiss_address else kiss_address  # KEEP THIS HERE! kiss_address is sometimes None!
         
         # Determine if we should launch a KISS server
-        if kiss_address is None or kiss_address == "direwolf" or kiss_address == "":
+        if kiss_address in ("noaprs", "nodirewolf", "nostart", "none", "null", "na", "ns", "nd"):
+            # Do not start direwolf
+            self.address = None
+            self.port = None
+            return            
+        elif kiss_address is None or kiss_address == "direwolf" or kiss_address == "":
             # Start Direwolf
             self.address = "localhost"
             self.port = DEFAULT_KISS_PORT
@@ -47,6 +51,11 @@ class KissServer():
         self.kiss_connection = kiss.TCPKISS(self.address, self.port)
         self.kiss_connection.start()
         
+    def start(self):
+        # If we are not running a KISS server, do nothing
+        if self.address is None:
+            return
+        
         # Start Kiss Thread
         LOGGER.info(f"Starting KISS Reading Thread {self.address}:{self.port}")
         self.kiss_thread = Thread(
@@ -58,8 +67,14 @@ class KissServer():
         
     def read_kiss_packet(self, packet):
         try:
+            # Try to parse the packet
             raw = aprs.parse_frame(packet)
             parsed = aprslib.parse(str(raw))
+            
+            # Do some additional parsing to make rest of program easier to work with
+            if '-' in parsed.get('from', ''):
+                parsed['from'], parsed['ssid'] = parsed['from'].split('-')
+            
             LOGGER.debug(f"Received New KISS Packet: {parsed}")
             for subscriber in self.subscribers:
                 subscriber(parsed)

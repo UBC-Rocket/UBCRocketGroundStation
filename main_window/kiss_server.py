@@ -1,8 +1,10 @@
 import os
 import kiss
 import aprs
+import time
 import aprslib
 import subprocess
+import traceback
 from threading import Thread
 from typing import Optional, Callable, List, Dict, Any, Union
 from util.detail import LOGGER
@@ -21,10 +23,11 @@ class KissServer():
         kiss_address = kiss_address.strip() if kiss_address else kiss_address  # KEEP THIS HERE! kiss_address is sometimes None!
         
         # Determine if we should launch a KISS server
-        if kiss_address in ("noaprs", "nodirewolf", "nostart", "none", "null", "na", "ns", "nd"):
+        if kiss_address in ("noaprs", "nodirewolf", "nostart", "none", "null", "na", "ns", "nd", "x"):
             # Do not start direwolf
             self.address = None
             self.port = None
+            self.kiss_connection = None
             return            
         elif kiss_address is None or kiss_address == "direwolf" or kiss_address == "":
             # Start Direwolf
@@ -65,6 +68,15 @@ class KissServer():
         )
         self.kiss_thread.start()
         
+    def run(self):
+        # If we are not running a KISS server, do nothing in a loop
+        if self.address is None:
+            while True:
+                time.sleep(0.001)
+        
+        # Start kiss
+        self.kiss_connection.read(callback=self.read_kiss_packet)
+        
     def read_kiss_packet(self, packet):
         try:
             # Try to parse the packet
@@ -80,6 +92,7 @@ class KissServer():
                 subscriber(parsed)
         except Exception as e:
             LOGGER.error(f"Error While Parsing APRS Packet: {e}")
+            traceback.print_exception(e)
             
     def add_subscriber(self, subscriber: Callable[[Dict[str, Any]], None]):
         # Subscribers are functions that take in a raw KISS packet and parses them.

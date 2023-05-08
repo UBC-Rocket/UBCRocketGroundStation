@@ -36,6 +36,11 @@ class RocketData:
         self.highest_altitude: Dict[FullAddress, float] = dict()
 
         self.session_name = os.path.join(LOGS_DIR, "autosave_" + SESSION_ID + ".csv")
+        
+        # As the name suggests,
+        # this is a temporary dictionary that stores the GPS data.
+        # A meeting will be set up soon to discus how to properly handle GPS data from APRS
+        self.TEMPORARY_GPS_DATA_DO_NOT_KEEP = dict()
 
         self.callback_lock = threading.RLock()  # Only for callback dict
         self.callbacks: Dict[CallBackKey, List[Callable]] = {}

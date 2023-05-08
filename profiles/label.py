@@ -83,6 +83,25 @@ def update_acceleration(rocket_data: RocketData, device: DeviceType) -> str:
         return f'{accel:.2f} g'
     else:
         return VALUE_NOT_AVAILABLE
+    
+
+# TODO: SUPER HACKY CODE TO TEMPORARY SHOW GPS INFO
+def update_aprs(rocket_data: RocketData, device: DeviceType) -> str:
+    import json
+    from datetime import datetime
+    from main_window.aprs_gps_status import AprsGpsStatus
+    
+    def serialize(obj):
+        if isinstance(obj, AprsGpsStatus):
+            serial = obj.name
+            return serial
+        if isinstance(obj, datetime):
+            serial = obj.isoformat()
+            return serial
+        return obj.__dict__
+    
+    # print(json.dumps(rocket_data.TEMPORARY_GPS_DATA_DO_NOT_KEEP, indent=2))
+    return json.dumps(rocket_data.TEMPORARY_GPS_DATA_DO_NOT_KEEP, indent=2, default=serialize)
 
 
 # TODO: Implement Tantalus test separation label update.

@@ -56,7 +56,7 @@ class KissServer():
         
     def start(self):
         # If we are not running a KISS server, do nothing
-        if self.address is None:
+        if self.address is None or self.kiss_connection is None:
             return
         
         # Start Kiss Thread
@@ -70,7 +70,7 @@ class KissServer():
         
     def run(self):
         # If we are not running a KISS server, do nothing in a loop
-        if self.address is None:
+        if self.address is None or self.kiss_connection is None:
             while True:
                 time.sleep(0.001)
         

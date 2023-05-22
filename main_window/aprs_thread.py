@@ -10,6 +10,7 @@ from util.detail import LOGGER
 from util.event_stats import Event
 from connections.connection import Connection
 from .rocket_data import RocketData
+from .data_entry_id import DataEntryIds
 
 CONNECTION_MESSAGE_READ_EVENT = Event('connection_message_read')
 CALLSIGN = "KD2ZWJ"
@@ -33,18 +34,15 @@ class APRSThread(QtCore.QThread):
         assert len(self.connections) == len(self.connection_to_name)  # Different if not one-to-one
         
         # Create rocket stage to rocket names
-        self.stage_to_name = {c.getStage(): n for (n, c) in self.connections.items()}
+        self.stage_to_connection_name = {c.getStage(): n for (n, c) in self.connections.items()}
 
+        # Setup Rocket Data
         self.rocket_data = rocket_data
         
         # Get kiss server address
         # All addresses for each connection should be the same.
         assert len({c.getKissAddress() for c in self.connections.values()}) == 1
         self.kiss_address = list(self.connections.values())[0].getKissAddress()
-        
-        # Initialize rocket_data with GPS info
-        for stage in self.stage_to_name.keys():
-            self.rocket_data.TEMPORARY_GPS_DATA_DO_NOT_KEEP[stage] = {'status': AprsGpsStatus.GPS_OFFLINE, 'latitude': None, 'longitude': None, 'altitude': None, 'last_gps_ping': None}
         
         # Start up the kiss server
         self.kiss_server = KissServer(self.kiss_address)
@@ -93,22 +91,42 @@ class APRSThread(QtCore.QThread):
             
     def new_gps_coordinate(self, stage: int, latitude: float, longitude: float, altitude: float):
         # Check if stage actually exists
-        if stage not in self.stage_to_name:
+        if stage not in self.stage_to_connection_name:
             self.update_gps_status(stage, AprsGpsStatus.GPS_ERROR)
             LOGGER.error(f"Received APRS packet for stage {stage} but no such stage exists!")
             return
         
-        # Update status
-        self.update_gps_status(stage, AprsGpsStatus.GPS_LOCKED)
+        # Get Full Address from Stage ID
+        connection_name = self.stage_to_connection_name[stage]
+        full_address = self.rocket_data.device_manager.connection_name_to_full_address(connection_name)
+        if full_address is None:
+            LOGGER.error(f"Could not find device for stage {stage}!")
+            return
         
-        # Update rocket_data
-        self.rocket_data.TEMPORARY_GPS_DATA_DO_NOT_KEEP[stage]['latitude'] = latitude
-        self.rocket_data.TEMPORARY_GPS_DATA_DO_NOT_KEEP[stage]['longitude'] = longitude
-        self.rocket_data.TEMPORARY_GPS_DATA_DO_NOT_KEEP[stage]['altitude'] = altitude
-        self.rocket_data.TEMPORARY_GPS_DATA_DO_NOT_KEEP[stage]['last_gps_ping'] = datetime.now()
+        # Create new GPS Coordinate
+        self.rocket_data.add_bundle(full_address, {
+            DataEntryIds.APRS_STATUS: AprsGpsStatus.GPS_LOCKED,
+            DataEntryIds.APRS_LATITUDE: latitude,
+            DataEntryIds.APRS_LONGITUDE: longitude,
+            DataEntryIds.APRS_ALTITUDE: altitude,
+            DataEntryIds.APRS_LAST_GPS_PING: datetime.now()
+        })
         
     def update_gps_status(self, stage: int, status: AprsGpsStatus):
-        self.rocket_data.TEMPORARY_GPS_DATA_DO_NOT_KEEP[stage]['status'] = status
+        # Check if stage actually exists
+        if stage not in self.stage_to_connection_name:
+            self.update_gps_status(stage, AprsGpsStatus.GPS_ERROR)
+            LOGGER.error(f"Received APRS packet for stage {stage} but no such stage exists!")
+            return
+        
+        # Get Full Address from Stage ID
+        connection_name = self.stage_to_connection_name[stage]
+        full_address = self.rocket_data.device_manager.connection_name_to_full_address(connection_name)
+        if full_address is None:
+            LOGGER.error(f"Could not find device for stage {stage}!")
+            return
+        
+        self.rocket_data.add_bundle(full_address, {DataEntryIds.APRS_STATUS: status})
 
     def run(self):
         """TODO Description"""

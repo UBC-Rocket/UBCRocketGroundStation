@@ -39,6 +39,7 @@ class CompApp(MainApp, Ui_MainWindow):
         """
         super().__init__(connections, rocket_profile)
 
+        self.cots_gps_pressed = False
         self.map_data = map_data.MapData()
         self.im = None  # Plot im
 
@@ -50,7 +51,13 @@ class CompApp(MainApp, Ui_MainWindow):
         self.actionSave.triggered.connect(self.save_file)
         self.actionSave.setShortcut("Ctrl+S")
         self.actionReset.triggered.connect(self.reset_view)
+        
+        # Attach function for 'Srad GPS' action
+        self.actionSradGPS.triggered.connect(self.srad_gps_action)
 
+        # Attach function for 'COTS GPS' action
+        self.actionCOTSGPS.triggered.connect(self.cots_gps_action)
+        
         # Hook into some of commandEdit's events
         qtHook(self.commandEdit, 'focusNextPrevChild', lambda _: False, override_return=True)  # Prevents tab from changing focus
         qtHook(self.commandEdit, 'keyPressEvent', self.command_edit_key_pressed)
@@ -205,16 +212,18 @@ class CompApp(MainApp, Ui_MainWindow):
 
         self.zoom_in_button.clicked.connect(self.slider_dec)
         self.zoom_out_button.clicked.connect(self.slider_inc)
-
+        
     def receive_data(self) -> None:
         """
         This is called when new data is available to be displayed.
         :return:
         :rtype:
         """
-
         for label in self.rocket_profile.labels:
             try:
+                if self.cots_gps_pressed:
+                    continue  # Skip updating "gps" label when SRADS GPS button is pressed
+
                 getattr(self, label.name + "Label").setText(
                     label.update(self.rocket_data)
                 )
@@ -222,6 +231,28 @@ class CompApp(MainApp, Ui_MainWindow):
                 LOGGER.exception(f'Failed to update {label.name}Label:')
 
         LABLES_UPDATED_EVENT.increment()
+
+    def cots_gps_action(self) -> None:
+        """
+        Action for 'Srad GPS' button
+        """
+        longitude = 123.56  # Set some random coordinates for now
+        latitude = 78.90
+        self.cots_gps_pressed = True
+        for label in self.rocket_profile.labels:
+            name = label.name
+            if name == "GPS":
+                getattr(self, name + "Label").setText(f"{latitude}, {longitude}")
+        self.receive_map(longitude, latitude)
+
+    def srad_gps_action(self) -> None:
+        # Clear the custom longitude and latitude values
+        longitude = None
+        latitude = None
+        self.cots_gps_pressed = False
+
+        # Call receive_map without providing the custom longitude and latitude
+        self.receive_map(longitude, latitude)
 
     def send_button_pressed(self) -> None:
         """
@@ -403,7 +434,7 @@ class CompApp(MainApp, Ui_MainWindow):
         if state is not None:
             self.restoreState(state)
 
-    def receive_map(self) -> None:
+    def receive_map(self, longitude: float = None, latitude: float = None) -> None:
         """
         Updates the UI when a new map is available for display
         """
@@ -419,7 +450,7 @@ class CompApp(MainApp, Ui_MainWindow):
         self.plotWidget.canvas.ax.set_ylim(map_image.shape[0], 0)
         self.plotWidget.canvas.ax.set_xlim(0, map_image.shape[1])
 
-        # Removes pesky white boarder
+        # Removes pesky white border
         self.plotWidget.canvas.fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
 
         if self.im:
@@ -430,9 +461,15 @@ class CompApp(MainApp, Ui_MainWindow):
         self.im = self.plotWidget.canvas.ax.imshow(map_image)
 
         # updateMark UI modification
-        for i in range(len(mark)):
-            annotation_box = AnnotationBbox(OffsetImage(MAP_MARKER), mark[i], frameon=False)
-            self.plotWidget.canvas.ax.add_artist(annotation_box)
+        if longitude is not None and latitude is not None:
+            custom_mark = [(longitude, latitude)]
+            for i in range(len(custom_mark)):
+                annotation_box = AnnotationBbox(OffsetImage(MAP_MARKER), custom_mark[i], frameon=False)
+                self.plotWidget.canvas.ax.add_artist(annotation_box)
+        else:
+            for i in range(len(mark)):
+                annotation_box = AnnotationBbox(OffsetImage(MAP_MARKER), mark[i], frameon=False)
+                self.plotWidget.canvas.ax.add_artist(annotation_box)
 
         # For debugging marker position
         #self.plotWidget.canvas.ax.plot(mark[1][0], mark[1][1], marker='o', markersize=3, color="red")
@@ -467,3 +504,4 @@ class CompApp(MainApp, Ui_MainWindow):
         self.save_view()
         self.MappingThread.shutdown()
         super().shutdown()
+

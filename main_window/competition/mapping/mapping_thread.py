@@ -12,7 +12,7 @@ from main_window.data_entry_id import DataEntryIds
 from main_window.rocket_data import RocketData
 from profiles.rocket_profile import RocketProfile
 from . import mapbox_utils
-from .map_data import MapData, MapDataValue
+from .map_data import MapData, MapDataValue, MapDataSource
 from util.detail import LOGGER
 
 # Scaling is linear so a scale factor of 1 means no scaling (aka 1*x=x)
@@ -44,6 +44,8 @@ class MappingThread(QtCore.QThread):
         self.connection = connection
         self.map = map_data
         self.rocket_data = rocket_data
+        
+        self.data_source = MapDataSource.SRAD
 
         self.devices = rocket_profile.mapping_devices #List of mappable devices
         self.viewed_devices = self.devices #List of devices currently being viewed
@@ -86,6 +88,16 @@ class MappingThread(QtCore.QThread):
         """
         with self.cv:
             self.cv.notify()
+            
+    def setDataSource(self, dataSource: MapDataSource) -> None:
+        """
+
+        :param dataSource:
+        :type dataSource:
+        """
+        with self.cv:
+            self.data_source = dataSource
+            self.notify()
 
     def setViewedDevice(self, devices) -> None:
         """
@@ -211,6 +223,8 @@ class MappingThread(QtCore.QThread):
 
         map_data_value = MapDataValue(zoom=zoom, radius=radius, image=resizedMapImage, mark=marks)
         self.map.set_map_value(map_data_value)
+        
+        print(f"\n\n\n{self.data_source}\n\n\n")
 
         return True
 

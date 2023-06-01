@@ -1,4 +1,5 @@
 import threading
+from enum import Enum, auto
 from collections import namedtuple
 
 MapDataValue = namedtuple('MapDataValue', ('zoom', 'radius', 'image', 'mark'))
@@ -30,3 +31,7 @@ class MapData:
         """
         with self.lock:
             self.value = value
+
+class MapDataSource(Enum):
+    SRAD = auto()
+    COTS = auto()

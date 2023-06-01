@@ -53,10 +53,10 @@ class CompApp(MainApp, Ui_MainWindow):
         self.actionReset.triggered.connect(self.reset_view)
         
         # Attach function for 'Srad GPS' action
-        self.actionSradGPS.triggered.connect(self.srad_gps_action)
+        self.actionSRADGPS.triggered.connect(self.set_srad_gps)
 
         # Attach function for 'COTS GPS' action
-        self.actionCOTSGPS.triggered.connect(self.cots_gps_action)
+        self.actionCOTSGPS.triggered.connect(self.set_cots_gps)
         
         # Hook into some of commandEdit's events
         qtHook(self.commandEdit, 'focusNextPrevChild', lambda _: False, override_return=True)  # Prevents tab from changing focus
@@ -231,28 +231,6 @@ class CompApp(MainApp, Ui_MainWindow):
                 LOGGER.exception(f'Failed to update {label.name}Label:')
 
         LABLES_UPDATED_EVENT.increment()
-
-    def cots_gps_action(self) -> None:
-        """
-        Action for 'Srad GPS' button
-        """
-        longitude = 123.56  # Set some random coordinates for now
-        latitude = 78.90
-        self.cots_gps_pressed = True
-        for label in self.rocket_profile.labels:
-            name = label.name
-            if name == "GPS":
-                getattr(self, name + "Label").setText(f"{latitude}, {longitude}")
-        self.receive_map(longitude, latitude)
-
-    def srad_gps_action(self) -> None:
-        # Clear the custom longitude and latitude values
-        longitude = None
-        latitude = None
-        self.cots_gps_pressed = False
-
-        # Call receive_map without providing the custom longitude and latitude
-        self.receive_map(longitude, latitude)
 
     def send_button_pressed(self) -> None:
         """
@@ -485,6 +463,12 @@ class CompApp(MainApp, Ui_MainWindow):
         :type event:
         """
         self.MappingThread.setDesiredMapSize(event.width, event.height)
+        
+    def set_srad_gps(self):
+        self.MappingThread.setDataSource(map_data.MapDataSource.SRAD)
+    
+    def set_cots_gps(self):
+        self.MappingThread.setDataSource(map_data.MapDataSource.COTS)
 
     def set_view_device(self, viewedDevices) -> None:
         self.MappingThread.setViewedDevice(viewedDevices)
@@ -504,4 +488,3 @@ class CompApp(MainApp, Ui_MainWindow):
         self.save_view()
         self.MappingThread.shutdown()
         super().shutdown()
-

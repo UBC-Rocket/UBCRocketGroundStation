@@ -44,13 +44,18 @@ class TantalusProfile(RocketProfile):
     @property
     def labels(self):
         return [
-            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Altitude", update_altitude),
-            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "MaxAltitude", update_max_altitude, "Max Altitude"),
-            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "GPS", update_gps),
-            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "State", update_state),
-            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Pressure", update_pressure),
-            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Acceleration", update_acceleration),
+            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Stage1Altitude", update_altitude, "Stage 1 Altitude"),
+            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Stage1MaxAltitude", update_max_altitude, "Stage 1 Max Altitude"),
+            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Stage1GPS", update_gps, "Stage 1 GPS"),
+            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Stage1State", update_state, "Stage 1 State"),
+            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Stage1Pressure", update_pressure, "Stage 1 Pressure"),
+            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Stage1Acceleration", update_acceleration, "Stage 1 Acceleration"),
+            Label(DeviceType.TANTALUS_STAGE_2_FLARE, "Stage2Altitude", update_altitude, "Stage 2 Altitude"),
+            Label(DeviceType.TANTALUS_STAGE_2_FLARE, "Stage2MaxAltitude", update_max_altitude, "Stage 2 Max Altitude"),
+            Label(DeviceType.TANTALUS_STAGE_2_FLARE, "Stage2GPS", update_gps, "Stage 2 GPS"),
             Label(DeviceType.TANTALUS_STAGE_2_FLARE, "Stage2State", update_state, "Stage 2 State"),
+            Label(DeviceType.TANTALUS_STAGE_2_FLARE, "Stage2Pressure", update_pressure, "Stage 2 Pressure"),
+            Label(DeviceType.TANTALUS_STAGE_2_FLARE, "Stage2Acceleration", update_acceleration, "Stage 2 Acceleration"),
         ]
 
     @property

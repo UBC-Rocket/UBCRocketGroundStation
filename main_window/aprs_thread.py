@@ -52,35 +52,38 @@ class APRSThread(QtCore.QThread):
             self.kiss_server.add_subscriber(self.handle_aprs_packet)
             
     def handle_aprs_packet(self, packet: Dict[str, Any]):
+        if "from" in packet and packet["from"] != CALLSIGN:
+            LOGGER.warning(f"Received packet from {packet['from']} but expected {CALLSIGN}")
+            
         match packet:
             # Garbled aprs packet with symbol x - No GPS Lock (and hasn't ever gotten one)
-            case {'from': CALLSIGN, 'ssid': stage, 'symbol': 'x'}:
+            case {'ssid': stage, 'symbol': 'x'}:
                 self.update_gps_status(int(stage), AprsGpsStatus.GPS_NO_LOCK)
                 LOGGER.debug(f"Received GPS packet from {packet['from']} (Stage: {stage}): == NO GPS LOCK ==")
         
             # Fully formed aprs packet with symbol ~ and comment * - GPS Locked and has lat/long/alt data
-            case {'from': CALLSIGN, 'ssid': stage, 'symbol': '~', 'comment': '*', 'latitude': latitude, 'longitude': longitude, 'altitude': altitude}:
+            case {'ssid': stage, 'comment': '*', 'latitude': latitude, 'longitude': longitude, 'altitude': altitude}:
                 LOGGER.debug(f"Received GPS packet from {packet['from']} (Stage: {stage}): {latitude=} {longitude=} {altitude=}")
                 self.new_gps_coordinate(int(stage), float(latitude), float(longitude), float(altitude))
                 
             # Catch case where sent fully formed aprs packet with symbol ~ and comment *, but no lat/long/alt data
-            case {'from': CALLSIGN, 'ssid': stage, 'symbol': '~', 'comment': '*'}:
+            case {'ssid': stage, 'comment': '*'}:
                 self.update_gps_status(int(stage), AprsGpsStatus.GPS_ERROR)
                 LOGGER.error(f"Received GPS packet from {packet['from']} (Stage: {stage}) but no lat/long/alt data was found!")
                 
             # Garbled aprs packet with symbol ~ and comment - - GPS Lock Lost (but had one before)
-            case {'from': CALLSIGN, 'ssid': stage, 'symbol': '~', 'comment': '-'}:
+            case {'ssid': stage, 'comment': '-'}:
                 self.update_gps_status(int(stage), AprsGpsStatus.GPS_LOST_LOCK)
                 LOGGER.debug(f"Received GPS packet from {packet['from']} (Stage: {stage}): == GPS LOCK LOST ==")
                 
             # Handle unknown comment when symbol is ~
-            case {'from': CALLSIGN, 'ssid': stage, 'symbol': '~', 'comment': unknown_comment}:
+            case {'ssid': stage, 'comment': unknown_comment}:
                 self.update_gps_status(int(stage), AprsGpsStatus.GPS_ERROR)
                 LOGGER.error(f"Unknown GPS Comment {unknown_comment} from packet {packet}!")
                 LOGGER.error(f"This may or may not be a useful status symbol! Message one of the Groundstation devs ASAP!")
                 
             # Handle unknown symbol
-            case {'from': CALLSIGN, 'ssid': stage, 'symbol': unknown_symbol}:
+            case {'ssid': stage, 'symbol': unknown_symbol}:
                 self.update_gps_status(int(stage), AprsGpsStatus.GPS_ERROR)
                 LOGGER.error(f"Unknown GPS Symbol {unknown_symbol} from packet {packet}!")
                 LOGGER.error(f"This may or may not be a useful status symbol! Message one of the Groundstation devs ASAP!")

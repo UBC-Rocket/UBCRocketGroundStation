@@ -225,13 +225,13 @@ class MappingThread(QtCore.QThread):
         text = []
         if self.data_source == MapDataSource.SRAD:
             ds = mapbox_utils.AbsoluteText(
-                x=10, y=10, text="Showing: SRAD GPS", 
+                x=10, y=10, text="SRAD", 
                 size=18, foreground_color="green", background_color="white",
                 alignment=("top", "left"), alpha=0.7
             )
         elif self.data_source == MapDataSource.COTS:
             ds = mapbox_utils.AbsoluteText(
-                x=10, y=10, text="Showing: COTS (APRS) GPS", 
+                x=10, y=10, text="COTS (APRS)", 
                 size=18, foreground_color="green", background_color="white",
                 alignment=("top", "left"), alpha=0.7
             )
@@ -292,11 +292,21 @@ class MappingThread(QtCore.QThread):
                 latitudes = dict()
                 longitudes = dict()
 
-                for device in self.viewed_devices:
-                    latitude = self.rocket_data.last_value_by_device(device, DataEntryIds.LATITUDE)
-                    longitude = self.rocket_data.last_value_by_device(device, DataEntryIds.LONGITUDE)
-                    if latitude and longitude: #plot on map if data not None
-                        latitudes[device], longitudes[device] = latitude, longitude
+                # Determine if we should draw APRS or SRAD
+                if self.data_source == MapDataSource.SRAD:
+                    for device in self.viewed_devices:
+                        latitude = self.rocket_data.last_value_by_device(device, DataEntryIds.LATITUDE)
+                        longitude = self.rocket_data.last_value_by_device(device, DataEntryIds.LONGITUDE)
+                        if latitude and longitude: #plot on map if data not None
+                            latitudes[device], longitudes[device] = latitude, longitude
+                elif self.data_source == MapDataSource.COTS:
+                    for device in self.viewed_devices:
+                        latitude = self.rocket_data.last_value_by_device(device, DataEntryIds.APRS_LATITUDE)
+                        longitude = self.rocket_data.last_value_by_device(device, DataEntryIds.APRS_LONGITUDE)
+                        if latitude and longitude: #plot on map if data not None
+                            latitudes[device], longitudes[device] = latitude, longitude
+                else:
+                    LOGGER.error(f"Unknown data source for map: {self.data_source}")
 
                 desired_size = self.getDesiredMapSize()
                 map_zoom = self.getMapZoom()

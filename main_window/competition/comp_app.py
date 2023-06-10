@@ -421,7 +421,7 @@ class CompApp(MainApp, Ui_MainWindow):
             if isinstance(c, AnnotationBbox):
                 c.remove()
 
-        zoom, radius, map_image, mark = self.map_data.get_map_value()
+        zoom, radius, map_image, mark, text = self.map_data.get_map_value()
 
         # plotMap UI modification
         self.plotWidget.canvas.ax.set_axis_off()
@@ -448,6 +448,39 @@ class CompApp(MainApp, Ui_MainWindow):
             for i in range(len(mark)):
                 annotation_box = AnnotationBbox(OffsetImage(MAP_MARKER), mark[i], frameon=False)
                 self.plotWidget.canvas.ax.add_artist(annotation_box)
+                
+        # Clear previous text boxes
+        # TODO: This is a hacky way to do this, look into why its now clearing text boxes??
+        while self.plotWidget.canvas.ax.texts:
+            del self.plotWidget.canvas.ax.texts[0]
+        
+        # Draw text
+        for t in text:
+            # Get text position
+            xPos = t.getPixelX(zoom)
+            yPos = y=t.getPixelY(zoom)
+            
+            # If negative, stick to opposite edge of canvas
+            if xPos < 0:
+                xPos = self.plotWidget.canvas.ax.get_xlim()[1] + xPos
+            if yPos < 0:
+                yPos = self.plotWidget.canvas.ax.get_ylim()[0] + yPos
+            
+            # Draw Text
+            print(xPos, yPos, t.getText())
+            mplText = self.plotWidget.canvas.ax.text(
+                x=xPos,
+                y=yPos,
+                s=t.getText(),
+                fontsize=t.getSize(),
+                color=t.getForegroundColor(),
+                verticalalignment=t.getAlignment()[0],
+                horizontalalignment=t.getAlignment()[1],
+                alpha=t.getAlpha()
+            )
+            # Draw background separately to avoid weird text artifacts
+            if t.getBackgroundColor() is not None:
+                mplText.set_bbox(dict(facecolor=t.getBackgroundColor(), alpha=t.getAlpha(), linewidth=0))
 
         # For debugging marker position
         #self.plotWidget.canvas.ax.plot(mark[1][0], mark[1][1], marker='o', markersize=3, color="red")

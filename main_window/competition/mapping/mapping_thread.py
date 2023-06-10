@@ -220,11 +220,47 @@ class MappingThread(QtCore.QThread):
             y = (p.y - yMin) / (yMax - yMin)
             mark = (x * resizedMapImage.shape[1], y * resizedMapImage.shape[0])
             marks.append(mark)
-
-        map_data_value = MapDataValue(zoom=zoom, radius=radius, image=resizedMapImage, mark=marks)
-        self.map.set_map_value(map_data_value)
+            
+        # Draw HUD info
+        text = []
+        if self.data_source == MapDataSource.SRAD:
+            ds = mapbox_utils.AbsoluteText(
+                x=10, y=10, text="Showing: SRAD GPS", 
+                size=18, foreground_color="green", background_color="white",
+                alignment=("top", "left"), alpha=0.7
+            )
+        elif self.data_source == MapDataSource.COTS:
+            ds = mapbox_utils.AbsoluteText(
+                x=10, y=10, text="Showing: COTS (APRS) GPS", 
+                size=18, foreground_color="green", background_color="white",
+                alignment=("top", "left"), alpha=0.7
+            )
+        else:
+            ds = mapbox_utils.AbsoluteText(
+                x=10, y=10, text="Showing: Unknown GPS", 
+                size=18, foreground_color="red", background_color="white",
+                alignment=("top", "left"), alpha=0.7
+            )
+        text.append(ds)
         
-        print(f"\n\n\n{self.data_source}\n\n\n")
+        # Draw Device Coordinates
+        for idx, device in enumerate(latitudes.keys()):
+            cs = mapbox_utils.AbsoluteText(
+                x=0, y=(-20*idx) - 4, text=f"{device.name}: Lat: {latitudes[device]:.6f}, Lon: {longitudes[device]:.6f}",
+                size=8, foreground_color="black", background_color="white",
+                alignment=("bottom", "left")
+            )
+            text.append(cs)
+            
+            rs = mapbox_utils.MapText(
+                latitude=latitudes[device], longitude=longitudes[device], text=f"{device.name}",
+                size=8, foreground_color="black", background_color="white",
+                alignment=("top", "left"), alpha=0.7
+            )
+            text.append(rs)
+
+        map_data_value = MapDataValue(zoom=zoom, radius=radius, image=resizedMapImage, mark=marks, text=text)
+        self.map.set_map_value(map_data_value)
 
         return True
 

@@ -26,57 +26,57 @@ from main_window.packet_parser import DEVICE_TYPE_TO_ID
 from util.detail import REQUIRED_FLARE
 
 
-class TantalusProfile(RocketProfile):
+class BNBProfile(RocketProfile):
 
     @property
     def rocket_name(self):
-        return "Tantalus"
+        return "BNB"
 
     @property
     def buttons(self):
         return {
-            "Arm Stage 1": "TANTALUS_STAGE_1_FLARE.ARM",
-            "Ping Stage 1": "TANTALUS_STAGE_1_FLARE.PING",
-            "Arm Stage 2": "TANTALUS_STAGE_2_FLARE.ARM",
-            "Ping Stage 2": "TANTALUS_STAGE_2_FLARE.PING",
+            "Arm Stage 1": "BNB_STAGE_1_FLARE.ARM",
+            "Ping Stage 1": "BNB_STAGE_1_FLARE.PING",
+            "Arm Stage 2": "BNB_STAGE_2_FLARE.ARM",
+            "Ping Stage 2": "BNB_STAGE_2_FLARE.PING",
         }
 
     @property
     def labels(self):
         return [
-            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Stage1Altitude", update_altitude, "Stage 1 Altitude"),
-            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Stage1MaxAltitude", update_max_altitude, "Stage 1 Max Altitude"),
-            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Stage1GPS", update_gps, "Stage 1 GPS"),
-            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Stage1State", update_state, "Stage 1 State"),
-            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Stage1Pressure", update_pressure, "Stage 1 Pressure"),
-            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Stage1Acceleration", update_acceleration, "Stage 1 Acceleration"),
-            Label(DeviceType.TANTALUS_STAGE_2_FLARE, "Stage2Altitude", update_altitude, "Stage 2 Altitude"),
-            Label(DeviceType.TANTALUS_STAGE_2_FLARE, "Stage2MaxAltitude", update_max_altitude, "Stage 2 Max Altitude"),
-            Label(DeviceType.TANTALUS_STAGE_2_FLARE, "Stage2GPS", update_gps, "Stage 2 GPS"),
-            Label(DeviceType.TANTALUS_STAGE_2_FLARE, "Stage2State", update_state, "Stage 2 State"),
-            Label(DeviceType.TANTALUS_STAGE_2_FLARE, "Stage2Pressure", update_pressure, "Stage 2 Pressure"),
-            Label(DeviceType.TANTALUS_STAGE_2_FLARE, "Stage2Acceleration", update_acceleration, "Stage 2 Acceleration"),
+            Label(DeviceType.BNB_STAGE_1_FLARE, "Stage1Altitude", update_altitude, "Stage 1 Altitude"),
+            Label(DeviceType.BNB_STAGE_1_FLARE, "Stage1MaxAltitude", update_max_altitude, "Stage 1 Max Altitude"),
+            Label(DeviceType.BNB_STAGE_1_FLARE, "Stage1GPS", update_gps, "Stage 1 GPS"),
+            Label(DeviceType.BNB_STAGE_1_FLARE, "Stage1State", update_state, "Stage 1 State"),
+            Label(DeviceType.BNB_STAGE_1_FLARE, "Stage1Pressure", update_pressure, "Stage 1 Pressure"),
+            Label(DeviceType.BNB_STAGE_1_FLARE, "Stage1Acceleration", update_acceleration, "Stage 1 Acceleration"),
+            Label(DeviceType.BNB_STAGE_2_FLARE, "Stage2Altitude", update_altitude, "Stage 2 Altitude"),
+            Label(DeviceType.BNB_STAGE_2_FLARE, "Stage2MaxAltitude", update_max_altitude, "Stage 2 Max Altitude"),
+            Label(DeviceType.BNB_STAGE_2_FLARE, "Stage2GPS", update_gps, "Stage 2 GPS"),
+            Label(DeviceType.BNB_STAGE_2_FLARE, "Stage2State", update_state, "Stage 2 State"),
+            Label(DeviceType.BNB_STAGE_2_FLARE, "Stage2Pressure", update_pressure, "Stage 2 Pressure"),
+            Label(DeviceType.BNB_STAGE_2_FLARE, "Stage2Acceleration", update_acceleration, "Stage 2 Acceleration"),
         ]
 
     @property
     def expected_devices(self):
         return [
-            DeviceType.TANTALUS_STAGE_1_FLARE,
-            DeviceType.TANTALUS_STAGE_2_FLARE,
+            DeviceType.BNB_STAGE_1_FLARE,
+            DeviceType.BNB_STAGE_2_FLARE,
         ]
 
     @property
     def mapping_devices(self):
         return [
-            DeviceType.TANTALUS_STAGE_1_FLARE,
-            DeviceType.TANTALUS_STAGE_2_FLARE,
+            DeviceType.BNB_STAGE_1_FLARE,
+            DeviceType.BNB_STAGE_2_FLARE,
         ]
 
     @property
     def required_device_versions(self):
         return {
-            DeviceType.TANTALUS_STAGE_1_FLARE: REQUIRED_FLARE,
-            DeviceType.TANTALUS_STAGE_2_FLARE: REQUIRED_FLARE,
+            DeviceType.BNB_STAGE_1_FLARE: REQUIRED_FLARE,
+            DeviceType.BNB_STAGE_2_FLARE: REQUIRED_FLARE,
         }
 
     @property
@@ -94,12 +94,12 @@ class TantalusProfile(RocketProfile):
 
     def construct_debug_connection(self):
         return {
-            'TANTALUS_STAGE_1_CONNECTION': DebugConnection('TANTALUS_STAGE_1_RADIO_ADDRESS',
-                                                           DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1_FLARE],
+            'BNB_STAGE_1_CONNECTION': DebugConnection('BNB_STAGE_1_RADIO_ADDRESS',
+                                                           DEVICE_TYPE_TO_ID[DeviceType.BNB_STAGE_1_FLARE],
                                                            generate_radio_packets=True),
 
-            'TANTALUS_STAGE_2_CONNECTION': DebugConnection('TANTALUS_STAGE_2_RADIO_ADDRESS',
-                                                           DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_2_FLARE],
+            'BNB_STAGE_2_CONNECTION': DebugConnection('BNB_STAGE_2_RADIO_ADDRESS',
+                                                           DEVICE_TYPE_TO_ID[DeviceType.BNB_STAGE_2_FLARE],
                                                            generate_radio_packets=True),
         }
 
@@ -149,8 +149,8 @@ class TantalusProfile(RocketProfile):
         hwsim_stage_2 = HWSim(rocket_sim_stage_2, hw_sim_sensors_stage_2, hw_sim_ignitors_stage_2)
 
         return {
-            'TANTALUS_STAGE_1_CONNECTION': SimConnection("TantalusStage1", "0013A20041678FC0", hwsim_stage_1),
-            'TANTALUS_STAGE_2_CONNECTION': SimConnection("TantalusStage2", "0013A20041678FC0", hwsim_stage_2),
+            'BNB_STAGE_1_CONNECTION': SimConnection("BNBStage1", "0013A20041678FC0", hwsim_stage_1),
+            'BNB_STAGE_2_CONNECTION': SimConnection("BNBStage2", "0013A20041678FC0", hwsim_stage_2),
         }
 
     def construct_app(self, connections):

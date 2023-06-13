@@ -27,7 +27,7 @@ def bulk_sensor_bundle():
         DataEntryIds.LATITUDE: 8,
         DataEntryIds.LONGITUDE: 9,
         DataEntryIds.STATE: 10,
-        DataEntryIds.DEVICE_TYPE: DeviceType.TANTALUS_STAGE_1_FLARE,
+        DataEntryIds.DEVICE_TYPE: DeviceType.BNB_STAGE_1_FLARE,
         # DataEntryIds.VERSION_ID: REQUIRED_FLARE,
     }
 
@@ -73,7 +73,7 @@ def test_last_value_by_device(full_device_manager, rocket_data_with_bulk_added, 
     rocket_data, full_address = rocket_data_with_bulk_added
 
     for key, val in bulk_sensor_bundle.items():
-        assert rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1_FLARE, key) == val
+        assert rocket_data.last_value_by_device(DeviceType.BNB_STAGE_1_FLARE, key) == val
     return
 
 
@@ -82,7 +82,7 @@ def test_highest_altitude_by_device_single(full_device_manager, rocket_data_with
     altitude_bundle = {
         DataEntryIds.TIME: 5,
         DataEntryIds.CALCULATED_ALTITUDE: 1234,
-        DataEntryIds.DEVICE_TYPE: DeviceType.TANTALUS_STAGE_2_FLARE,
+        DataEntryIds.DEVICE_TYPE: DeviceType.BNB_STAGE_2_FLARE,
         # DataEntryIds.VERSION_ID: REQUIRED_FLARE,
     }
     full_address_stage_2 = full_device_manager.get_full_address(altitude_bundle[DataEntryIds.DEVICE_TYPE])
@@ -100,7 +100,7 @@ def test_highest_altitude_by_device_multiple(full_device_manager, rocket_data_wi
     altitude_bundle = {
         DataEntryIds.TIME: 5,
         DataEntryIds.CALCULATED_ALTITUDE: 1234,
-        DataEntryIds.DEVICE_TYPE: DeviceType.TANTALUS_STAGE_2_FLARE,
+        DataEntryIds.DEVICE_TYPE: DeviceType.BNB_STAGE_2_FLARE,
         # DataEntryIds.VERSION_ID: REQUIRED_FLARE,
     }
     full_address_stage_2 = full_device_manager.get_full_address(altitude_bundle[DataEntryIds.DEVICE_TYPE])

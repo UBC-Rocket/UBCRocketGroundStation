@@ -425,8 +425,8 @@ class CompApp(MainApp, Ui_MainWindow):
 
         # plotMap UI modification
         self.plotWidget.canvas.ax.set_axis_off()
-        self.plotWidget.canvas.ax.set_ylim(map_image.shape[0], 0)
-        self.plotWidget.canvas.ax.set_xlim(0, map_image.shape[1])
+        # self.plotWidget.canvas.ax.set_ylim(map_image.shape[0], 0)
+        # self.plotWidget.canvas.ax.set_xlim(0, map_image.shape[1])
 
         # Removes pesky white border
         self.plotWidget.canvas.fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
@@ -467,7 +467,6 @@ class CompApp(MainApp, Ui_MainWindow):
                 yPos = self.plotWidget.canvas.ax.get_ylim()[0] + yPos
             
             # Draw Text
-            print(xPos, yPos, t.getText())
             mplText = self.plotWidget.canvas.ax.text(
                 x=xPos,
                 y=yPos,

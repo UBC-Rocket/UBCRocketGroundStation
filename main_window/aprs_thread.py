@@ -13,7 +13,7 @@ from .rocket_data import RocketData
 from .data_entry_id import DataEntryIds
 
 CONNECTION_MESSAGE_READ_EVENT = Event('connection_message_read')
-CALLSIGN = "KD2ZWJ"
+CALLSIGN = "VE7MYD"
 
 class APRSThread(QtCore.QThread):
     sig_received = pyqtSignal()

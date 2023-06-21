@@ -30,6 +30,7 @@ class KissServer():
             self.kiss_connection = None
             return            
         elif kiss_address is None or kiss_address == "direwolf" or kiss_address == "":
+            raise NotImplementedError("Automatic Direwolf Launch Not Implemented. Please specify a KISS Address")
             # Start Direwolf
             self.address = "localhost"
             self.port = DEFAULT_KISS_PORT
@@ -48,25 +49,15 @@ class KissServer():
             # HACK: If running on WSL, if $HOST_IP is passed, use the host ip!!
             if self.address.startswith("$"):
                 self.address = os.environ[self.address[1:]]
-
+        
+        # Connect to KISS Server
+        self.connect()
+        
+    def connect(self):
         # Create Kiss Connection
         LOGGER.info(f"Connecting to KISS Server at {self.address}:{self.port}")
         self.kiss_connection = kiss.TCPKISS(self.address, self.port)
         self.kiss_connection.start()
-        
-    def start(self):
-        # If we are not running a KISS server, do nothing
-        if self.address is None or self.kiss_connection is None:
-            return
-        
-        # Start Kiss Thread
-        LOGGER.info(f"Starting KISS Reading Thread {self.address}:{self.port}")
-        self.kiss_thread = Thread(
-            target=self.kiss_connection.read, 
-            kwargs={'callback': self.read_kiss_packet}, 
-            daemon=True
-        )
-        self.kiss_thread.start()
         
     def run(self):
         # If we are not running a KISS server, do nothing in a loop
@@ -74,8 +65,18 @@ class KissServer():
             while True:
                 time.sleep(0.001)
         
-        # Start kiss
-        self.kiss_connection.read(callback=self.read_kiss_packet)
+        # Try to read kiss packet
+        while True:
+            try:
+                self.kiss_connection.read(callback=self.read_kiss_packet)
+            except BrokenPipeError:
+                LOGGER.error(f"KISS Server Connection Closed. Attempting to Reconnect...")
+                self.connect()
+                LOGGER.info(f"Reconnected to KISS Server")
+            except ConnectionResetError:
+                LOGGER.error(f"KISS Server Connection Closed. Attempting to Reconnect...")
+                self.connect()
+                LOGGER.info(f"Reconnected to KISS Server")
         
     def read_kiss_packet(self, packet):
         try:

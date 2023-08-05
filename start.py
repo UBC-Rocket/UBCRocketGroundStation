@@ -6,7 +6,7 @@ import matplotlib
 matplotlib.use('QT5Agg') # Ensures that the Qt5 backend is used, otherwise there might be some issues on some OSs (Mac)
 from com_window.main import ComWindow
 from PyQt5 import QtWidgets, QtCore
-from profiles.rockets.tantalus import BNBProfile
+from profiles.rockets.bnb import BNBProfile
 from util.self_test import SelfTest
 from util.detail import IS_PYINSTALLER, LOGGER
 

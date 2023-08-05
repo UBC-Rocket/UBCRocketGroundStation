@@ -102,7 +102,7 @@ class SilvertipProfile(RocketProfile):
             SensorSim(SensorType.BAROMETER, rocket_sim, error_stdev=(50, 0.005)),
             DummySensor(SensorType.GPS, (12.6, 13.2, 175)),
             SensorSim(SensorType.ACCELEROMETER, rocket_sim),
-            DummySensor(SensorType.IMU, (1, 0, 0, 0)),
+            DummySensor(SensorType.IMU, (1, 0, 0, 0, 0, 0, 0)),
             DummySensor(SensorType.TEMPERATURE, (20,)),
             VoltageSensor()
         ]

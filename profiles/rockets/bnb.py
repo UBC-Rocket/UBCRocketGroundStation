@@ -115,7 +115,7 @@ class BNBProfile(RocketProfile):
             DummySensor(SensorType.BAROMETER, (1000, 25)),
             DummySensor(SensorType.GPS, (12.6, 13.2, 175)),
             DummySensor(SensorType.ACCELEROMETER, (1, 0, 0)),
-            DummySensor(SensorType.IMU, (1, 0, 0, 0)),
+            DummySensor(SensorType.IMU, (1, 0, 0, 0, 0, 0, 0)),
             DummySensor(SensorType.TEMPERATURE, (20,)),
             VoltageSensor()
         ]
@@ -136,7 +136,7 @@ class BNBProfile(RocketProfile):
             DummySensor(SensorType.BAROMETER, (100000, 25)),
             DummySensor(SensorType.GPS, (12.6, 13.2, 175)),
             DummySensor(SensorType.ACCELEROMETER, (1, 0, 0)),
-            DummySensor(SensorType.IMU, (1, 0, 0, 0)),
+            DummySensor(SensorType.IMU, (1, 0, 0, 0, 0, 0, 0)),
             DummySensor(SensorType.TEMPERATURE, (20,)),
             VoltageSensor()
         ]

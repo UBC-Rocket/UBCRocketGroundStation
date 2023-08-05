@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, ANY
 from .integration_utils import test_app, valid_paramitrization, all_profiles
 from connections.debug.debug_connection import DebugConnection, ARMED_EVENT, DISARMED_EVENT
 from main_window.competition.comp_app import LABLES_UPDATED_EVENT
-from profiles.rockets.tantalus import BNBProfile
+from profiles.rockets.bnb import BNBProfile
 from connections.debug import radio_packets
 from main_window.rocket_data import BUNDLE_ADDED_EVENT
 from main_window.data_entry_id import DataEntryIds, DataEntryValues

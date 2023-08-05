@@ -14,7 +14,7 @@ class SensorType(Enum):
 
 REQUIRED_SENSOR_FLOATS = {
     SensorType.GPS: 3,
-    SensorType.IMU: 4,
+    SensorType.IMU: 7,
     SensorType.ACCELEROMETER: 3,
     SensorType.BAROMETER: 2,
     SensorType.TEMPERATURE: 1,

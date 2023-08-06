@@ -117,7 +117,7 @@ class BNBProfile(RocketProfile):
             DummySensor(SensorType.ACCELEROMETER, (1, 0, 0)),
             DummySensor(SensorType.IMU, (1, 0, 0, 0, 0, 0, 0)),
             DummySensor(SensorType.TEMPERATURE, (20,)),
-            VoltageSensor()
+            # VoltageSensor()
         ]
 
         hw_sim_ignitors_stage_1 = [
@@ -138,7 +138,7 @@ class BNBProfile(RocketProfile):
             DummySensor(SensorType.ACCELEROMETER, (1, 0, 0)),
             DummySensor(SensorType.IMU, (1, 0, 0, 0, 0, 0, 0)),
             DummySensor(SensorType.TEMPERATURE, (20,)),
-            VoltageSensor()
+            # VoltageSensor()
         ]
 
         hw_sim_ignitors_stage_2 = [

@@ -104,7 +104,7 @@ class SilvertipProfile(RocketProfile):
             SensorSim(SensorType.ACCELEROMETER, rocket_sim),
             DummySensor(SensorType.IMU, (1, 0, 0, 0, 0, 0, 0)),
             DummySensor(SensorType.TEMPERATURE, (20,)),
-            VoltageSensor()
+            # VoltageSensor()
         ]
 
         hw_sim_ignitors = [

@@ -128,16 +128,12 @@ class TestFlare:
     def test_pin_mode(self, qtbot, sim_app, device_type):
         hw = get_hw_sim(sim_app, device_type)
 
+        # Pin modes get flipped in _handleDigitalPinWrite & _handleAnalogRead?
+        assert hw.get_pin_mode(31) == PinModes.INPUT
+        assert hw.get_pin_mode(15) == PinModes.INPUT
         assert hw.get_pin_mode(20) == PinModes.INPUT
-        assert hw.get_pin_mode(21) == PinModes.INPUT
-        assert hw.get_pin_mode(13) == PinModes.INPUT
-        assert hw.get_pin_mode(13) == PinModes.INPUT
-        assert hw.get_pin_mode(16) == PinModes.INPUT
-        assert hw.get_pin_mode(4) == PinModes.INPUT
-        assert hw.get_pin_mode(14) == PinModes.OUTPUT
-        assert hw.get_pin_mode(35) == PinModes.INPUT
-        assert hw.get_pin_mode(17) == PinModes.INPUT
-        assert hw.get_pin_mode(34) == PinModes.OUTPUT
+        assert hw.get_pin_mode(193) == PinModes.OUTPUT
+        assert hw.get_pin_mode(200) == PinModes.OUTPUT
 
     # No voltage sensor in 2022/23
     # def test_voltage_reading(self, qtbot, sim_app, device_type):

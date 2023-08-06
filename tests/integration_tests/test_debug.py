@@ -93,9 +93,9 @@ def test_bulk_sensor_packet(qtbot, single_connection_bnb):
 
     assert LABLES_UPDATED_EVENT.wait(snapshot) >= 1
 
-    assert app.AltitudeLabel.text() == '2.00 m'
-    assert app.GPSLabel.text() == '9.00000\xb0, 10.00000\xb0'
-    assert app.StateLabel.text() == STATE_IDS[state_input].name
+    assert app.Stage1AltitudeLabel.text() == '2.00 m'
+    assert app.Stage1GPSLabel.text() == '9.00000\xb0, 10.00000\xb0'
+    assert app.Stage1StateLabel.text() == STATE_IDS[state_input].name
 
 
 def test_single_sensor_packet(qtbot, single_connection_bnb):

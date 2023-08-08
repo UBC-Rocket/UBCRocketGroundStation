@@ -121,8 +121,8 @@ class BNBProfile(RocketProfile):
         ]
 
         hw_sim_ignitors_stage_1 = [
-            Ignitor(IgnitorType.MAIN, 4, 14, 16),
-            Ignitor(IgnitorType.DROGUE, 17, 34, 35),
+            Ignitor(IgnitorType.MAIN, 33, 33, 20),
+            Ignitor(IgnitorType.DROGUE, 33, 33, 15),
         ]
 
         hwsim_stage_1 = HWSim(rocket_sim_stage_1, hw_sim_sensors_stage_1, hw_sim_ignitors_stage_1)
@@ -142,8 +142,8 @@ class BNBProfile(RocketProfile):
         ]
 
         hw_sim_ignitors_stage_2 = [
-            Ignitor(IgnitorType.MAIN, 4, 14, 16),
-            Ignitor(IgnitorType.DROGUE, 17, 34, 35),
+            Ignitor(IgnitorType.MAIN, 33, 33, 20),
+            Ignitor(IgnitorType.DROGUE, 33, 33, 15),
         ]
 
         hwsim_stage_2 = HWSim(rocket_sim_stage_2, hw_sim_sensors_stage_2, hw_sim_ignitors_stage_2)

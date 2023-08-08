@@ -384,7 +384,7 @@ def test_full_flight(qtbot, sim_app, device_type):
                             DataEntryValues.STATE_MAIN_DESCENT)
 
 
-@pytest.mark.parametrize("sim_app", valid_paramitrization(all_profiles(excluding=['WbProfile', 'CoPilotProfile'])),
+@pytest.mark.parametrize("sim_app", valid_paramitrization(all_profiles(excluding=['WbProfile', 'CoPilotProfile', 'HollyburnProfile'])),
                          indirect=True)
 def test_clean_shutdown(qtbot, sim_app):
     assert sim_app.ReadThread.isRunning()

@@ -13,6 +13,5 @@ coverage==6.5.0
 setuptools==65.5.0
 sortedcontainers==2.4.0
 orhelper==0.1.3
-extra_dependencies/kiss-7.0.0.tar.gz
-extra_dependencies/aprs-7.0.0.tar.gz
+wheel
 aprslib==0.7.2

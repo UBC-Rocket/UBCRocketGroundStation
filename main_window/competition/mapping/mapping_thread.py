@@ -12,7 +12,7 @@ from main_window.data_entry_id import DataEntryIds
 from main_window.rocket_data import RocketData
 from profiles.rocket_profile import RocketProfile
 from . import mapbox_utils
-from .map_data import MapData, MapDataValue
+from .map_data import MapData, MapDataValue, MapDataSource
 from util.detail import LOGGER
 
 # Scaling is linear so a scale factor of 1 means no scaling (aka 1*x=x)
@@ -44,6 +44,8 @@ class MappingThread(QtCore.QThread):
         self.connection = connection
         self.map = map_data
         self.rocket_data = rocket_data
+        
+        self.data_source = MapDataSource.SRAD
 
         self.devices = rocket_profile.mapping_devices #List of mappable devices
         self.viewed_devices = self.devices #List of devices currently being viewed
@@ -86,6 +88,16 @@ class MappingThread(QtCore.QThread):
         """
         with self.cv:
             self.cv.notify()
+            
+    def setDataSource(self, dataSource: MapDataSource) -> None:
+        """
+
+        :param dataSource:
+        :type dataSource:
+        """
+        with self.cv:
+            self.data_source = dataSource
+            self.notify()
 
     def setViewedDevice(self, devices) -> None:
         """
@@ -208,8 +220,46 @@ class MappingThread(QtCore.QThread):
             y = (p.y - yMin) / (yMax - yMin)
             mark = (x * resizedMapImage.shape[1], y * resizedMapImage.shape[0])
             marks.append(mark)
+            
+        # Draw HUD info
+        text = []
+        if self.data_source == MapDataSource.SRAD:
+            ds = mapbox_utils.AbsoluteText(
+                x=10, y=10, text="SRAD", 
+                size=18, foreground_color="green", background_color="white",
+                alignment=("top", "left"), alpha=0.7
+            )
+        elif self.data_source == MapDataSource.COTS:
+            ds = mapbox_utils.AbsoluteText(
+                x=10, y=10, text="COTS (APRS)", 
+                size=18, foreground_color="green", background_color="white",
+                alignment=("top", "left"), alpha=0.7
+            )
+        else:
+            ds = mapbox_utils.AbsoluteText(
+                x=10, y=10, text="Showing: Unknown GPS", 
+                size=18, foreground_color="red", background_color="white",
+                alignment=("top", "left"), alpha=0.7
+            )
+        text.append(ds)
+        
+        # Draw Device Coordinates
+        for idx, device in enumerate(latitudes.keys()):
+            cs = mapbox_utils.AbsoluteText(
+                x=0, y=(-20*idx) - 4, text=f"{device.name}: Lat: {latitudes[device]:.6f}, Lon: {longitudes[device]:.6f}",
+                size=8, foreground_color="black", background_color="white",
+                alignment=("bottom", "left")
+            )
+            text.append(cs)
+            
+            rs = mapbox_utils.MapText(
+                latitude=latitudes[device], longitude=longitudes[device], text=f"{device.name}",
+                size=8, foreground_color="black", background_color="white",
+                alignment=("top", "left"), alpha=0.7
+            )
+            text.append(rs)
 
-        map_data_value = MapDataValue(zoom=zoom, radius=radius, image=resizedMapImage, mark=marks)
+        map_data_value = MapDataValue(zoom=zoom, radius=radius, image=resizedMapImage, mark=marks, text=text)
         self.map.set_map_value(map_data_value)
 
         return True
@@ -242,11 +292,21 @@ class MappingThread(QtCore.QThread):
                 latitudes = dict()
                 longitudes = dict()
 
-                for device in self.viewed_devices:
-                    latitude = self.rocket_data.last_value_by_device(device, DataEntryIds.LATITUDE)
-                    longitude = self.rocket_data.last_value_by_device(device, DataEntryIds.LONGITUDE)
-                    if latitude and longitude: #plot on map if data not None
-                        latitudes[device], longitudes[device] = latitude, longitude
+                # Determine if we should draw APRS or SRAD
+                if self.data_source == MapDataSource.SRAD:
+                    for device in self.viewed_devices:
+                        latitude = self.rocket_data.last_value_by_device(device, DataEntryIds.LATITUDE)
+                        longitude = self.rocket_data.last_value_by_device(device, DataEntryIds.LONGITUDE)
+                        if latitude and longitude: #plot on map if data not None
+                            latitudes[device], longitudes[device] = latitude, longitude
+                elif self.data_source == MapDataSource.COTS:
+                    for device in self.viewed_devices:
+                        latitude = self.rocket_data.last_value_by_device(device, DataEntryIds.APRS_LATITUDE)
+                        longitude = self.rocket_data.last_value_by_device(device, DataEntryIds.APRS_LONGITUDE)
+                        if latitude and longitude: #plot on map if data not None
+                            latitudes[device], longitudes[device] = latitude, longitude
+                else:
+                    LOGGER.error(f"Unknown data source for map: {self.data_source}")
 
                 desired_size = self.getDesiredMapSize()
                 map_zoom = self.getMapZoom()

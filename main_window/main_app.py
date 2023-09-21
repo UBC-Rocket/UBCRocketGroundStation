@@ -12,6 +12,7 @@ from profiles.rocket_profile import RocketProfile
 from main_window.read_thread import ReadThread
 from main_window.rocket_data import RocketData
 from main_window.send_thread import SendThread
+from main_window.aprs_thread import APRSThread
 from main_window.device_manager import DeviceManager
 from main_window.command_parser import CommandParser
 
@@ -53,6 +54,11 @@ class MainApp(QtWidgets.QMainWindow):
         self.SendThread = SendThread(self.connections, self.device_manager, self.command_parser)
         self.sig_send.connect(self.SendThread.queueMessage)
         self.SendThread.start()
+        
+        # Init and connection of APRSThread
+        self.APRSThread = APRSThread(self.connections, self.rocket_data)
+        self.ReadThread.sig_received.connect(self.receive_data)
+        self.APRSThread.start()
 
     def closeEvent(self, event) -> None:
         """

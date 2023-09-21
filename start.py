@@ -3,6 +3,8 @@ import sys
 import multiprocessing
 import argparse
 import matplotlib
+import platform
+import subprocess
 matplotlib.use('QT5Agg') # Ensures that the Qt5 backend is used, otherwise there might be some issues on some OSs (Mac)
 from com_window.main import ComWindow
 from PyQt5 import QtWidgets, QtCore
@@ -19,6 +21,14 @@ if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
 MIN_APP_FONT_POINT_SIZE = 8
 
 if __name__ == "__main__":
+    
+    # Launch Direwolf executable (only for windows for now)
+    if platform.system() == 'Windows':
+        if not os.path.exists(get_launch_script_path()):
+            print('Direwolf is not installed. Please run setup.py to install.')
+        else:
+            subprocess.Popen(['python', 'direwolf_launcher.py'])
+    
     # Pyinstaller fix https://stackoverflow.com/questions/32672596/pyinstaller-loads-script-multiple-times
     multiprocessing.freeze_support()
 
@@ -66,4 +76,3 @@ if __name__ == "__main__":
     main_window.show()
     return_code = app.exec_()
     sys.exit(return_code)
-

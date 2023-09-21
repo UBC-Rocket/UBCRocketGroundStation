@@ -155,7 +155,7 @@
       <item row="4" column="0">
        <widget class="QLabel" name="label_5">
         <property name="text">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;KISS TCP Server Address:&lt;br/&gt;(Leave blank init KISS server)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;APRS KISS Server IP Address:&lt;br/&gt;(Leave blank to start automatically)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
        </widget>
       </item>

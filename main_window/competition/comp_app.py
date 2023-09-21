@@ -39,6 +39,7 @@ class CompApp(MainApp, Ui_MainWindow):
         """
         super().__init__(connections, rocket_profile)
 
+        self.cots_gps_pressed = False
         self.map_data = map_data.MapData()
         self.im = None  # Plot im
 
@@ -50,7 +51,13 @@ class CompApp(MainApp, Ui_MainWindow):
         self.actionSave.triggered.connect(self.save_file)
         self.actionSave.setShortcut("Ctrl+S")
         self.actionReset.triggered.connect(self.reset_view)
+        
+        # Attach function for 'Srad GPS' action
+        self.actionSRADGPS.triggered.connect(self.set_srad_gps)
 
+        # Attach function for 'COTS GPS' action
+        self.actionCOTSGPS.triggered.connect(self.set_cots_gps)
+        
         # Hook into some of commandEdit's events
         qtHook(self.commandEdit, 'focusNextPrevChild', lambda _: False, override_return=True)  # Prevents tab from changing focus
         qtHook(self.commandEdit, 'keyPressEvent', self.command_edit_key_pressed)
@@ -205,16 +212,18 @@ class CompApp(MainApp, Ui_MainWindow):
 
         self.zoom_in_button.clicked.connect(self.slider_dec)
         self.zoom_out_button.clicked.connect(self.slider_inc)
-
+        
     def receive_data(self) -> None:
         """
         This is called when new data is available to be displayed.
         :return:
         :rtype:
         """
-
         for label in self.rocket_profile.labels:
             try:
+                if self.cots_gps_pressed:
+                    continue  # Skip updating "gps" label when SRADS GPS button is pressed
+
                 getattr(self, label.name + "Label").setText(
                     label.update(self.rocket_data)
                 )
@@ -403,7 +412,7 @@ class CompApp(MainApp, Ui_MainWindow):
         if state is not None:
             self.restoreState(state)
 
-    def receive_map(self) -> None:
+    def receive_map(self, longitude: float = None, latitude: float = None) -> None:
         """
         Updates the UI when a new map is available for display
         """
@@ -412,14 +421,14 @@ class CompApp(MainApp, Ui_MainWindow):
             if isinstance(c, AnnotationBbox):
                 c.remove()
 
-        zoom, radius, map_image, mark = self.map_data.get_map_value()
+        zoom, radius, map_image, mark, text = self.map_data.get_map_value()
 
         # plotMap UI modification
         self.plotWidget.canvas.ax.set_axis_off()
-        self.plotWidget.canvas.ax.set_ylim(map_image.shape[0], 0)
-        self.plotWidget.canvas.ax.set_xlim(0, map_image.shape[1])
+        # self.plotWidget.canvas.ax.set_ylim(map_image.shape[0], 0)
+        # self.plotWidget.canvas.ax.set_xlim(0, map_image.shape[1])
 
-        # Removes pesky white boarder
+        # Removes pesky white border
         self.plotWidget.canvas.fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
 
         if self.im:
@@ -430,9 +439,47 @@ class CompApp(MainApp, Ui_MainWindow):
         self.im = self.plotWidget.canvas.ax.imshow(map_image)
 
         # updateMark UI modification
-        for i in range(len(mark)):
-            annotation_box = AnnotationBbox(OffsetImage(MAP_MARKER), mark[i], frameon=False)
-            self.plotWidget.canvas.ax.add_artist(annotation_box)
+        if longitude is not None and latitude is not None:
+            custom_mark = [(longitude, latitude)]
+            for i in range(len(custom_mark)):
+                annotation_box = AnnotationBbox(OffsetImage(MAP_MARKER), custom_mark[i], frameon=False)
+                self.plotWidget.canvas.ax.add_artist(annotation_box)
+        else:
+            for i in range(len(mark)):
+                annotation_box = AnnotationBbox(OffsetImage(MAP_MARKER), mark[i], frameon=False)
+                self.plotWidget.canvas.ax.add_artist(annotation_box)
+                
+        # Clear previous text boxes
+        # TODO: This is a hacky way to do this, look into why its now clearing text boxes??
+        while self.plotWidget.canvas.ax.texts:
+            del self.plotWidget.canvas.ax.texts[0]
+        
+        # Draw text
+        for t in text:
+            # Get text position
+            xPos = t.getPixelX(zoom)
+            yPos = y=t.getPixelY(zoom)
+            
+            # If negative, stick to opposite edge of canvas
+            if xPos < 0:
+                xPos = self.plotWidget.canvas.ax.get_xlim()[1] + xPos
+            if yPos < 0:
+                yPos = self.plotWidget.canvas.ax.get_ylim()[0] + yPos
+            
+            # Draw Text
+            mplText = self.plotWidget.canvas.ax.text(
+                x=xPos,
+                y=yPos,
+                s=t.getText(),
+                fontsize=t.getSize(),
+                color=t.getForegroundColor(),
+                verticalalignment=t.getAlignment()[0],
+                horizontalalignment=t.getAlignment()[1],
+                alpha=t.getAlpha()
+            )
+            # Draw background separately to avoid weird text artifacts
+            if t.getBackgroundColor() is not None:
+                mplText.set_bbox(dict(facecolor=t.getBackgroundColor(), alpha=t.getAlpha(), linewidth=0))
 
         # For debugging marker position
         #self.plotWidget.canvas.ax.plot(mark[1][0], mark[1][1], marker='o', markersize=3, color="red")
@@ -448,6 +495,12 @@ class CompApp(MainApp, Ui_MainWindow):
         :type event:
         """
         self.MappingThread.setDesiredMapSize(event.width, event.height)
+        
+    def set_srad_gps(self):
+        self.MappingThread.setDataSource(map_data.MapDataSource.SRAD)
+    
+    def set_cots_gps(self):
+        self.MappingThread.setDataSource(map_data.MapDataSource.COTS)
 
     def set_view_device(self, viewedDevices) -> None:
         self.MappingThread.setViewedDevice(viewedDevices)
@@ -467,5 +520,3 @@ class CompApp(MainApp, Ui_MainWindow):
         self.save_view()
         self.MappingThread.shutdown()
         super().shutdown()
-
-

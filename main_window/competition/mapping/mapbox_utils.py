@@ -4,6 +4,7 @@ import os
 from sys import platform
 import time
 from typing import Any, Optional
+from abc import ABC, abstractmethod
 
 import mapbox
 import numpy as np
@@ -56,9 +57,31 @@ def convertImage(image):
         # Not sure what is happening here. Sending back image and YOLO
         LOGGER.warning(f"Converting Image Of Unknown Type {image.dtype}")
         return image
+    
+    
+class AbstractPoint(ABC):
+    @abstractmethod
+    def __repr__(self) -> str:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def getPixelX(self, zoom: int) -> int:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def getPixelY(self, zoom: int) -> int:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def getTileX(self, zoom: int) -> int:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def getTileY(self, zoom: int) -> int:
+        raise NotImplementedError()
 
 
-class MapPoint:
+class MapPoint(AbstractPoint):
     def __init__(self, latitude: float, longitude: float) -> None:
         """
 
@@ -134,6 +157,346 @@ class MapPoint:
         :rtype: int
         """
         return int(self.getPixelY(zoom) / TILE_SIZE)
+
+
+class AbsolutePoint(AbstractPoint):
+    def __init__(self, x: int, y: int) -> None:
+        """
+
+        :param x:
+        :type x: int
+        :param y:
+        :type y: int
+        """
+        self.x = x
+        self.y = y
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.x}, {self.y}"
+
+    def getPixelX(self, zoom: int) -> int:
+        """
+
+        :param zoom:
+        :type zoom: int
+        :return:
+        :rtype: int
+        """
+        return self.x
+
+    def getPixelY(self, zoom: int) -> int:
+        """
+
+        :param zoom:
+        :type zoom:
+        :return:
+        :rtype:
+        """
+        return self.y
+
+    def getTileX(self, zoom: int) -> int:
+        """
+
+        :param zoom:
+        :type zoom: int
+        :return:
+        :rtype: int
+        """
+        LOGGER.warning("getTileX is not supported for AbsolutePoint")
+        return 0
+
+    def getTileY(self, zoom: int) -> int:
+        """
+
+        :param zoom:
+        :type zoom: int
+        :return:
+        :rtype: int
+        """
+        LOGGER.warning("getTileY is not supported for AbsolutePoint")
+        return 0
+    
+    
+class AbstractText(ABC):
+    def __init__(
+        self,
+        text: str,
+        size: int = 12,
+        background_color: Any = None,
+        foreground_color: Any = (0, 0, 0),
+        alignment: tuple[str, str] = ("top", "left"),
+        alpha: float = 1.0
+    ):
+        self.text = text
+        self.size = size
+        self.background_color = background_color
+        self.foreground_color = foreground_color
+        self.alignment = alignment
+        self.alpha = alpha
+
+    def getText(self) -> str:
+        """
+        
+        :return: 
+        :rtype: str
+        """
+        return self.text
+
+    def getSize(self) -> int:
+        """
+        
+        :return: 
+        :rtype: int
+        """
+        return self.size
+
+    def getBackgroundColor(self):
+        """
+        
+        """
+        return self.background_color
+
+    def getForegroundColor(self):
+        """
+        
+        """
+        return self.foreground_color
+    
+    def getAlignment(self) -> tuple[str, str]:
+        """
+        
+        :return: 
+        :rtype: tuple[str, str]
+        """
+        return self.alignment
+
+    def getAlpha(self) -> float:
+        """
+        
+        :return: 
+        :rtype: float
+        """
+        return self.alpha
+
+    @abstractmethod
+    def __repr__(self) -> str:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def getPixelX(self, zoom: int) -> int:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def getPixelY(self, zoom: int) -> int:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def getTileX(self, zoom: int) -> int:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def getTileY(self, zoom: int) -> int:
+        raise NotImplementedError()
+
+
+class MapText(AbstractText):
+    def __init__(
+        self, 
+        latitude: float, 
+        longitude: float,
+        text: str,
+        size: int = 12,
+        background_color: Any = None,
+        foreground_color: Any = (0, 0, 0),
+        alignment: tuple[str, str] = ("top", "left"),
+        alpha: float = 1.0
+    ) -> None:
+        """
+
+        :param latitude:
+        :type latitude: float
+        :param longitude:
+        :type longitude: float
+        :param text:
+        :type text: str
+        :param size:
+        :type size: int
+        :param background_color:
+        :type background_color: Any
+        :param foreground_color:
+        :type foreground_color: Any
+        :param alignment:
+        :type alignment: tuple[str, str]
+        :param alpha:
+        :type alpha: int
+        """
+        # Values outside this range will produce weird results in the tile calculations
+        # Alternative is to normalize angles
+        if not -90 < latitude < 90 or not -180 < longitude < 180:
+            raise ValueError("Latitude or longitude is out of bounds")
+
+        self.latitude = latitude
+        self.longitude = longitude
+        self.x = float(0.5 + self.longitude / 360)
+        siny = math.sin(self.latitude * math.pi / 180)
+        self.y = float((0.5 - math.log((1 + siny) / (1 - siny)) / (4 * math.pi)))
+        
+        # Setup text information
+        super().__init__(
+            text=text,
+            size=size,
+            background_color=background_color,
+            foreground_color=foreground_color,
+            alignment=alignment,
+            alpha=alpha
+        )
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.latitude}, {self.longitude})[{self.text}]"
+
+    def getPixelX(self, zoom: int) -> int:
+        """
+
+        :param zoom:
+        :type zoom: int
+        :return:
+        :rtype: int
+        """
+        return int(
+            math.floor(TILE_SIZE * (0.5 + self.longitude / 360) * math.pow(2, zoom))
+        )
+
+    def getPixelY(self, zoom: int) -> int:
+        """
+
+        :param zoom:
+        :type zoom:
+        :return:
+        :rtype:
+        """
+        siny = math.sin(self.latitude * math.pi / 180)
+
+        # Truncating to 0.9999 effectively limits latitude to 89.189. This is
+        # about a third of a tile past the edge of the world tile.
+        siny = min(max(siny, -0.9999), 0.9999)
+
+        return int(
+            math.floor(
+                TILE_SIZE
+                * (0.5 - math.log((1 + siny) / (1 - siny)) / (4 * math.pi))
+                * math.pow(2, zoom)
+            )
+        )
+
+    def getTileX(self, zoom: int) -> int:
+        """
+
+        :param zoom:
+        :type zoom: int
+        :return:
+        :rtype: int
+        """
+        return int(self.getPixelX(zoom) / TILE_SIZE)
+
+    def getTileY(self, zoom: int) -> int:
+        """
+
+        :param zoom:
+        :type zoom: int
+        :return:
+        :rtype: int
+        """
+        return int(self.getPixelY(zoom) / TILE_SIZE)
+
+
+class AbsoluteText(AbstractText):
+    def __init__(
+        self, 
+        x: int, 
+        y: int,
+        text: str,
+        size: int = 12,
+        background_color: Any = None,
+        foreground_color: Any = (0, 0, 0),
+        alignment: tuple[str, str] = ("top", "left"),
+        alpha: float = 1.0
+    ) -> None:
+        """
+
+        :param x:
+        :type x: int
+        :param y:
+        :type y: int
+        :param text:
+        :type text: str
+        :param size:
+        :type size: int
+        :param background_color:
+        :type background_color: Any
+        :param foreground_color:
+        :type foreground_color: Any
+        :param alignment:
+        :type alignment: tuple[str, str]
+        :param alpha:
+        :type alpha: int
+        """
+        self.x = x
+        self.y = y
+        
+        # Setup text information
+        super().__init__(
+            text=text,
+            size=size,
+            background_color=background_color,
+            foreground_color=foreground_color,
+            alignment=alignment,
+            alpha=alpha
+        )
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.x}, {self.y}"
+
+    def getPixelX(self, zoom: int) -> int:
+        """
+
+        :param zoom:
+        :type zoom: int
+        :return:
+        :rtype: int
+        """
+        return self.x
+
+    def getPixelY(self, zoom: int) -> int:
+        """
+
+        :param zoom:
+        :type zoom:
+        :return:
+        :rtype:
+        """
+        return self.y
+
+    def getTileX(self, zoom: int) -> int:
+        """
+
+        :param zoom:
+        :type zoom: int
+        :return:
+        :rtype: int
+        """
+        LOGGER.warning("getTileX is not supported for AbsolutePoint")
+        return 0
+
+    def getTileY(self, zoom: int) -> int:
+        """
+
+        :param zoom:
+        :type zoom: int
+        :return:
+        :rtype: int
+        """
+        LOGGER.warning("getTileY is not supported for AbsolutePoint")
+        return 0
 
 
 class MapTile:

@@ -83,6 +83,24 @@ def update_acceleration(rocket_data: RocketData, device: DeviceType) -> str:
         return f'{accel:.2f} g'
     else:
         return VALUE_NOT_AVAILABLE
+    
+
+def update_aprs(rocket_data: RocketData, device: DeviceType) -> str:
+    import json
+    from datetime import datetime
+    from main_window.aprs_gps_status import AprsGpsStatus
+    
+    temporary_message_payload = []
+    for device in rocket_data.device_manager.list_device_types():
+        temporary_message_payload.append("==========")
+        temporary_message_payload.append(device.name)
+        temporary_message_payload.append("Status: " + str(rocket_data.last_value_by_device(device, DataEntryIds.APRS_STATUS)))
+        temporary_message_payload.append("Latitude: " + str(rocket_data.last_value_by_device(device, DataEntryIds.APRS_LATITUDE)))
+        temporary_message_payload.append("Longitude: " + str(rocket_data.last_value_by_device(device, DataEntryIds.APRS_LONGITUDE)))
+        temporary_message_payload.append("Altitude: " + str(rocket_data.last_value_by_device(device, DataEntryIds.APRS_ALTITUDE)))
+        temporary_message_payload.append("Last GPS Ping: " + str(rocket_data.last_value_by_device(device, DataEntryIds.APRS_LAST_GPS_PING)))
+        
+    return "\n".join(temporary_message_payload)
 
 
 # TODO: Implement Tantalus test separation label update.

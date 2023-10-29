@@ -52,7 +52,7 @@ class WbProfile(RocketProfile):
                                                            kiss_address=kiss_address)
         }
 
-    def construct_sim_connection(self):
+    def construct_sim_connection(self, kiss_address: str):
         return None
 
     def construct_app(self, connections):

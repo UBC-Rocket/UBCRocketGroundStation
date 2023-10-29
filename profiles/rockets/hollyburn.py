@@ -108,7 +108,7 @@ class HollyburnProfile(RocketProfile):
                                                            kiss_address=kiss_address),
         }
 
-    def construct_sim_connection(self):
+    def construct_sim_connection(self, kiss_address: str):
         # Assemble HW here
 
         '''
@@ -157,7 +157,7 @@ class HollyburnProfile(RocketProfile):
         '''
 
         return {
-            'HOLLYBURN_BODY_CONNECTION': SimConnection("Hollyburn", "0013A20041678FC0", hwsim_body),
+            'HOLLYBURN_BODY_CONNECTION': SimConnection("Hollyburn", "0013A20041678FC0", hwsim_body, kiss_address=kiss_address),
             # 'HOLLYBURN_NOSE_CONNECTION': SimConnection("Hollyburn", "0013A20041678FC0", hwsim_nose),
         }
 

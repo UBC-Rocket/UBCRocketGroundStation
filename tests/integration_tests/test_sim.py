@@ -29,7 +29,7 @@ S_TO_MS = int(1e3)
 def sim_app(test_app, request) -> CompApp:
     profile = request.param
     try:
-        connections = profile.construct_sim_connection(kiss_address='localhost:8001')
+        connections = profile.construct_sim_connection(kiss_address='nd')
     except FirmwareNotFound:
         pytest.skip("Firmware not found")
         return

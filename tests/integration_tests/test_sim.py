@@ -25,11 +25,15 @@ from util.event_stats import get_event_stats_snapshot
 
 S_TO_MS = int(1e3)
 
+# command for not launching a kiss_server
+_kiss_address = 'nd'
+
+
 @pytest.fixture(scope="function")
 def sim_app(test_app, request) -> CompApp:
     profile = request.param
     try:
-        connections = profile.construct_sim_connection(kiss_address='nd')
+        connections = profile.construct_sim_connection(kiss_address=_kiss_address)
     except FirmwareNotFound:
         pytest.skip("Firmware not found")
         return

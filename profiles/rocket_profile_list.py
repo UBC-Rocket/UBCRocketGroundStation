@@ -9,8 +9,8 @@ from .rockets.hollyburn import HollyburnProfile
 from .rockets.whistler_blackcomb import WbProfile
 
 ROCKET_PROFILES: List[RocketProfile] = [
-    SilvertipProfile(),
     BNBProfile(),
+    SilvertipProfile(),
     CoPilotProfile(),
     HollyburnProfile(),
     WbProfile(),

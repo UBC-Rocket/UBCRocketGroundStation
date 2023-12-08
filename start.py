@@ -6,7 +6,7 @@ import matplotlib
 matplotlib.use('QT5Agg') # Ensures that the Qt5 backend is used, otherwise there might be some issues on some OSs (Mac)
 from com_window.main import ComWindow
 from PyQt5 import QtWidgets, QtCore
-from profiles.rockets.tantalus import TantalusProfile
+from profiles.rockets.bnb import BNBProfile
 from util.self_test import SelfTest
 from util.detail import IS_PYINSTALLER, LOGGER
 
@@ -57,7 +57,7 @@ if __name__ == "__main__":
         main_window = rocket.construct_app(connection)
 
     else:
-        rocket = TantalusProfile()
+        rocket = BNBProfile()
         connection = rocket.construct_debug_connection()
         main_window = rocket.construct_app(connection)
         test = SelfTest(main_window)

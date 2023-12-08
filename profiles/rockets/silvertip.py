@@ -111,14 +111,14 @@ class SilvertipProfile(RocketProfile):
             SensorSim(SensorType.BAROMETER, rocket_sim, error_stdev=(50, 0.005)),
             DummySensor(SensorType.GPS, (12.6, 13.2, 175)),
             SensorSim(SensorType.ACCELEROMETER, rocket_sim),
-            DummySensor(SensorType.IMU, (1, 0, 0, 0)),
+            DummySensor(SensorType.IMU, (1, 0, 0, 0, 0, 0, 0)),
             DummySensor(SensorType.TEMPERATURE, (20,)),
-            VoltageSensor()
+            # VoltageSensor()
         ]
 
         hw_sim_ignitors = [
-            Ignitor(IgnitorType.MAIN, 4, 14, 16, action_fn=rocket_sim.deploy_main),
-            Ignitor(IgnitorType.DROGUE, 17, 34, 35, action_fn=rocket_sim.deploy_drogue),
+            Ignitor(IgnitorType.MAIN, 33, 33, 20, action_fn=rocket_sim.deploy_main),
+            Ignitor(IgnitorType.DROGUE, 33, 33, 15, action_fn=rocket_sim.deploy_drogue),
         ]
 
         hwsim = HWSim(rocket_sim, hw_sim_sensors, hw_sim_ignitors)

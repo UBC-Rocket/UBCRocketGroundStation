@@ -182,7 +182,7 @@ class CompApp(MainApp, Ui_MainWindow):
             if label.map_fn is not None:
                 qt_text.mousePressEvent = gen_clicked_callback(label)
 
-            if label.name == "GPS":
+            if "GPS" in label.name:
                 self.selected_label = label
 
         if self.selected_label is None:
@@ -259,7 +259,7 @@ class CompApp(MainApp, Ui_MainWindow):
         dataplot_view_menu = view_menu.addMenu("Data Plot")
 
         for label in self.label_windows:
-            if label.name != "GPS":
+            if "GPS" not in label.name:
                 data_label = QAction(f'{label.name}', self)
                 data_label.triggered.connect(
                     lambda i, label_name=label: self.open_plot_window(label_name))

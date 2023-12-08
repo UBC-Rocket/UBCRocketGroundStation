@@ -65,7 +65,8 @@ def receive_time_series(self, plot_widget: MplWidget, label: Label) -> None:
 
     self.im = None
 
-    if label.name == "Acceleration" and not plot_widget.showing_checkboxes:
+    is_acceleration = "Acceleration" in label.name
+    if is_acceleration and not plot_widget.showing_checkboxes:
         plot_widget.show_checkboxes()
 
     # Plot data on graph
@@ -75,7 +76,7 @@ def receive_time_series(self, plot_widget: MplWidget, label: Label) -> None:
     plot_widget.canvas.ax.cla()
     data_entry_id = self.rocket_profile.label_to_data_id[label.name]
 
-    if label.name == "Acceleration":
+    if is_acceleration:
         labels = ["X", "Y", "Z"]
         colors = ["Red", "Blue", "Green"]
         plot_data = False

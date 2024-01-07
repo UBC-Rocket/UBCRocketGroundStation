@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
     else:
         rocket = TantalusProfile()
-        connection = rocket.construct_debug_connection()
+        connection = rocket.construct_debug_connection(kiss_address='nd')
         main_window = rocket.construct_app(connection)
         test = SelfTest(main_window)
         test.start()

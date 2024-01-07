@@ -99,6 +99,7 @@ def setup_step():
 
     print("Installing requirements in venv...")
     _run(VENV_PIP, ['install', '-r', 'requirements.txt'])
+    _run(VENV_PIP, ['install', '-r', 'extra_requirements.txt'])
 
     print("Downloading external requirements...")
     for url, file in EXTERNAL_DEPENDENCIES.items():

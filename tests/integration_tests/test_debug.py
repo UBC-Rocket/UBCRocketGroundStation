@@ -26,11 +26,16 @@ from main_window.competition.comp_packet_parser import (
 from util.event_stats import get_event_stats_snapshot
 from util.detail import REQUIRED_FLARE
 
+# command for not launching a kiss_server
+_kiss_address = 'nd'
+
 
 @pytest.fixture(scope="function")
 def single_connection_tantalus(test_app):
     yield test_app(TantalusProfile(), {
-        'DEBUG_CONNECTION': DebugConnection('TANTALUS_STAGE_1_ADDRESS', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1_FLARE], generate_radio_packets=False)
+        'DEBUG_CONNECTION': DebugConnection('TANTALUS_STAGE_1_ADDRESS',
+                                            DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1_FLARE],
+                                            generate_radio_packets=False, kiss_address=_kiss_address)
     }, num_devices=1)
 
 
@@ -156,6 +161,7 @@ def test_event_packet(qtbot, single_connection_tantalus):
     assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1_FLARE,
                                                 DataEntryIds.EVENT) == EVENT_IDS[event_to_test]
 
+
 def test_state_packet(qtbot, single_connection_tantalus):
     app = single_connection_tantalus
     connection = app.connections['DEBUG_CONNECTION']
@@ -211,7 +217,8 @@ def test_config_packet(qtbot, single_connection_tantalus):
     assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1_FLARE, DataEntryIds.IS_SIM) == True
     assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1_FLARE,
                                                 DataEntryIds.DEVICE_TYPE) == DeviceType.TANTALUS_STAGE_1_FLARE
-    assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1_FLARE, DataEntryIds.VERSION_ID) == version_id
+    assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_1_FLARE,
+                                                DataEntryIds.VERSION_ID) == version_id
 
 
 def test_status_ping_packet(qtbot, single_connection_tantalus):
@@ -289,9 +296,9 @@ def test_orientation_packet(qtbot, single_connection_tantalus):
 
 def test_multi_connection_receive(qtbot, test_app):
     con_a = DebugConnection('TANTALUS_STAGE_1_ADDRESS', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1_FLARE],
-                            generate_radio_packets=False)
+                            generate_radio_packets=False, kiss_address=_kiss_address)
     con_b = DebugConnection('TANTALUS_STAGE_2_ADDRESS', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_2_FLARE],
-                            generate_radio_packets=False)
+                            generate_radio_packets=False, kiss_address=_kiss_address)
     snapshot = get_event_stats_snapshot()
     app = test_app(TantalusProfile(), {'DEBUG_CONNECTION_1': con_a, 'DEBUG_CONNECTION_2': con_b}, num_devices=2)
 
@@ -314,9 +321,9 @@ def test_multi_connection_receive(qtbot, test_app):
 
 def test_multi_connection_commands(qtbot, test_app):
     con_a = DebugConnection('TANTALUS_STAGE_1_ADDRESS', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1_FLARE],
-                            generate_radio_packets=False)
+                            generate_radio_packets=False, kiss_address=_kiss_address)
     con_b = DebugConnection('TANTALUS_STAGE_2_ADDRESS', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_2_FLARE],
-                            generate_radio_packets=False)
+                            generate_radio_packets=False, kiss_address=_kiss_address)
 
     con_a.send = MagicMock()
     con_b.send = MagicMock()
@@ -351,7 +358,7 @@ def test_multi_connection_commands(qtbot, test_app):
 
 def test_register_after_data(qtbot, test_app):
     con = DebugConnection('TANTALUS_STAGE_1_ADDRESS', DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1_FLARE],
-                          generate_radio_packets=False)
+                          generate_radio_packets=False, kiss_address=_kiss_address)
     app = test_app(TantalusProfile(), {'DEBUG_CONNECTION': con}, num_devices=1)
     snapshot = get_event_stats_snapshot()
 
@@ -361,7 +368,8 @@ def test_register_after_data(qtbot, test_app):
     assert BUNDLE_ADDED_EVENT.wait(snapshot) == 1
 
     # Cause device to register
-    con.receive(radio_packets.config(0xFFFFFFFF, True, DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_2_FLARE], REQUIRED_FLARE))
+    con.receive(
+        radio_packets.config(0xFFFFFFFF, True, DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_2_FLARE], REQUIRED_FLARE))
     assert DEVICE_REGISTERED_EVENT.wait(snapshot) == 1
 
     assert app.rocket_data.last_value_by_device(DeviceType.TANTALUS_STAGE_2_FLARE, DataEntryIds.PRESSURE) == 1
@@ -369,7 +377,7 @@ def test_register_after_data(qtbot, test_app):
 
 @pytest.mark.parametrize("profile", valid_paramitrization(all_profiles(excluding='WbProfile')))
 def test_clean_shutdown(qtbot, profile):
-    app = profile.construct_app(profile.construct_debug_connection())
+    app = profile.construct_app(profile.construct_debug_connection(kiss_address=_kiss_address))
 
     assert app.ReadThread.isRunning()
     assert app.SendThread.isRunning()

@@ -134,9 +134,6 @@ dmypy.json
 # PyCharm
 .idea/
 
-# uv Packages
-uv.lock
-
 logs/
 mapbox_cache/
 *.csv

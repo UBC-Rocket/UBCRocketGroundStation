@@ -343,3 +343,22 @@ def pointToTile(p: MapPoint, s: int) -> MapTile:
     :rtype: MapTile
     """
     return MapTile(math.floor(p.x * 2.0 ** s), math.floor(p.y * 2.0 ** s), s)
+
+
+def advance_download_point_radius(latitude: float, longitude: float, radius: float, zoom: int):
+    lat1 = latitude + radius / 110.574
+    lon1 = longitude - radius / 111.320 / math.cos(lat1 * math.pi / 180.0)
+    p1 = MapPoint(lat1, lon1)  # Map corner 1
+
+    lat2 = latitude - radius / 110.574
+    lon2 = longitude + radius / 111.320 / math.cos(lat2 * math.pi / 180.0)
+    p2 = MapPoint(lat2, lon2)  # Map corner 2
+
+    TileGrid(p1, p2, zoom).downloadArrayImages()
+
+
+def advance_download_two_points(lat1: float, lon1: float, lat2: float, lon2: float, zoom: int):
+    p1 = MapPoint(lat1, lon1)
+    p2 = MapPoint(lat2, lon2)
+
+    TileGrid(p1, p2, zoom).downloadArrayImages()

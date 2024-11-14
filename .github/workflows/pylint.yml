@@ -9,9 +9,9 @@ jobs:
       matrix:
         python-version: ["3.12"]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4.2.2
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5.3.0
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -20,13 +20,13 @@ jobs:
         uv sync
     - name: Get changed files
       id: changed-files
-      uses: tj-actions/changed-files@v11.5
+      uses: tj-actions/changed-files@v45.0.3
     - name: Analysing the code with pylint
       run: |
         for file in ${{ steps.changed-files.outputs.all_modified_files }}; do
           if [[ -f $file && $file == *.py ]]
             then
               echo $file
-              pylint $file
+              uv run pylint $file
             fi
         done

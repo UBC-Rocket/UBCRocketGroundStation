@@ -29,14 +29,6 @@ jobs:
                   chmod +x codecov
                   ./codecov do-upload -s test_coverage
             cd ..
-      # - run:
-      #     name: Send integ tests to codecov
-      #     command: |
-      #       cd UBCRocketGroundStation 
-      #             curl -Os https://cli.codecov.io/v0.4.4/linux/codecov
-      #             chmod +x codecov
-      #             ./codecov -F integration -f test_coverage/integ-test-coverage.xml 
-      #       cd ..
 
 workflows:
   main:

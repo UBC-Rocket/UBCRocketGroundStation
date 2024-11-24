@@ -326,7 +326,7 @@ class TileGrid:
 
             t2 = time.perf_counter()
             LOGGER.debug(f"Successfully generated size {str(self.scale)} map in {t2 - t1} seconds.")
-            return img
+            return plt.imread(outfile, "jpeg")
         else:
             LOGGER.debug(f"Found size {str(self.scale)} map!")
             return plt.imread(outfile, "jpeg")

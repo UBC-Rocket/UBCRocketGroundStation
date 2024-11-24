@@ -87,7 +87,7 @@ class TestMapTile:
         mocked_tile.return_value.content = cv2.imencode('.png', cv2.imread(impath))[1]
 
         # Pass true to overwrite as image file may exist from previous tests
-        i = hennings_tile.getImage(True) 
+        i = hennings_tile.getImage(overwrite=True) 
 
         numpy.testing.assert_array_equal(i, hennings_image)
 
@@ -152,7 +152,7 @@ class TestTileGrid:
             "jpeg",  # Needed to make sure MPL doesn't use Pillow and return decimals.
         )
         
-        ubc_tile_grid.downloadArrayImages()
+        ubc_tile_grid.downloadArrayImages(overwrite=True)
         stitched_map = ubc_tile_grid.genStitchedMap()
 
         # assert_allclose because linux vs. windows can decode the images slightly differently

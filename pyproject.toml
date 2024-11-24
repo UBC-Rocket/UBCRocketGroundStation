@@ -22,6 +22,8 @@ dependencies = [
     "sortedcontainers==2.4.0",
     "pyqt5-qt5==5.15.2",
     "digi-xbee",
+    "opencv-python-headless>=4.10.0.84",
+    "opencv-python>=4.10.0.84",
 ]
 
 [tool.uv.sources]

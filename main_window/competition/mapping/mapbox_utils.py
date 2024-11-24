@@ -162,7 +162,7 @@ class MapTile:
         if not os.path.isdir(scalefolder):
             os.mkdir(scalefolder)
 
-        impath = os.path.join(scalefolder, str(self) + ".jpg")
+        impath = os.path.join(scalefolder, str(self) + ".png")
 
         if ((not os.path.exists(impath)) or overwrite) and not (maps is None):
             response = maps.tile(

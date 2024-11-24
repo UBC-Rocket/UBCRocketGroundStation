@@ -1,4 +1,5 @@
 import os
+import cv2
 
 import numpy
 import pytest
@@ -78,14 +79,15 @@ class TestMapTile:
         )
 
     def test_get_image_exists(self, hennings_tile, mocker):
-        hennings_image = pyplot.imread(
-            os.path.join(LOCAL, "tests", "test_mapbox_utils", "41322_89729.jpg"), "jpeg"
-        )
+        impath = os.path.join(LOCAL, "tests", "test_mapbox_utils", "41322_89729.png")
+        hennings_image = pyplot.imread(impath, "jpeg")
+
         mocked_tile = mocker.patch("main_window.competition.mapping.mapbox_utils.maps.tile")
         mocked_tile.return_value.status_code = 200
-        mocked_tile.return_value.content = hennings_image
+        mocked_tile.return_value.content = cv2.imencode('.png', cv2.imread(impath))[1]
 
-        i = hennings_tile.getImage()
+        # Pass true to overwrite as image file may exist from previous tests
+        i = hennings_tile.getImage(True) 
 
         numpy.testing.assert_array_equal(i, hennings_image)
 

@@ -162,7 +162,7 @@ class MapTile:
         if not os.path.isdir(scalefolder):
             os.mkdir(scalefolder)
 
-        impath = os.path.join(scalefolder, str(self) + ".png")
+        impath = os.path.join(scalefolder, str(self) + ".jpg")
 
         if ((not os.path.exists(impath)) or overwrite) and not (maps is None):
             response = maps.tile(
@@ -322,7 +322,7 @@ class TileGrid:
                 img = appendv(img, row)
 
             if is_img_not_blank is True:
-                plt.imsave(outfile, img)
+                plt.imsave(outfile, img.astype(np.uint8))
 
             t2 = time.perf_counter()
             LOGGER.debug(f"Successfully generated size {str(self.scale)} map in {t2 - t1} seconds.")

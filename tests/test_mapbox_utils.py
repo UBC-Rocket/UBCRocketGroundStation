@@ -77,7 +77,6 @@ class TestMapTile:
             i, numpy.zeros((mapbox_utils.TILE_SIZE, mapbox_utils.TILE_SIZE, 3))
         )
 
-    @pytest.mark.skip("Missing apikey.txt") 
     def test_get_image_exists(self, hennings_tile, mocker):
         hennings_image = pyplot.imread(
             os.path.join(LOCAL, "tests", "test_mapbox_utils", "41322_89729.jpg"), "jpeg"

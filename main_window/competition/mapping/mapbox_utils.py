@@ -322,11 +322,11 @@ class TileGrid:
                 img = appendv(img, row)
 
             if is_img_not_blank is True:
-                plt.imsave(outfile, img.astype(np.uint8))
+                plt.imsave(outfile, img)
 
             t2 = time.perf_counter()
             LOGGER.debug(f"Successfully generated size {str(self.scale)} map in {t2 - t1} seconds.")
-            return plt.imread(outfile, "jpeg")
+            return img
         else:
             LOGGER.debug(f"Found size {str(self.scale)} map!")
             return plt.imread(outfile, "jpeg")

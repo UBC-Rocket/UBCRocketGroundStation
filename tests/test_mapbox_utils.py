@@ -79,15 +79,14 @@ class TestMapTile:
         )
 
     def test_get_image_exists(self, hennings_tile, mocker):
-        impath = os.path.join(LOCAL, "tests", "test_mapbox_utils", "41322_89729.png")
-        hennings_image = pyplot.imread(impath, "jpeg")
-
+        hennings_image = pyplot.imread(
+            os.path.join(LOCAL, "tests", "test_mapbox_utils", "41322_89729.jpg"), "jpeg"
+        )
         mocked_tile = mocker.patch("main_window.competition.mapping.mapbox_utils.maps.tile")
         mocked_tile.return_value.status_code = 200
-        mocked_tile.return_value.content = cv2.imencode('.png', cv2.imread(impath))[1]
+        mocked_tile.return_value.content = hennings_image
 
-        # Pass true to overwrite as image file may exist from previous tests
-        i = hennings_tile.getImage(overwrite=True) 
+        i = hennings_tile.getImage()
 
         numpy.testing.assert_array_equal(i, hennings_image)
 
@@ -158,7 +157,7 @@ class TestTileGrid:
         # assert_allclose because linux vs. windows can decode the images slightly differently
         # https://github.com/python-pillow/Pillow/issues/3833
         # https://github.com/python-pillow/Pillow/issues/4686
-        numpy.testing.assert_allclose(hennings_image.astype(numpy.uint8)[:,:,:3], stitched_map[:,:,:3], rtol=0, atol=20) # Some systems return alpha channels for one and not the other, needs to be removed before comparison
+        numpy.testing.assert_allclose(hennings_image.astype(numpy.float64)[:,:,:3] * 255, stitched_map[:,:,:3], rtol=0, atol=20) # Some systems return alpha channels for one and not the other, needs to be removed before comparison
 
 
 def test_point_to_tile(ubc_point_1):

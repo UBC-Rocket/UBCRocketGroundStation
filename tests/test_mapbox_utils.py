@@ -150,13 +150,13 @@ class TestTileGrid:
             "jpeg",  # Needed to make sure MPL doesn't use Pillow and return decimals.
         )
         
-        ubc_tile_grid.downloadArrayImages()
+        ubc_tile_grid.downloadArrayImages(overwrite=True)
         stitched_map = ubc_tile_grid.genStitchedMap()
 
         # assert_allclose because linux vs. windows can decode the images slightly differently
         # https://github.com/python-pillow/Pillow/issues/3833
         # https://github.com/python-pillow/Pillow/issues/4686
-        numpy.testing.assert_allclose(hennings_image[:,:,:3], stitched_map[:,:,:3], rtol=0, atol=20) # Some systems return alpha channels for one and not the other, needs to be removed before comparison
+        numpy.testing.assert_allclose(hennings_image.astype(numpy.float64)[:,:,:3] * 255, stitched_map[:,:,:3], rtol=0, atol=20) # Some systems return alpha channels for one and not the other, needs to be removed before comparison
 
 
 def test_point_to_tile(ubc_point_1):

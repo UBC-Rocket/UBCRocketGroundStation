@@ -33,9 +33,9 @@ LOCAL = os.path.dirname(os.path.abspath(__file__))
 GLOBAL_PYTHON = sys.executable
 
 VENV_BIN_DIR = os.path.join(LOCAL, {
-    'linux': 'venv/bin/',
-    'win32': 'venv/Scripts/',
-    'darwin': 'venv/bin/'
+    'linux': '.venv/bin/',
+    'win32': '.venv/Scripts/',
+    'darwin': '.venv/bin/'
 }[sys.platform])
 
 EXECUTABLE_FILE_EXTENSION = {
@@ -49,8 +49,6 @@ VENV_PYTHON = os.path.join(VENV_BIN_DIR, {
     'win32': 'python',
     'darwin': 'python3'
 }[sys.platform] + EXECUTABLE_FILE_EXTENSION)
-
-VENV_PIP = os.path.join(VENV_BIN_DIR, 'pip' + EXECUTABLE_FILE_EXTENSION)
 
 VENV_PYINSTALLER = os.path.join(VENV_BIN_DIR, 'pyinstaller' + EXECUTABLE_FILE_EXTENSION)
 
@@ -89,17 +87,18 @@ def parent_dir(path):
         return path
 
 def setup_step():
+    _run(GLOBAL_PYTHON, ['-m', 'pip', 'install', '--upgrade', 'uv'])
+
     print("Creating venv...")
 
-    _run(GLOBAL_PYTHON, ['-m', 'venv', 'venv'])
+    _run(GLOBAL_PYTHON, ['-m', 'uv', 'venv'])
 
     print("Printing some venv debug info...")
     _run(VENV_PYTHON, ['--version'])
     _run(VENV_PYTHON, ['-c', '"import sys; print(sys.executable)"'])
 
     print("Installing requirements in venv...")
-    _run(VENV_PIP, ['install', '-r', 'requirements.txt'])
-    _run(VENV_PIP, ['install', '-r', 'extra_requirements.txt'])
+    _run(GLOBAL_PYTHON, ['-m', 'uv', 'sync'])
 
     print("Downloading external requirements...")
     for url, file in EXTERNAL_DEPENDENCIES.items():
@@ -119,7 +118,8 @@ def build_step():
     print("Running PyInstaller...")
     hidden_imports = [f"--hidden-import={i}" for i in HIDDEN_IMPORTS]
     data_files = [f"--add-data={i}{PYINSTALLER_SEPARATOR}{parent_dir(i)}" for i in DATA_FILES]
-    splash = f"--splash {SPLASH_IMAGE}" if sys.platform != 'darwin' else ""  # Splash not currently supported on MacOS
+    #No tkinter support for python 3.12
+    splash = "" #f"--splash {SPLASH_IMAGE}" if sys.platform != 'darwin' else ""  # Splash not currently supported on MacOS
     _run(VENV_PYINSTALLER, ['--onefile',
                             ENTRY_POINT,
                             '--console',
@@ -172,8 +172,8 @@ def main(cmd_args):
 
 
 if __name__ == '__main__':
-    if not (sys.version_info[0] == 3 and sys.version_info[1] <= 10):
-        raise Exception("Python version must be at minimum 3.10!")
+    if not (sys.version_info[0] == 3 and sys.version_info[1] <= 12):
+        raise Exception("Python version must be at minimum 3.12!")
 
     if _is_venv():
         raise Exception("Running in a virtual environment")

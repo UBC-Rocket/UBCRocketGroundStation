@@ -1,2 +1,0 @@
-extra_dependencies/kiss-7.0.0.tar.gz
-extra_dependencies/aprs-7.0.0.tar.gz

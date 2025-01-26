@@ -42,7 +42,7 @@ class SerialConnection(Connection):
         self.device.close()
 
     def isIntBigEndian(self):
-        return True
+        return False
 
     def isFloatBigEndian(self):
         return False

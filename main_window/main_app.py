@@ -1,3 +1,4 @@
+"""Main app"""
 import os
 import threading
 from typing import Dict
@@ -18,13 +19,14 @@ from main_window.command_parser import CommandParser
 
 
 class MainApp(QtWidgets.QMainWindow):
+    """Manage main app"""
     sig_send = pyqtSignal(str)
 
     def __init__(self, connections: Dict[str, Connection], rocket_profile: RocketProfile) -> None:
         """
 
-        :param connection:
-        :type connection: Connection
+        :param connections:
+        :type connections: Dict[str, Connection]
         :param rocket_profile:
         :type rocket_profile: RocketProfile
         """
@@ -39,14 +41,19 @@ class MainApp(QtWidgets.QMainWindow):
 
         self.connections = connections
         self.rocket_profile = rocket_profile
-        self.device_manager = DeviceManager(self.rocket_profile.expected_devices, self.rocket_profile.required_device_versions, strict_versions=False)
+        self.device_manager = DeviceManager(self.rocket_profile.expected_devices,
+                                            self.rocket_profile.required_device_versions,
+                                            strict_versions=False)
         self.rocket_data = RocketData(self.device_manager)
         self.command_parser = CommandParser(self.device_manager)
 
         packet_parser = self.rocket_profile.construct_packet_parser()
 
         # Init and connection of ReadThread
-        self.ReadThread = ReadThread(self.connections, self.rocket_data, packet_parser, self.device_manager)
+        self.ReadThread = ReadThread(self.connections,
+                                     self.rocket_data,
+                                     packet_parser,
+                                     self.device_manager)
         self.ReadThread.sig_received.connect(self.receive_data)
         self.ReadThread.start()
 
@@ -60,7 +67,7 @@ class MainApp(QtWidgets.QMainWindow):
         self.ReadThread.sig_received.connect(self.receive_data)
         self.APRSThread.start()
 
-    def closeEvent(self, event) -> None:
+    def close_event(self, event) -> None:
         """
         This is called when application is closing
         :param event:
@@ -74,7 +81,7 @@ class MainApp(QtWidgets.QMainWindow):
         :return:
         :rtype:
         """
-        LOGGER.debug(f"MainApp shutting down")
+        LOGGER.debug("MainApp shutting down")
         self.ReadThread.shutdown()
         self.SendThread.shutdown()
         self.rocket_data.shutdown()

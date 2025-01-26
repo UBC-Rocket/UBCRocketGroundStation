@@ -1,12 +1,12 @@
 version: 2.1
 
-orbs:
-  codecov: codecov/codecov@1.2.3
+# orbs:
+#   codecov: codecov/codecov@1.2.3
 
 jobs:
   test:
     machine:
-      image: ubuntu-2004:202010-01
+      image: ubuntu-2004:2024.05.1
     steps:
       - checkout:
           path: UBCRocketGroundStation
@@ -25,17 +25,9 @@ jobs:
           name: Send unit tests to codecov
           command: |
             cd UBCRocketGroundStation
-                  curl -Os https://uploader.codecov.io/latest/linux/codecov
+                  curl -Os https://cli.codecov.io/latest/linux/codecov
                   chmod +x codecov
-                  ./codecov -Z -f test_reports/unit-test-coverage.xml -F unit
-            cd ..
-      - run:
-          name: Send integ tests to codecov
-          command: |
-            cd UBCRocketGroundStation
-                  curl -Os https://uploader.codecov.io/latest/linux/codecov
-                  chmod +x codecov
-                  ./codecov -Z -f test_reports/integ-test-coverage.xml -F integration
+                  ./codecov do-upload -s test_coverage
             cd ..
 
 workflows:

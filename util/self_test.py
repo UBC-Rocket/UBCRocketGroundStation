@@ -4,7 +4,7 @@ from time import sleep
 
 from util.event_stats import get_event_stats_snapshot
 from util.detail import LOGGER
-from main_window.competition.comp_app import LABLES_UPDATED_EVENT, MAP_UPDATED_EVENT
+from main_window.competition.comp_app import LABELS_UPDATED_EVENT, MAP_UPDATED_EVENT
 
 class SelfTest:
     """
@@ -29,7 +29,7 @@ class SelfTest:
 
             # Dont wait, check difference now all at once
             # Add any other common events here
-            assert LABLES_UPDATED_EVENT.wait(snapshot, timeout=0) >= 2
+            assert LABELS_UPDATED_EVENT.wait(snapshot, timeout=0) >= 2
             assert MAP_UPDATED_EVENT.wait(snapshot, timeout=0) >= 2
 
             LOGGER.info("SELF TEST PASSED")

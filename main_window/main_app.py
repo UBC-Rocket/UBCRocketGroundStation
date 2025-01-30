@@ -8,7 +8,6 @@ from PyQt5.QtCore import pyqtSignal
 
 from connections.connection import Connection
 from util.detail import LOGS_DIR, SESSION_ID, LOGGER
-from profiles.rocket_profile import RocketProfile
 
 from main_window.read_thread import ReadThread
 from main_window.rocket_data import RocketData
@@ -22,7 +21,7 @@ class MainApp(QtWidgets.QMainWindow):
     """Manage main app"""
     sig_send = pyqtSignal(str)
 
-    def __init__(self, connections: Dict[str, Connection], rocket_profile: RocketProfile) -> None:
+    def __init__(self, connections: Dict[str, Connection], rocket_profile) -> None:
         """
 
         :param connections:

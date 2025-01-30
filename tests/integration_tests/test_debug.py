@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock, ANY
 from .integration_utils import test_app, valid_paramitrization, all_profiles
 from connections.debug.debug_connection import DebugConnection, ARMED_EVENT, DISARMED_EVENT
-from main_window.competition.comp_app import LABLES_UPDATED_EVENT
+from main_window.competition.comp_app import LABELS_UPDATED_EVENT
 from profiles.rockets.tantalus import TantalusProfile
 from connections.debug import radio_packets
 from main_window.rocket_data import BUNDLE_ADDED_EVENT
@@ -96,7 +96,7 @@ def test_bulk_sensor_packet(qtbot, single_connection_tantalus):
     state_val = get_val(DataEntryIds.STATE)
     assert STATE_IDS[state_input] == state_val
 
-    assert LABLES_UPDATED_EVENT.wait(snapshot) >= 1
+    assert LABELS_UPDATED_EVENT.wait(snapshot) >= 1
 
     assert app.AltitudeLabel.text() == '2.00 m'
     assert app.GPSLabel.text() == '9.00000\xb0, 10.00000\xb0'

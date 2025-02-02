@@ -234,10 +234,10 @@ class TestFlare:
 
     def test_imu_read(self, qtbot, sim_app, device_type):
         test_vals = [
-            (1, 0, 0, 0),
-            (0, 1, 0, 0),
-            (0, 0, 1, 0),
-            (0, 0, 0, 1),
+            (1, 0, 0, 0, 0, 0, 0),
+            (0, 1, 0, 0, 0, 0, 0),
+            (0, 0, 1, 0, 0, 0, 0),
+            (0, 0, 0, 1, 0, 0, 0),
         ]
 
         for vals in test_vals:

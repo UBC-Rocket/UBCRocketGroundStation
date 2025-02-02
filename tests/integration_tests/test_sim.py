@@ -132,43 +132,40 @@ class TestFlare:
     def test_pin_mode(self, qtbot, sim_app, device_type):
         hw = get_hw_sim(sim_app, device_type)
 
+        # Pin modes get flipped in _handleDigitalPinWrite & _handleAnalogRead?
+        assert hw.get_pin_mode(31) == PinModes.INPUT
+        assert hw.get_pin_mode(15) == PinModes.INPUT
         assert hw.get_pin_mode(20) == PinModes.INPUT
-        assert hw.get_pin_mode(21) == PinModes.INPUT
-        assert hw.get_pin_mode(13) == PinModes.INPUT
-        assert hw.get_pin_mode(13) == PinModes.INPUT
-        assert hw.get_pin_mode(16) == PinModes.INPUT
-        assert hw.get_pin_mode(4) == PinModes.INPUT
-        assert hw.get_pin_mode(14) == PinModes.OUTPUT
-        assert hw.get_pin_mode(35) == PinModes.INPUT
-        assert hw.get_pin_mode(17) == PinModes.INPUT
-        assert hw.get_pin_mode(34) == PinModes.OUTPUT
+        assert hw.get_pin_mode(193) == PinModes.OUTPUT
+        assert hw.get_pin_mode(200) == PinModes.OUTPUT
 
-    def test_voltage_reading(self, qtbot, sim_app, device_type):
-        flush_packets(sim_app, device_type)
-
-        snapshot = get_event_stats_snapshot()
-        sim_app.send_command(device_type.name + ".VOLT")
-        assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
-
-        last_battery_voltage = sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.VOLTAGE)
-        assert(round(last_battery_voltage, 1) == VoltageSensor.NOMINAL_BATTERY_VOLTAGE)
-        assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.EVENT) is None
-
-        # The ADC level of 863 gets converted to 10.9V in battery.cpp in FLARE 21899292dc39015570f795ef9e607081aab57e3e
-        updated_voltage_sensor = VoltageSensor(dummy_adc_level=863)
-        hw = get_hw_sim(sim_app, device_type)
-        hw.replace_sensor(updated_voltage_sensor)
-
-        flush_packets(sim_app, device_type)
-
-        snapshot = get_event_stats_snapshot()
-        sim_app.send_command(device_type.name + ".VOLT")
-        assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
-
-        last_battery_voltage = sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.VOLTAGE)
-        assert(round(last_battery_voltage, 1) == 10.9)
-        assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.EVENT) \
-               == DataEntryValues.EVENT_LOW_VOLTAGE
+    # No voltage sensor in 2022/23
+    # def test_voltage_reading(self, qtbot, sim_app, device_type):
+    #     flush_packets(sim_app, device_type)
+    #
+    #     snapshot = get_event_stats_snapshot()
+    #     sim_app.send_command(device_type.name + ".VOLT")
+    #     assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
+    #
+    #     last_battery_voltage = sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.VOLTAGE)
+    #     assert(round(last_battery_voltage, 1) == VoltageSensor.NOMINAL_BATTERY_VOLTAGE)
+    #     assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.EVENT) is None
+    #
+    #     # The ADC level of 863 gets converted to 10.9V in battery.cpp in FLARE 21899292dc39015570f795ef9e607081aab57e3e
+    #     updated_voltage_sensor = VoltageSensor(dummy_adc_level=863)
+    #     hw = get_hw_sim(sim_app, device_type)
+    #     hw.replace_sensor(updated_voltage_sensor)
+    #
+    #     flush_packets(sim_app, device_type)
+    #
+    #     snapshot = get_event_stats_snapshot()
+    #     sim_app.send_command(device_type.name + ".VOLT")
+    #     assert SINGLE_SENSOR_EVENT.wait(snapshot) == 1
+    #
+    #     last_battery_voltage = sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.VOLTAGE)
+    #     assert(round(last_battery_voltage, 1) == 10.9)
+    #     assert sim_app.rocket_data.last_value_by_device(device_type, DataEntryIds.EVENT) \
+    #            == DataEntryValues.EVENT_LOW_VOLTAGE
 
     def test_baro_altitude(self, qtbot, sim_app, device_type):
         Pb = 101325

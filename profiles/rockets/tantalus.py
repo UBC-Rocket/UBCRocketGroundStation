@@ -8,6 +8,7 @@ from ..label import (
     update_state,
     update_aprs,
 )
+from ..mpl_funcs import receive_map
 from ..rocket_profile import RocketProfile, FlightPoint
 from connections.serial.serial_connection import SerialConnection
 from connections.debug.debug_connection import DebugConnection
@@ -47,7 +48,7 @@ class TantalusProfile(RocketProfile):
         return [
             Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Altitude", update_altitude),
             Label(DeviceType.TANTALUS_STAGE_1_FLARE, "MaxAltitude", update_max_altitude, "Max Altitude"),
-            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "GPS", update_gps),
+            Label(DeviceType.TANTALUS_STAGE_1_FLARE, "GPS", update_gps, map_fn=receive_map),
             Label(DeviceType.TANTALUS_STAGE_1_FLARE, "State", update_state),
             Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Pressure", update_pressure),
             Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Acceleration", update_acceleration),

@@ -11,6 +11,7 @@ from PyQt5 import QtWidgets, QtCore
 from profiles.rockets.tantalus import TantalusProfile
 from util.self_test import SelfTest
 from util.detail import IS_PYINSTALLER, LOGGER
+from setup import get_launch_script_path
 
 if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
     QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)

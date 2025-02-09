@@ -59,7 +59,7 @@ def set_dummy_sensor_values(sim_app, device_type: DeviceType, sensor_type: Senso
 
 @pytest.mark.parametrize(
     "sim_app, device_type", valid_paramitrization(
-        all_profiles(excluding=['WbProfile', 'CoPilotProfile', 'HollyburnProfile']),
+        all_profiles(excluding=['WbProfile', 'CoPilotProfile', 'HollyburnProfile', 'TantalusProfile']),
         only_flare(all_devices(excluding=[]))),
     indirect=['sim_app'])
 class TestFlare:
@@ -388,7 +388,7 @@ def test_full_flight(qtbot, sim_app, device_type):
                             DataEntryValues.STATE_MAIN_DESCENT)
 
 
-@pytest.mark.parametrize("sim_app", valid_paramitrization(all_profiles(excluding=['WbProfile', 'CoPilotProfile', 'HollyburnProfile'])),
+@pytest.mark.parametrize("sim_app", valid_paramitrization(all_profiles(excluding=['WbProfile', 'CoPilotProfile', 'HollyburnProfile', 'TantalusProfile'])),
                          indirect=True)
 def test_clean_shutdown(qtbot, sim_app):
     assert sim_app.ReadThread.isRunning()

@@ -52,8 +52,8 @@ MAX_SINGLE_SENSOR_ID: int = 0x2F
 
 
 ID_TO_DEVICE_TYPE = {
-        0x00: DeviceType.TANTALUS_STAGE_1_FLARE,
-        0x01: DeviceType.TANTALUS_STAGE_2_FLARE,
+        0x00: DeviceType.BNB_STAGE_1_FLARE,
+        0x01: DeviceType.BNB_STAGE_2_FLARE,
         0x02: DeviceType.CO_PILOT_FLARE,
         0x03: DeviceType.HOLLYBURN_BODY_FLARE,
         0x04: DeviceType.HOLLYBURN_NOSE_FLARE,

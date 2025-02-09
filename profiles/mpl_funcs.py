@@ -8,7 +8,7 @@ from main_window.mplwidget import MplWidget
 from profiles.label import Label
 
 
-def receive_map(self) -> None:
+def receive_map(self, longitude: float = None, latitude: float = None) -> None:
     """
     Updates the UI when a new map is available for display
     """
@@ -17,16 +17,15 @@ def receive_map(self) -> None:
         if isinstance(c, AnnotationBbox):
             c.remove()
 
-    zoom, radius, map_image, mark = self.map_data.get_map_value()
+    zoom, radius, map_image, mark, text = self.map_data.get_map_value()
 
     # plotMap UI modification
     self.plot_widget.canvas.ax.set_axis_off()
-    self.plot_widget.canvas.ax.set_ylim(map_image.shape[0], 0)
-    self.plot_widget.canvas.ax.set_xlim(0, map_image.shape[1])
+    # self.plot_widget.canvas.ax.set_ylim(map_image.shape[0], 0)
+    # self.plot_widget.canvas.ax.set_xlim(0, map_image.shape[1])
 
-    # Removes pesky white boarder
-    self.plot_widget.canvas.fig.subplots_adjust(
-        left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
+    # Removes pesky white border
+    self.plot_widget.canvas.fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
 
     if self.im:
         # Required because plotting images over old ones creates memory leak
@@ -36,9 +35,51 @@ def receive_map(self) -> None:
     self.im = self.plot_widget.canvas.ax.imshow(map_image)
 
     # updateMark UI modification
-    for i, m in enumerate(mark):
-        annotation_box = AnnotationBbox(OffsetImage(MAP_MARKER), m, frameon=False)
-        self.plot_widget.canvas.ax.add_artist(annotation_box)
+    if longitude is not None and latitude is not None:
+        custom_mark = [(longitude, latitude)]
+        for i in range(len(custom_mark)):
+            annotation_box = AnnotationBbox(OffsetImage(MAP_MARKER), custom_mark[i], frameon=False)
+            self.plot_widget.canvas.ax.add_artist(annotation_box)
+    else:
+        for i in range(len(mark)):
+            annotation_box = AnnotationBbox(OffsetImage(MAP_MARKER), mark[i], frameon=False)
+            self.plot_widget.canvas.ax.add_artist(annotation_box)
+            
+    # Clear previous text boxes
+    # TODO: This is a hacky way to do this, look into why its now clearing text boxes??
+    #! Doesn't work anymore to clear text
+    #while self.plot_widget.canvas.ax.texts:
+    #    del self.plot_widget.canvas.ax.texts[0]
+    
+    # Draw text
+    for t in text:
+        # Get text position
+        xPos = t.getPixelX(zoom)
+        yPos = y=t.getPixelY(zoom)
+        
+        # If negative, stick to opposite edge of canvas
+        if xPos < 0:
+            xPos = self.plot_widget.canvas.ax.get_xlim()[1] + xPos
+        if yPos < 0:
+            yPos = self.plot_widget.canvas.ax.get_ylim()[0] + yPos
+        
+        # Draw Text
+        mplText = self.plot_widget.canvas.ax.text(
+            x=xPos,
+            y=yPos,
+            s=t.getText(),
+            fontsize=t.getSize(),
+            color=t.getForegroundColor(),
+            verticalalignment=t.getAlignment()[0],
+            horizontalalignment=t.getAlignment()[1],
+            alpha=t.getAlpha()
+        )
+        # Draw background separately to avoid weird text artifacts
+        if t.getBackgroundColor() is not None:
+            mplText.set_bbox(dict(facecolor=t.getBackgroundColor(), alpha=t.getAlpha(), linewidth=0))
+
+    # For debugging marker position
+    #self.plot_widget.canvas.ax.plot(mark[1][0], mark[1][1], marker='o', markersize=3, color="red")
 
     self.plot_widget.canvas.draw()
 

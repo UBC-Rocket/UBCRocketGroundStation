@@ -60,11 +60,12 @@ class MainApp(QtWidgets.QMainWindow):
         self.SendThread = SendThread(self.connections, self.device_manager, self.command_parser)
         self.sig_send.connect(self.SendThread.queueMessage)
         self.SendThread.start()
-        
-        # Init and connection of APRSThread
-        self.APRSThread = APRSThread(self.connections, self.rocket_data)
-        self.ReadThread.sig_received.connect(self.receive_data)
-        self.APRSThread.start()
+
+        # !test_sim fails here        
+        # # Init and connection of APRSThread
+        # self.APRSThread = APRSThread(self.connections, self.rocket_data)
+        # self.ReadThread.sig_received.connect(self.receive_data)
+        # self.APRSThread.start()
 
     def close_event(self, event) -> None:
         """

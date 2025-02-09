@@ -1,18 +1,11 @@
 import os
 from collections import namedtuple
 
-import PyQt5
 import serial.tools.list_ports
-from PyQt5 import QtCore, QtWidgets, uic
+from PyQt5 import QtWidgets, uic
 
 from util.detail import BUNDLED_DATA, LOGGER
 from profiles.rocket_profile_list import ROCKET_PROFILES
-
-if hasattr(QtCore.Qt, "AA_EnableHighDpiScaling"):
-    PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
-
-if hasattr(QtCore.Qt, "AA_UseHighDpiPixmaps"):
-    PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
 
 qtCreatorFile = os.path.join(BUNDLED_DATA, "qt_files", "com_window.ui")
 
@@ -26,6 +19,7 @@ CONNECTIONS = {
     'SIM': ConnectionRequirements(com_port=False, baud_rate=False),
 }
 
+
 class ComWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self) -> None:
         """
@@ -34,7 +28,7 @@ class ComWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         QtWidgets.QMainWindow.__init__(self)
         Ui_MainWindow.__init__(self)
 
-        self.RocketProfiles = {p.rocket_name:p for p in ROCKET_PROFILES}
+        self.RocketProfiles = {p.rocket_name: p for p in ROCKET_PROFILES}
 
         self.chosen_connection = None
         self.chosen_rocket = None
@@ -67,7 +61,8 @@ class ComWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         baud_rate = int(self.baudBox.currentText())
         com_port = self.comBox.currentText()
 
-        LOGGER.debug(f"User has selected rocket={rocket}, connection={connection}, com_port={com_port}, baud_rate={baud_rate}")
+        LOGGER.debug(
+            f"User has selected rocket={rocket}, connection={connection}, com_port={com_port}, baud_rate={baud_rate}")
 
         self.chosen_rocket = self.RocketProfiles[rocket]
 

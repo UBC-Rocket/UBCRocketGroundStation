@@ -22,10 +22,6 @@ export DISPLAY=":1"
 # https://github.com/NVlabs/instant-ngp/discussions/300
 export QT_QPA_PLATFORM=offscreen
 
-# Setup JDK for OpenRocket
-sudo apt-get install -y openjdk-8-jre
-export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
-
 # Start setting up Python for GS
 sudo apt-get install -y tk-dev
 env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install -s 3.12

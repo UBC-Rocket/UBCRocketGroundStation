@@ -110,20 +110,19 @@ class RocketProfile(ABC):
 
     @abstractmethod
     def construct_serial_connection(
-            self, com_port: str, baud_rate: int
+        self, com_port: str, baud_rate: int, kiss_address: str
     ) -> Dict[str, Connection]:
         pass
 
     @abstractmethod
-    def construct_debug_connection(self) -> Dict[str, Connection]:
+    def construct_debug_connection(self, kiss_address: str) -> Dict[str, Connection]:
         pass
 
     @abstractmethod
-    def construct_sim_connection(self) -> Dict[str, Connection]:
-        # Here we can define HW Sim and all its sensors etc.
-        # without them being constructed if we aren't running SIM.
-        # This is useful as HW Sim may be multi-threaded or do something
-        # upon construction that we dont want to happen during regular flight.
+    def construct_sim_connection(self, kiss_address: str) -> Dict[str, Connection]:
+        # Here we can define HW Sim and all its sensors etc. without them being constructed if we aren't running SIM.
+        # This is useful as HW Sim may be multi-threaded or do something upon construction that we dont want to
+        # happen during regular flight.
         pass
 
     @abstractmethod

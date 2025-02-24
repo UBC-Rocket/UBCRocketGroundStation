@@ -25,11 +25,15 @@ from util.event_stats import get_event_stats_snapshot
 
 S_TO_MS = int(1e3)
 
+# command for not launching a kiss_server
+_kiss_address = 'nd'
+
+
 @pytest.fixture(scope="function")
 def sim_app(test_app, request) -> CompApp:
     profile = request.param
     try:
-        connections = profile.construct_sim_connection()
+        connections = profile.construct_sim_connection(kiss_address=_kiss_address)
     except FirmwareNotFound:
         pytest.skip("Firmware not found")
         return
@@ -55,7 +59,7 @@ def set_dummy_sensor_values(sim_app, device_type: DeviceType, sensor_type: Senso
 
 @pytest.mark.parametrize(
     "sim_app, device_type", valid_paramitrization(
-        all_profiles(excluding=['WbProfile', 'CoPilotProfile', 'HollyburnProfile']),
+        all_profiles(excluding=['WbProfile', 'CoPilotProfile', 'HollyburnProfile', 'TantalusProfile', 'BNBProfile']),
         only_flare(all_devices(excluding=[]))),
     indirect=['sim_app'])
 class TestFlare:
@@ -384,7 +388,7 @@ def test_full_flight(qtbot, sim_app, device_type):
                             DataEntryValues.STATE_MAIN_DESCENT)
 
 
-@pytest.mark.parametrize("sim_app", valid_paramitrization(all_profiles(excluding=['WbProfile', 'CoPilotProfile', 'HollyburnProfile'])),
+@pytest.mark.parametrize("sim_app", valid_paramitrization(all_profiles(excluding=['WbProfile', 'CoPilotProfile', 'HollyburnProfile', 'TantalusProfile', 'BNBProfile'])),
                          indirect=True)
 def test_clean_shutdown(qtbot, sim_app):
     assert sim_app.ReadThread.isRunning()

@@ -42,6 +42,13 @@ class DataEntryIds(Enum):
     DROGUE_IGNITER_CONTINUITY = auto()
     MAIN_IGNITER_CONTINUITY = auto()
     FILE_OPEN_SUCCESS = auto()
+    
+    # APRS Data
+    APRS_STATUS = auto()
+    APRS_LATITUDE = auto()
+    APRS_LONGITUDE = auto()
+    APRS_ALTITUDE = auto()
+    APRS_LAST_GPS_PING = auto()
 
 
 class DataEntryValues(Enum):

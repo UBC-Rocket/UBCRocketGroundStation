@@ -3,12 +3,15 @@ import sys
 import multiprocessing
 import argparse
 import matplotlib
+import platform
+import subprocess
 matplotlib.use('QT5Agg') # Ensures that the Qt5 backend is used, otherwise there might be some issues on some OSs (Mac)
 from com_window.main import ComWindow
 from PyQt5 import QtWidgets, QtCore
 from profiles.rockets.bnb import BNBProfile
 from util.self_test import SelfTest
 from util.detail import IS_PYINSTALLER, LOGGER
+from setup import get_launch_script_path
 
 if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
     QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
@@ -19,6 +22,14 @@ if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
 MIN_APP_FONT_POINT_SIZE = 8
 
 if __name__ == "__main__":
+    
+    # Launch Direwolf executable (only for windows for now)
+    if platform.system() == 'Windows':
+        if not os.path.exists(get_launch_script_path()):
+            print('Direwolf is not installed. Please run setup.py to install.')
+        else:
+            subprocess.Popen(['python', 'direwolf_launcher.py'])
+    
     # Pyinstaller fix https://stackoverflow.com/questions/32672596/pyinstaller-loads-script-multiple-times
     multiprocessing.freeze_support()
 
@@ -58,7 +69,7 @@ if __name__ == "__main__":
 
     else:
         rocket = BNBProfile()
-        connection = rocket.construct_debug_connection()
+        connection = rocket.construct_debug_connection(kiss_address='nd')
         main_window = rocket.construct_app(connection)
         test = SelfTest(main_window)
         test.start()
@@ -66,4 +77,3 @@ if __name__ == "__main__":
     main_window.show()
     return_code = app.exec_()
     sys.exit(return_code)
-

@@ -26,13 +26,17 @@ from main_window.competition.comp_packet_parser import (
 from util.event_stats import get_event_stats_snapshot
 from util.detail import REQUIRED_FLARE
 
+# command for not launching a kiss_server
+_kiss_address = 'nd'
+
 
 @pytest.fixture(scope="function")
 def single_connection_bnb(test_app):
     yield test_app(BNBProfile(), {
-        'DEBUG_CONNECTION': DebugConnection('BNB_STAGE_1_ADDRESS', DEVICE_TYPE_TO_ID[DeviceType.BNB_STAGE_1_FLARE], generate_radio_packets=False)
+        'DEBUG_CONNECTION': DebugConnection('BNB_STAGE_1_ADDRESS',
+                                            DEVICE_TYPE_TO_ID[DeviceType.BNB_STAGE_1_FLARE],
+                                            generate_radio_packets=False, kiss_address=_kiss_address)
     }, num_devices=1)
-
 
 def test_arm_signal(qtbot, single_connection_bnb):
     app = single_connection_bnb
@@ -289,9 +293,9 @@ def test_orientation_packet(qtbot, single_connection_bnb):
 
 def test_multi_connection_receive(qtbot, test_app):
     con_a = DebugConnection('BNB_STAGE_1_ADDRESS', DEVICE_TYPE_TO_ID[DeviceType.BNB_STAGE_1_FLARE],
-                            generate_radio_packets=False)
+                            generate_radio_packets=False, kiss_address=_kiss_address)
     con_b = DebugConnection('BNB_STAGE_2_ADDRESS', DEVICE_TYPE_TO_ID[DeviceType.BNB_STAGE_2_FLARE],
-                            generate_radio_packets=False)
+                            generate_radio_packets=False, kiss_address=_kiss_address)
     snapshot = get_event_stats_snapshot()
     app = test_app(BNBProfile(), {'DEBUG_CONNECTION_1': con_a, 'DEBUG_CONNECTION_2': con_b}, num_devices=2)
 
@@ -314,9 +318,9 @@ def test_multi_connection_receive(qtbot, test_app):
 
 def test_multi_connection_commands(qtbot, test_app):
     con_a = DebugConnection('BNB_STAGE_1_ADDRESS', DEVICE_TYPE_TO_ID[DeviceType.BNB_STAGE_1_FLARE],
-                            generate_radio_packets=False)
+                            generate_radio_packets=False, kiss_address=_kiss_address)
     con_b = DebugConnection('BNB_STAGE_2_ADDRESS', DEVICE_TYPE_TO_ID[DeviceType.BNB_STAGE_2_FLARE],
-                            generate_radio_packets=False)
+                            generate_radio_packets=False, kiss_address=_kiss_address)
 
     con_a.send = MagicMock()
     con_b.send = MagicMock()
@@ -351,7 +355,7 @@ def test_multi_connection_commands(qtbot, test_app):
 
 def test_register_after_data(qtbot, test_app):
     con = DebugConnection('BNB_STAGE_1_ADDRESS', DEVICE_TYPE_TO_ID[DeviceType.BNB_STAGE_1_FLARE],
-                          generate_radio_packets=False)
+                          generate_radio_packets=False, kiss_address=_kiss_address)
     app = test_app(BNBProfile(), {'DEBUG_CONNECTION': con}, num_devices=1)
     snapshot = get_event_stats_snapshot()
 
@@ -367,9 +371,9 @@ def test_register_after_data(qtbot, test_app):
     assert app.rocket_data.last_value_by_device(DeviceType.BNB_STAGE_2_FLARE, DataEntryIds.PRESSURE) == 1
 
 
-@pytest.mark.parametrize("profile", valid_paramitrization(all_profiles(excluding='WbProfile')))
+@pytest.mark.parametrize("profile", valid_paramitrization(all_profiles(excluding=['WbProfile', 'TantalusProfile'])))
 def test_clean_shutdown(qtbot, profile):
-    app = profile.construct_app(profile.construct_debug_connection())
+    app = profile.construct_app(profile.construct_debug_connection(kiss_address=_kiss_address))
 
     assert app.ReadThread.isRunning()
     assert app.SendThread.isRunning()

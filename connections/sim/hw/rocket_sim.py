@@ -232,8 +232,8 @@ def _process_simulation(
                 result_queue.put(Exception(f"Error inside JVM: {ex}"))
                 return
 
-    except Exception:
-        result_queue.put(Exception("Error starting OpenRocket"))
+    except Exception as e:
+        result_queue.put(Exception(f"Error starting OpenRocket: {e}"))
         return
 
     # JVM shut down on `while` statement exit

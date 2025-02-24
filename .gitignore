@@ -137,6 +137,9 @@ dmypy.json
 # PyCharm
 .idea/
 
+# Direwolf
+direwolf/
+
 logs/
 mapbox_cache/
 *.csv

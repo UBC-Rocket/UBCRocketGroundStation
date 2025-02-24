@@ -172,8 +172,8 @@ def main(cmd_args):
 
 
 if __name__ == '__main__':
-    if not (sys.version_info[0] == 3 and sys.version_info[1] == 12):
-        raise Exception("Python version is not 3.12")
+    if not (sys.version_info[0] == 3 and sys.version_info[1] <= 12):
+        raise Exception("Python version must be at minimum 3.12!")
 
     if _is_venv():
         raise Exception("Running in a virtual environment")
@@ -188,4 +188,3 @@ if __name__ == '__main__':
     cmd_args = parser.parse_args()
 
     main(cmd_args)
-

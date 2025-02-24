@@ -8,11 +8,14 @@ from ..connection import Connection, ConnectionMessage
 
 class SerialConnection(Connection):
 
-    def __init__(self, comPort: str, baudRate: int):
+    def __init__(self, comPort: str, baudRate: int, kiss_address: str, stage: int = 1):
         self.device = XBeeDevice(comPort, baudRate)
         self.device.set_sync_ops_timeout(5)  # 5 seconds
         self.device.open()
         self.device.add_data_received_callback(self._newData)
+        
+        self.kiss_address = kiss_address
+        self.stages = stage
 
         self.callback = None
 

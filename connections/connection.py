@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections import namedtuple
-from typing import Callable
+from typing import Callable, Optional
 
 ConnectionMessage = namedtuple('ConnectionMessage', ['device_address', 'connection', 'data'])
 
@@ -39,4 +39,13 @@ class Connection(ABC):
     @abstractmethod
     def isFloatBigEndian(self) -> bool:
         pass
-
+    
+    # Returns the KISS protocol connection address
+    @abstractmethod
+    def getKissAddress(self) -> Optional[str]:
+        pass
+    
+    # Returns the stage number of the connection
+    @abstractmethod
+    def getStage(self) -> int:
+        pass

@@ -203,26 +203,28 @@ class BNBProfile(RocketProfile):
     def expected_main_deploy_point(self):
         return None
 
-    def construct_serial_connection(self, com_port, baud_rate):
+    def construct_serial_connection(self, com_port: str, baud_rate: int, kiss_address: str):
         return {
             "XBEE_RADIO": SerialConnection(com_port, baud_rate),
         }
 
-    def construct_debug_connection(self):
+    def construct_debug_connection(self, kiss_address: str):
         return {
             "BNB_STAGE_1_CONNECTION": DebugConnection(
                 "BNB_STAGE_1_RADIO_ADDRESS",
                 DEVICE_TYPE_TO_ID[DeviceType.BNB_STAGE_1_FLARE],
-                generate_radio_packets=True
+                generate_radio_packets=True,
+                kiss_address=kiss_address
             ),
             "BNB_STAGE_2_CONNECTION": DebugConnection(
                 "BNB_STAGE_2_RADIO_ADDRESS",
                 DEVICE_TYPE_TO_ID[DeviceType.BNB_STAGE_2_FLARE],
-                generate_radio_packets=True
+                generate_radio_packets=True,
+                kiss_address=kiss_address
             ),
         }
 
-    def construct_sim_connection(self):
+    def construct_sim_connection(self, kiss_address: str):
         # Assemble HW here
         """
         Stage 1

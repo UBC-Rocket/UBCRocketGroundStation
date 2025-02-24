@@ -2,6 +2,7 @@ import random
 import struct
 import threading
 import time
+from typing import Optional
 
 import connections.debug.radio_packets as radio_packets
 from main_window.packet_parser import VERSION_ID_LEN
@@ -16,12 +17,16 @@ PACKET_INTERVAL_S = 2
 
 class DebugConnection(Connection):
 
-    def __init__(self, device_address: str, device_id: int, generate_radio_packets=True) -> None:
+    def __init__(self, device_address: str, device_id: int, stage: int = 1, generate_radio_packets: bool = True, kiss_address: str = "") -> None:
         """
 
         """
+        
+        # Set Base Class Variables
         self.device_address = device_address
         self.device_id = device_id
+        self.stage = stage
+        self.kiss_address = kiss_address
         self.start_time = time.time()
         self.lastSend = time.time()
         self.callback = None
@@ -57,7 +62,6 @@ class DebugConnection(Connection):
                 # full_arr.extend(self.event_mock_set_values())
                 # full_arr.extend(self.state_mock_set_values())
                 # full_arr.extend(self.bad_subpacket_id_mock()) # bad id, to see handling of itself and remaining data
-                full_arr.extend(self.gps_mock_random())
                 full_arr.extend(self.orientation_mock_random())
                 self.receive(full_arr)
 
@@ -79,7 +83,7 @@ class DebugConnection(Connection):
         :return:
         :rtype: bytearray
         """
-
+        
         return radio_packets.bulk_sensor(self._current_millis(),
                                          random.uniform(0, 1e6),
                                          random.uniform(0, 1e6),
@@ -174,6 +178,14 @@ class DebugConnection(Connection):
     def registerCallback(self, fn) -> None:
         with self.lock:
             self.callback = fn
+            
+    # Get the KISS server address
+    def getKissAddress(self) -> str:
+        return self.kiss_address
+    
+    # Get the Stage number
+    def getStage(self) -> int:
+        return self.stage
 
     # Send data to a specific device on this connection
     def send(self, device_address, data) -> None:

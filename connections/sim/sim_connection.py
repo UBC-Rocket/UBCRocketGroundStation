@@ -11,6 +11,7 @@ from .stream_filter import ReadFilter, WriteFilter
 from connections.sim.hw.hw_sim import HWSim
 from connections.sim.hw.xbee_module_sim import XBeeModuleSim
 from util.detail import LOGGER, LOCAL, EXECUTABLE_FILE_EXTENSION
+from typing import Callable, Optional
 
 
 class SimRxId(Enum):
@@ -44,16 +45,18 @@ ID_TO_SENSOR = {
 
 
 class SimConnection(Connection):
-    def __init__(self, executable_name: str, gs_address: str, hw_sim: HWSim):
+    def __init__(self, executable_name: str, gs_address: str, hw_sim: HWSim, stage: int = 1, kiss_address: str = ""):
         self._find_executable(executable_name)
 
+        self.kiss_address = kiss_address
         self.device_address = executable_name + '_SIM_DEVICE_ADDR'
         self.callback = None
+        self.stage = stage
 
         self.bigEndianInts = None
         self.bigEndianFloats = None
 
-        self.stdin_lock = threading.RLock() # Since SIM Thread and Send Thread / XBee Thread both send packets
+        self.stdin_lock = threading.RLock()  # Since SIM Thread and Send Thread / XBee Thread both send packets
 
         # Firmware subprocess - Closes automatically when parent (ground station) closes
         self.rocket = sp.Popen(
@@ -282,6 +285,14 @@ class SimConnection(Connection):
 
         self.executablePath = os.path.join(path, executable_name)
         self.firmwareDir = path
+
+    # Returns the KISS protocol connection address
+    def getKissAddress(self) -> Optional[str]:
+        return self.kiss_address
+
+    # Returns the stage number of the connection
+    def getStage(self) -> int:
+        return self.stage
 
 
 class FirmwareNotFound(Exception):

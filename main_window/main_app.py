@@ -12,6 +12,7 @@ from util.detail import LOGS_DIR, SESSION_ID, LOGGER
 from main_window.read_thread import ReadThread
 from main_window.rocket_data import RocketData
 from main_window.send_thread import SendThread
+from main_window.aprs_thread import APRSThread
 from main_window.device_manager import DeviceManager
 from main_window.command_parser import CommandParser
 
@@ -60,6 +61,10 @@ class MainApp(QtWidgets.QMainWindow):
         self.sig_send.connect(self.SendThread.queueMessage)
         self.SendThread.start()
 
+        # # Init and connection of APRSThread
+        self.APRSThread = APRSThread(self.connections, self.rocket_data)
+        self.APRSThread.start()
+
     def close_event(self, event) -> None:
         """
         This is called when application is closing
@@ -92,6 +97,7 @@ class MainApp(QtWidgets.QMainWindow):
         :return:
         :rtype:
         """
+        pass
 
     def send_command(self, command) -> None:
         """

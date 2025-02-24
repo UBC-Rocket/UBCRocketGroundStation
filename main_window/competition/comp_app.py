@@ -8,6 +8,7 @@ from typing import Callable, Dict
 import logging
 
 from PyQt5.QtWidgets import QAction
+from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PIL import Image
 
@@ -47,6 +48,7 @@ class CompApp(MainApp, Ui_MainWindow):
         """
         super().__init__(connections, rocket_profile)
 
+        self.cots_gps_pressed = False
         self.plot_widget = AccelWidget()
         self.map_data = map_data.MapData()
         self.im = None  # Plot im
@@ -59,7 +61,13 @@ class CompApp(MainApp, Ui_MainWindow):
         self.actionSave.triggered.connect(self.save_file)
         self.actionSave.setShortcut("Ctrl+S")
         self.actionReset.triggered.connect(self.reset_view)
+        
+        # Attach function for 'Srad GPS' action
+        self.actionSRADGPS.triggered.connect(self.set_srad_gps)
 
+        # Attach function for 'COTS GPS' action
+        self.actionCOTSGPS.triggered.connect(self.set_cots_gps)
+        
         # Hook into some of commandEdit's events
         qtHook(self.commandEdit, 'focusNextPrevChild', lambda _: False,
                override_return=True)  # Prevents tab from changing focus
@@ -280,16 +288,18 @@ class CompApp(MainApp, Ui_MainWindow):
 
         self.zoom_in_button.clicked.connect(self.slider_dec)
         self.zoom_out_button.clicked.connect(self.slider_inc)
-
+        
     def receive_data(self) -> None:
         """
         This is called when new data is available to be displayed.
         :return:
         :rtype:
         """
-
         for label in self.rocket_profile.labels:
             try:
+                if self.cots_gps_pressed:
+                    continue  # Skip updating "gps" label when SRADS GPS button is pressed
+
                 getattr(self, label.name + "Label").setText(
                     label.update(self.rocket_data)
                 )
@@ -492,6 +502,12 @@ class CompApp(MainApp, Ui_MainWindow):
         :type event:
         """
         self.MappingThread.setDesiredMapSize(event.width, event.height)
+        
+    def set_srad_gps(self):
+        self.MappingThread.setDataSource(map_data.MapDataSource.SRAD)
+    
+    def set_cots_gps(self):
+        self.MappingThread.setDataSource(map_data.MapDataSource.COTS)
 
     def set_view_device(self, viewed_devices) -> None:
         """Change view device"""

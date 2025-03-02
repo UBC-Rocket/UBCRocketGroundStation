@@ -17,7 +17,7 @@ PACKET_INTERVAL_S = 2
 
 class DebugConnection(Connection):
 
-    def __init__(self, device_address: str, device_id: int, stage: int = 1, generate_radio_packets: bool = True, kiss_address: str = "") -> None:
+    def __init__(self, device_address: str, device_id: int, stage: int = 1, generate_radio_packets: bool = True) -> None:
         """
 
         """
@@ -26,7 +26,6 @@ class DebugConnection(Connection):
         self.device_address = device_address
         self.device_id = device_id
         self.stage = stage
-        self.kiss_address = kiss_address
         self.start_time = time.time()
         self.lastSend = time.time()
         self.callback = None

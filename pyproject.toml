@@ -26,7 +26,8 @@ dependencies = [
     "wheel==0.41.2",
     "aprslib==0.7.2",
     "kiss",
-    "aprs"
+    "aprs",
+    "pynmea2"
 ]
 
 [tool.uv.sources]

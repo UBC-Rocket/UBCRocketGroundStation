@@ -90,25 +90,23 @@ class HollyburnProfile(RocketProfile):
             altitude_tolerance=50
         )
 
-    def construct_serial_connection(self, com_port: str, baud_rate: int, kiss_address: str):
+    def construct_serial_connection(self, com_port: str, baud_rate: int):
         return {
-            'XBEE_RADIO': SerialConnection(com_port, baud_rate, kiss_address),
+            'XBEE_RADIO': SerialConnection(com_port, baud_rate),
         }
 
-    def construct_debug_connection(self, kiss_address: str):
+    def construct_debug_connection(self):
         return {
             'HOLLYBURN_BODY_FLARE_CONNECTION': DebugConnection('HOLLYBURN_BODY_FLARE_RADIO_ADDRESS',
-                                                           DEVICE_TYPE_TO_ID[DeviceType.HOLLYBURN_BODY_FLARE],
-                                                           generate_radio_packets=True,
-                                                           kiss_address=kiss_address),
+                                                                DEVICE_TYPE_TO_ID[DeviceType.HOLLYBURN_BODY_FLARE],
+                                                                generate_radio_packets=True),
 
             'HOLLYBURN_NOSE_FLARE_CONNECTION': DebugConnection('HOLLYBURN_NOSE_FLARE_RADIO_ADDRESS',
-                                                           DEVICE_TYPE_TO_ID[DeviceType.HOLLYBURN_NOSE_FLARE],
-                                                           generate_radio_packets=True,
-                                                           kiss_address=kiss_address),
+                                                                DEVICE_TYPE_TO_ID[DeviceType.HOLLYBURN_NOSE_FLARE],
+                                                                generate_radio_packets=True),
         }
 
-    def construct_sim_connection(self, kiss_address: str):
+    def construct_sim_connection(self):
         # Assemble HW here
 
         '''
@@ -157,7 +155,7 @@ class HollyburnProfile(RocketProfile):
         '''
 
         return {
-            'HOLLYBURN_BODY_CONNECTION': SimConnection("Hollyburn", "0013A20041678FC0", hwsim_body, kiss_address=kiss_address),
+            'HOLLYBURN_BODY_CONNECTION': SimConnection("Hollyburn", "0013A20041678FC0", hwsim_body),
             # 'HOLLYBURN_NOSE_CONNECTION': SimConnection("Hollyburn", "0013A20041678FC0", hwsim_nose),
         }
 

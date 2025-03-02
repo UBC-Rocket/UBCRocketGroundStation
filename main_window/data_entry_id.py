@@ -50,6 +50,12 @@ class DataEntryIds(Enum):
     APRS_ALTITUDE = auto()
     APRS_LAST_GPS_PING = auto()
 
+    # NMEA Data
+    NMEA_STATUS = auto()
+    NMEA_LATITUDE = auto()
+    NMEA_LONGITUDE = auto()
+    NMEA_ALTITUDE = auto()
+    NMEA_LAST_GPS_PING = auto()
 
 class DataEntryValues(Enum):
     STATUS_NOMINAL = auto()

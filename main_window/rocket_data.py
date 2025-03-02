@@ -33,7 +33,7 @@ class RocketData:
         # Map: Key -> time-indexed list of data
         self.keyset: Dict[DataEntryKey, SortedDict[int, Union[int, float, str, Enum]]] = dict()
         self.last_time = 0
-        self.highest_altitude: Dict[FullAddress, float] = dict()
+        self.highest_altitude: float = 0.0
 
         self.session_name = os.path.join(LOGS_DIR, "autosave_" + SESSION_ID + ".csv")
 
@@ -104,11 +104,7 @@ class RocketData:
 
             # if there's an altitude value, update max
             if DataEntryIds.CALCULATED_ALTITUDE in incoming_data:
-                if full_address in self.highest_altitude:
-                    self.highest_altitude[full_address] = max(self.highest_altitude[full_address],
-                                                              incoming_data[DataEntryIds.CALCULATED_ALTITUDE])
-                else:
-                    self.highest_altitude[full_address] = incoming_data[DataEntryIds.CALCULATED_ALTITUDE]
+                self.highest_altitude = max(self.highest_altitude, incoming_data[DataEntryIds.CALCULATED_ALTITUDE])
 
             # write the data
             for data_id in incoming_data:
@@ -221,10 +217,7 @@ class RocketData:
             if full_address is None:
                 return None
 
-            if full_address in self.highest_altitude:
-                return self.highest_altitude[full_address]
-
-            return None
+            return self.highest_altitude
 
     # TODO Missing unit test
     def save(self, csv_path):

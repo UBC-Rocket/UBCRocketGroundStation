@@ -12,7 +12,7 @@ from util.detail import LOGS_DIR, SESSION_ID, LOGGER
 from main_window.read_thread import ReadThread
 from main_window.rocket_data import RocketData
 from main_window.send_thread import SendThread
-from main_window.aprs_thread import APRSThread
+from main_window.nmea_thread import NMEAThread
 from main_window.device_manager import DeviceManager, FullAddress
 from main_window.command_parser import CommandParser
 
@@ -80,9 +80,10 @@ class MainApp(QtWidgets.QMainWindow):
         self.sig_send.connect(self.SendThread.queueMessage)
         self.SendThread.start()
 
-        # # Init and connection of APRSThread
-        self.APRSThread = APRSThread(self.connections, self.rocket_data)
-        self.APRSThread.start()
+        # Init and connection of NMEAThread
+        # TODO: Fix 2nd parameter with serial port -- how to get that shit here?
+        self.NMEAThread = NMEAThread(self.rocket_data, None, 9600)
+        self.NMEAThread.start()
 
     def close_event(self, event) -> None:
         """

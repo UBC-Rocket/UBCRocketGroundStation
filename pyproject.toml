@@ -25,7 +25,8 @@ dependencies = [
     "aprslib==0.7.2",
     "kiss",
     "aprs",
-    "orhelper"
+    "orhelper",
+    "pynmea2"
 ]
 
 [tool.uv.sources]

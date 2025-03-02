@@ -8,9 +8,8 @@ from ..connection import Connection, ConnectionMessage
 
 class SerialConnection(Connection):
 
-    def __init__(self, comPort: str, baudRate: int, kiss_address: str, stage: int = 1):
+    def __init__(self, comPort: str, baudRate: int, stage: int = 1):
         self.device = serial.Serial(comPort, baudRate, timeout=1)
-        self.kiss_address = kiss_address
         self.stage = stage
         self.callback = None
         self.running = True

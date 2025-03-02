@@ -713,6 +713,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pynmea2"
+version = "1.19.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/c0/d7/5d0e36d00cd8aa19a6e717bcd1216ca805d86865501dfebdd18667c9edbd/pynmea2-1.19.0.tar.gz", hash = "sha256:1daa79b93279f887d1c235e5cc5c79e32644564138ce46989ab0f4a2fc970d7c", size = 36240 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/75/24/1f575eb17a8135e54b3c243ff87e2f4d6b2389942836021d0628ed837559/pynmea2-1.19.0-py3-none-any.whl", hash = "sha256:5138558b4fb5daa587b2c17de99eb43df0297039de1c98010c996624abfb00eb", size = 30016 },
+]
+
+[[package]]
 name = "pyparsing"
 version = "3.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -927,6 +936,7 @@ dependencies = [
     { name = "pillow" },
     { name = "pyinstaller" },
     { name = "pylint" },
+    { name = "pynmea2" },
     { name = "pyqt5" },
     { name = "pyqt5-qt5", version = "5.15.2", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'win32'" },
     { name = "pyqt5-qt5", version = "5.15.15", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'win32'" },
@@ -952,6 +962,7 @@ requires-dist = [
     { name = "pillow", specifier = "==10.4.0" },
     { name = "pyinstaller", specifier = "==6.10" },
     { name = "pylint", specifier = "==3.3.1" },
+    { name = "pynmea2" },
     { name = "pyqt5", specifier = "==5.15.11" },
     { name = "pyqt5-qt5", marker = "sys_platform != 'win32'", specifier = "==5.15.15" },
     { name = "pyqt5-qt5", marker = "sys_platform == 'win32'", specifier = "==5.15.2" },

@@ -90,18 +90,17 @@ class CoPilotProfile(RocketProfile):
     def expected_main_deploy_point(self):
         return None
 
-    def construct_serial_connection(self, com_port: str, baud_rate: int, kiss_address: str):
+    def construct_serial_connection(self, com_port: str, baud_rate: int):
         return None
 
-    def construct_debug_connection(self, kiss_address: str):
+    def construct_debug_connection(self):
         return {
             'CO_PILOT_CONNECTION': DebugConnection('CO_PILOT_RADIO_ADDRESS',
                                                    DEVICE_TYPE_TO_ID[DeviceType.CO_PILOT_FLARE],
-                                                   generate_radio_packets=True,
-                                                   kiss_address=kiss_address),
+                                                   generate_radio_packets=True),
         }
 
-    def construct_sim_connection(self, kiss_address: str):
+    def construct_sim_connection(self):
         return None
 
     def construct_app(self, connections):

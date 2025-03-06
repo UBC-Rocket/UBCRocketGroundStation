@@ -15,6 +15,8 @@ from . import mapbox_utils
 from .map_data import MapData, MapDataValue, MapDataSource
 from util.detail import LOGGER
 
+from typing import Tuple
+
 # Scaling is linear so a scale factor of 1 means no scaling (aka 1*x=x)
 SCALE_FACTOR_NO_SCALE = 1
 
@@ -50,7 +52,7 @@ class MappingThread(QtCore.QThread):
         self.devices = rocket_profile.mapping_devices #List of mappable devices
         self.viewed_devices = self.devices #List of devices currently being viewed
 
-        self._desiredMapSize: tuple(int, int) = None  # Lock in cv is used to protect this
+        self._desiredMapSize: Tuple[int, int] = None  # Lock in cv is used to protect this
         self.map_zoom = 1
         self._is_shutting_down = False  # Lock in cv is used to protect this
 
@@ -231,7 +233,7 @@ class MappingThread(QtCore.QThread):
             )
         elif self.data_source == MapDataSource.COTS:
             ds = mapbox_utils.AbsoluteText(
-                x=10, y=10, text="COTS (APRS)", 
+                x=10, y=10, text="COTS (NMEA)", 
                 size=18, foreground_color="green", background_color="white",
                 alignment=("top", "left"), alpha=0.7
             )
@@ -292,7 +294,7 @@ class MappingThread(QtCore.QThread):
                 latitudes = dict()
                 longitudes = dict()
 
-                # Determine if we should draw APRS or SRAD
+                # Determine if we should draw NMEA or SRAD
                 if self.data_source == MapDataSource.SRAD:
                     for device in self.viewed_devices:
                         latitude = self.rocket_data.last_value_by_device(device, DataEntryIds.LATITUDE)
@@ -301,8 +303,8 @@ class MappingThread(QtCore.QThread):
                             latitudes[device], longitudes[device] = latitude, longitude
                 elif self.data_source == MapDataSource.COTS:
                     for device in self.viewed_devices:
-                        latitude = self.rocket_data.last_value_by_device(device, DataEntryIds.APRS_LATITUDE)
-                        longitude = self.rocket_data.last_value_by_device(device, DataEntryIds.APRS_LONGITUDE)
+                        latitude = self.rocket_data.last_value_by_device(device, DataEntryIds.NMEA_LATITUDE)
+                        longitude = self.rocket_data.last_value_by_device(device, DataEntryIds.NMEA_LONGITUDE)
                         if latitude and longitude: #plot on map if data not None
                             latitudes[device], longitudes[device] = latitude, longitude
                 else:

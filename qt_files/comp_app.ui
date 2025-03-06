@@ -77,7 +77,7 @@
     </widget>
     <addaction name="menuSave"/>
     <addaction name="menuView"/>
-    <action name="actionSRADGPS" checkable="true">
+    <action name="actionSRADGPS">
         <property name="text">
             <string>Show SRAD GPS</string>
         </property>
@@ -85,7 +85,7 @@
             <string>Display SRAD (Student Researched and Developed) GPS coordinates on the live map.</string>
         </property>
     </action>
-    <action name="actionCOTSGPS" checkable="true">
+    <action name="actionCOTSGPS">
         <property name="text">
             <string>Show COTS GPS</string>
         </property>

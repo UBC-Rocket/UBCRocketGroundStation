@@ -18,7 +18,7 @@ def receive_map(self, longitude: float = None, latitude: float = None) -> None:
             c.remove()
 
     zoom, radius, map_image, mark, text = self.map_data.get_map_value()
-
+    
     # plotMap UI modification
     self.plot_widget.canvas.ax.set_axis_off()
     # self.plot_widget.canvas.ax.set_ylim(map_image.shape[0], 0)
@@ -47,15 +47,15 @@ def receive_map(self, longitude: float = None, latitude: float = None) -> None:
             
     # Clear previous text boxes
     # TODO: This is a hacky way to do this, look into why its now clearing text boxes??
-    #! Doesn't work anymore to clear text
-    #while self.plot_widget.canvas.ax.texts:
-    #    del self.plot_widget.canvas.ax.texts[0]
+
+    for ax_text in self.plot_widget.canvas.ax.texts[:]:
+       ax_text.remove()
     
     # Draw text
     for t in text:
         # Get text position
         xPos = t.getPixelX(zoom)
-        yPos = y=t.getPixelY(zoom)
+        yPos = t.getPixelY(zoom)
         
         # If negative, stick to opposite edge of canvas
         if xPos < 0:

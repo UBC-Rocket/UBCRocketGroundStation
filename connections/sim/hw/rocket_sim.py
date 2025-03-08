@@ -215,16 +215,23 @@ def _process_simulation(
                 # Configure
                 sim.getOptions().setRandomSeed(seed)
                 opts = sim.getOptions()
-                opts.setGeodeticComputation(orh.openrocket.util.GeodeticComputationStrategy.FLAT)
+                opts.setGeodeticComputation(orh.openrocket_core.util.GeodeticComputationStrategy.FLAT)
 
                 # Setup drogue
-                _setup_recovery_device(orh, opts, drogue_component_name, drogue_deployment_time)
+                _setup_recovery_device(orh, sim, drogue_component_name, drogue_deployment_time)
 
                 # Setup main
-                _setup_recovery_device(orh, opts, main_component_name, main_deployment_time)
+                _setup_recovery_device(orh, sim, main_component_name, main_deployment_time)
 
                 orh.run_simulation(sim)
-                data = orh.get_timeseries(sim, list(FlightDataType))
+
+                # Hacky fix: Remove TYPE_MASS_PROPELLANT from FlightDataType, OpenRocket-24.12.beta.01 does not have this
+                # orhelper 0.1.4 still includes this
+                variables = list(FlightDataType)
+                if FlightDataType.TYPE_PROPELLANT_MASS in variables:
+                  variables.remove(FlightDataType.TYPE_PROPELLANT_MASS)
+
+                data = orh.get_timeseries(sim, variables)
 
                 events = orh.get_events(sim)
 
@@ -239,22 +246,22 @@ def _process_simulation(
     # JVM shut down on `while` statement exit
     result_queue.put((data, events))
 
-def _setup_recovery_device(orh, opts, component_name, time):
+def _setup_recovery_device(orh, sim, component_name, time):
 
-    rocket = opts.getRocket()
-    id = rocket.getDefaultConfiguration().getFlightConfigurationID()
+    rocket = sim.getRocket()
+    id = rocket.getSelectedConfiguration().getFlightConfigurationID()
     try:
         parachute = orh.get_component_named(rocket, component_name)
     except ValueError:
         if time is not None:
             raise
     else:
-        configuration = parachute.getDeploymentConfiguration().get(id).clone()
+        configuration = parachute.getDeploymentConfigurations().get(id).clone()
         if time is None:
-            configuration.setDeployEvent(orh.openrocket.rocketcomponent.DeploymentConfiguration.DeployEvent.NEVER)
+            configuration.setDeployEvent(orh.openrocket_core.rocketcomponent.DeploymentConfiguration.DeployEvent.NEVER)
         else:
-            configuration.setDeployEvent(orh.openrocket.rocketcomponent.DeploymentConfiguration.DeployEvent.LAUNCH)
+            configuration.setDeployEvent(orh.openrocket_core.rocketcomponent.DeploymentConfiguration.DeployEvent.LAUNCH)
             configuration.setDeployDelay(time)
 
-        parachute.getDeploymentConfiguration().set(id, configuration)
-        parachute.getDeploymentConfiguration().setDefault(configuration)
+        parachute.getDeploymentConfigurations().set(id, configuration)
+        parachute.getDeploymentConfigurations().setDefault(configuration)

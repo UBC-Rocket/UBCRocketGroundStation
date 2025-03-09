@@ -577,7 +577,7 @@ wheels = [
 [[package]]
 name = "orhelper"
 version = "0.1.4"
-source = { git = "https://github.com/jasonkwok475/orhelper#198ccecb07ac7c310389aca8521ebef14f5d0ce4" }
+source = { git = "https://github.com/jasonkwok475/orhelper?rev=d809b3958deda9ad542119812f664a9e91a56c6b#d809b3958deda9ad542119812f664a9e91a56c6b" }
 dependencies = [
     { name = "jpype1" },
     { name = "numpy" },
@@ -955,7 +955,7 @@ requires-dist = [
     { name = "mapbox", specifier = "==0.18.1" },
     { name = "matplotlib", specifier = "==3.9.2" },
     { name = "numpy", specifier = "==2.1.2" },
-    { name = "orhelper", git = "https://github.com/jasonkwok475/orhelper" },
+    { name = "orhelper", git = "https://github.com/jasonkwok475/orhelper?rev=d809b3958deda9ad542119812f664a9e91a56c6b" },
     { name = "pillow", specifier = "==10.4.0" },
     { name = "pyinstaller", specifier = "==6.10" },
     { name = "pylint", specifier = "==3.3.1" },

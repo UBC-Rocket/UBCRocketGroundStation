@@ -63,8 +63,8 @@ PYINSTALLER_SEPARATOR = {
 GIT_HASH_FILE = os.path.join(LOCAL, '.git_hash')
 
 EXTERNAL_DEPENDENCIES = {
-    'https://github.com/openrocket/openrocket/releases/download/release-15.03/OpenRocket-15.03.jar':
-        os.path.join(LOCAL, 'OpenRocket-15.03.jar'),
+    'https://github.com/openrocket/openrocket/releases/download/release-24.12.beta.01/OpenRocket-24.12.beta.01.jar':
+        os.path.join(LOCAL, 'OpenRocket-24.12.beta.01.jar'),
 }
 
 def _run(executable, args):

@@ -225,13 +225,7 @@ def _process_simulation(
 
                 orh.run_simulation(sim)
 
-                # Hacky fix: Remove TYPE_MASS_PROPELLANT from FlightDataType, OpenRocket-24.12.beta.01 does not have this
-                # orhelper 0.1.4 still includes this
-                variables = list(FlightDataType)
-                if FlightDataType.TYPE_PROPELLANT_MASS in variables:
-                  variables.remove(FlightDataType.TYPE_PROPELLANT_MASS)
-
-                data = orh.get_timeseries(sim, variables)
+                data = orh.get_timeseries(sim, list(FlightDataType))
 
                 events = orh.get_events(sim)
 

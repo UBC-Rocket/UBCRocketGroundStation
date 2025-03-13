@@ -1,6 +1,7 @@
 # UBCRocketGroundStation 
 [![Build Status](https://circleci.com/gh/UBC-Rocket/UBCRocketGroundStation.svg?style=shield)](https://app.circleci.com/pipelines/github/UBC-Rocket/UBCRocketGroundStation)
 [![codecov](https://codecov.io/gh/UBC-Rocket/UBCRocketGroundStation/branch/master/graph/badge.svg?token=2IML1026UZ)](https://codecov.io/gh/UBC-Rocket/UBCRocketGroundStation)
+[![Maintainability](https://api.codeclimate.com/v1/badges/fa6dfc069ec58e43bd1b/maintainability)](https://codeclimate.com/github/UBC-Rocket/UBCRocketGroundStation/maintainability)
 
 Absolutely flawless ground station code.
 

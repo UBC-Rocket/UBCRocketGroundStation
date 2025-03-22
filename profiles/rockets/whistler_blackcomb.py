@@ -42,17 +42,19 @@ class WbProfile(RocketProfile):
     def expected_main_deploy_point(self):
         return None
 
-    def construct_serial_connection(self, com_port: str, baud_rate: int):
+    def construct_serial_connection(self, com_port: str, baud_rate: int, nmea_serial_port: str, nmea_baud_rate: int):
         return None
 
-    def construct_debug_connection(self):
+    def construct_debug_connection(self, nmea_serial_port: str, nmea_baud_rate: int):
         return {
             'TANTALUS_STAGE_1_CONNECTION': DebugConnection('TANTALUS_STAGE_1_RADIO_ADDRESS',
                                                            DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1_FLARE],
-                                                           generate_radio_packets=False)
+                                                           generate_radio_packets=False,
+                                                           nmea_serial_port=nmea_serial_port,
+                                                           nmea_baud_rate=nmea_baud_rate)
         }
 
-    def construct_sim_connection(self):
+    def construct_sim_connection(self, nmea_serial_port: str, nmea_baud_rate: int):
         return None
 
     def construct_app(self, connections):

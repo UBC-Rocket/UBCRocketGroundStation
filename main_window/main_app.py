@@ -80,9 +80,7 @@ class MainApp(QtWidgets.QMainWindow):
         self.sig_send.connect(self.SendThread.queueMessage)
         self.SendThread.start()
 
-        # Init and connection of NMEAThread
-        # TODO: Fix 2nd parameter with serial port -- how to get that shit here?
-        self.NMEAThread = NMEAThread(self.rocket_data, None, 9600)
+        self.NMEAThread = NMEAThread(self.connections, self.rocket_data)
         self.NMEAThread.start()
 
     def close_event(self, event) -> None:

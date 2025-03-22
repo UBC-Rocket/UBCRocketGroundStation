@@ -8,9 +8,12 @@ from ..connection import Connection, ConnectionMessage
 
 class SerialConnection(Connection):
 
-    def __init__(self, comPort: str, baudRate: int, stage: int = 1):
+    def __init__(self, comPort: str, baudRate: int, stage: int = 1, nmea_serial_port: str = "", nmea_baud_rate: int = 9600):
         self.device = serial.Serial(comPort, baudRate, timeout=1)
         self.stage = stage
+        self.nmea_serial_port = nmea_serial_port
+        self.nmea_baud_rate = nmea_baud_rate
+
         self.callback = None
         self.running = True
         self.buffer = bytearray()

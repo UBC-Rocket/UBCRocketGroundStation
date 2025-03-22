@@ -45,12 +45,15 @@ ID_TO_SENSOR = {
 
 
 class SimConnection(Connection):
-    def __init__(self, executable_name: str, gs_address: str, hw_sim: HWSim, stage: int = 1):
+    def __init__(self, executable_name: str, gs_address: str, hw_sim: HWSim, stage: int = 1, nmea_serial_port: str = "", nmea_baud_rate: int = 9600):
         self._find_executable(executable_name)
 
         self.device_address = executable_name + '_SIM_DEVICE_ADDR'
         self.callback = None
         self.stage = stage
+
+        self.nmea_serial_port = nmea_serial_port
+        self.nmea_baud_rate = nmea_baud_rate
 
         self.bigEndianInts = None
         self.bigEndianFloats = None
@@ -295,6 +298,12 @@ class SimConnection(Connection):
     # Returns the stage number of the connection
     def getStage(self) -> int:
         return self.stage
+    
+    def getNMEASerialPort(self) -> str:
+        return self.nmea_serial_port
+
+    def getNMEABaudRate(self) -> int:
+        return self.nmea_baud_rate
 
 
 class FirmwareNotFound(Exception):

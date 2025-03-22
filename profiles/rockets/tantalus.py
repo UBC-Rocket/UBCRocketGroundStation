@@ -84,25 +84,29 @@ class TantalusProfile(RocketProfile):
     def expected_main_deploy_point(self):
         return None
 
-    def construct_serial_connection(self, com_port: str, baud_rate: int):
+    def construct_serial_connection(self, com_port: str, baud_rate: int, nmea_serial_port: str, nmea_baud_rate: int):
         return {
             'XBEE_RADIO': SerialConnection(com_port, baud_rate),
         }
 
-    def construct_debug_connection(self):
+    def construct_debug_connection(self, nmea_serial_port: str, nmea_baud_rate: int):
         return {
             'TANTALUS_STAGE_1_CONNECTION': DebugConnection('TANTALUS_STAGE_1_RADIO_ADDRESS',
                                                            DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1_FLARE],
                                                            stage=1,
-                                                           generate_radio_packets=True),
+                                                           generate_radio_packets=True,
+                                                           nmea_serial_port=nmea_serial_port,
+                                                           nmea_baud_rate=nmea_baud_rate),
 
             'TANTALUS_STAGE_2_CONNECTION': DebugConnection('TANTALUS_STAGE_2_RADIO_ADDRESS',
                                                            DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_2_FLARE],
                                                            stage=2,
-                                                           generate_radio_packets=True),
+                                                           generate_radio_packets=True,
+                                                           nmea_serial_port=nmea_serial_port,
+                                                           nmea_baud_rate=nmea_baud_rate),
         }
 
-    def construct_sim_connection(self):
+    def construct_sim_connection(self, nmea_serial_port: str, nmea_baud_rate: int):
         # Assemble HW here
 
         '''

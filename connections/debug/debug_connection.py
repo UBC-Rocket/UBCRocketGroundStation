@@ -17,7 +17,7 @@ PACKET_INTERVAL_S = 2
 
 class DebugConnection(Connection):
 
-    def __init__(self, device_address: str, device_id: int, stage: int = 1, generate_radio_packets: bool = True) -> None:
+    def __init__(self, device_address: str, device_id: int, stage: int = 1, generate_radio_packets: bool = True, nmea_serial_port: str = "", nmea_baud_rate: int = 9600) -> None:
         """
 
         """
@@ -26,6 +26,8 @@ class DebugConnection(Connection):
         self.device_address = device_address
         self.device_id = device_id
         self.stage = stage
+        self.nmea_serial_port = nmea_serial_port
+        self.nmea_baud_rate = nmea_baud_rate
         self.start_time = time.time()
         self.lastSend = time.time()
         self.callback = None
@@ -190,6 +192,12 @@ class DebugConnection(Connection):
     # Get the Stage number
     def getStage(self) -> int:
         return self.stage
+    
+    def getNMEASerialPort(self) -> str:
+        return self.nmea_serial_port
+
+    def getNMEABaudRate(self) -> int:
+        return self.nmea_baud_rate
 
     # Send data to a specific device on this connection
     def send(self, device_address, data) -> None:

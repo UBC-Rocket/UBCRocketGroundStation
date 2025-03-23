@@ -118,7 +118,7 @@ class SilvertipProfile(RocketProfile):
         ]
 
         hw_sim_ignitors = [
-            Ignitor(IgnitorType.MAIN, 33, 33, 20, action_fn=rocket_sim.deploy_main),
+            Ignitor(IgnitorType.MAIN, 33, 33, 14, action_fn=rocket_sim.deploy_main),
             Ignitor(IgnitorType.DROGUE, 33, 33, 15, action_fn=rocket_sim.deploy_drogue),
         ]
 

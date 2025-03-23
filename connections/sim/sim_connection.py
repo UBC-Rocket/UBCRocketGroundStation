@@ -299,11 +299,11 @@ class SimConnection(Connection):
     def getStage(self) -> int:
         return self.stage
     
-    # def getNMEASerialPort(self) -> Optional[str]:
-    #     return self.nmea_serial_port
+    def getNMEASerialPort(self) -> Optional[str]:
+        return ""
 
-    # def getNMEABaudRate(self) -> Optional[int]:
-    #     return self.nmea_baud_rate
+    def getNMEABaudRate(self) -> Optional[int]:
+        return 0
 
 
 class FirmwareNotFound(Exception):

@@ -32,17 +32,17 @@ S_TO_MS = int(1e3)
 _nmea_serial_port = None
 _nmea_baud_rate = 9600
 
-ports = comports()
+# ports = comports()
 
-for port in ports:
-    try:
-        p = serial.Serial(port.device)
-        p.close()
-        _nmea_serial_port = port.device
-        LOGGER.debug(f"Selected NMEA serial port: {_nmea_serial_port}")
-        break
-    except (OSError, serial.SerialException):
-        pass
+# for port in ports:
+#     try:
+#         p = serial.Serial(port.device)
+#         p.close()
+#         _nmea_serial_port = port.device
+#         LOGGER.debug(f"Selected NMEA serial port: {_nmea_serial_port}")
+#         break
+#     except (OSError, serial.SerialException):
+#         pass
 
 @pytest.fixture(scope="function")
 def sim_app(test_app, request) -> CompApp:

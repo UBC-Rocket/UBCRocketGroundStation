@@ -95,7 +95,7 @@ class ComWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         text = self.typeBox.currentText()
         requirements = CONNECTIONS[text]
 
-        self.baudBox.setEnabled(requirements.baud_rate)
         self.comBox.setEnabled(requirements.com_port)
+        self.baudBox.setEnabled(requirements.baud_rate)
         self.nmeaSerial.setEnabled(requirements.nmea_serial_port)
         self.nmeaBaud.setEnabled(requirements.nmea_baud_rate)

@@ -6,6 +6,7 @@ from ..label import (
     update_max_altitude,
     update_pressure,
     update_state,
+    update_nmea
 )
 
 from ..mpl_funcs import receive_map
@@ -53,6 +54,7 @@ class TantalusProfile(RocketProfile):
             Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Pressure", update_pressure),
             Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Acceleration", update_acceleration),
             Label(DeviceType.TANTALUS_STAGE_2_FLARE, "Stage2State", update_state, "Stage 2 State"),
+            Label(DeviceType.TANTALUS_STAGE_2_FLARE, "DEBUG_NMEA_STATE", update_nmea, "DEBUG NMEA STATE"),
         ]
 
     @property

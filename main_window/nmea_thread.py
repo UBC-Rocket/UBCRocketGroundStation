@@ -15,8 +15,6 @@ import pynmea2
 import io
 import serial
 
-import random
-
 CONNECTION_MESSAGE_READ_EVENT = Event('connection_message_read')
 
 class NMEAThread(QtCore.QThread):
@@ -86,9 +84,6 @@ class NMEAThread(QtCore.QThread):
             self.new_gps_coordinate(NMEAGpsStatus.GPS_INVALID, None, None, None)
             
     def new_gps_coordinate(self, status: NMEAGpsStatus, latitude: float, longitude: float, altitude: float):
-        '''
-        reupdate for ui
-        '''
         stage: int = 1
 
         if status == NMEAGpsStatus.GPS_INVALID:

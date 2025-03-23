@@ -300,10 +300,10 @@ class SimConnection(Connection):
         return self.stage
     
     def getNMEASerialPort(self) -> Optional[str]:
-        return ""
+        return None
 
     def getNMEABaudRate(self) -> Optional[int]:
-        return 0
+        return 9600
 
 
 class FirmwareNotFound(Exception):

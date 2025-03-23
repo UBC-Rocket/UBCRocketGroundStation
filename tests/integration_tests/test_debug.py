@@ -26,8 +26,6 @@ from main_window.competition.comp_packet_parser import (
 from util.event_stats import get_event_stats_snapshot
 from util.detail import REQUIRED_FLARE
 
-from util.detail import LOGGER
-
 _nmea_serial_port = None
 _nmea_baud_rate = 9600
 

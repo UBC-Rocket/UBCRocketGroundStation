@@ -102,7 +102,7 @@ class CoPilotProfile(RocketProfile):
                                                    nmea_baud_rate=nmea_baud_rate),
         }
 
-    def construct_sim_connection(self, nmea_serial_port: str, nmea_baud_rate: int):
+    def construct_sim_connection(self):
         return None
 
     def construct_app(self, connections):

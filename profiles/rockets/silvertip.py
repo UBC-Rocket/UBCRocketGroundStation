@@ -104,7 +104,7 @@ class SilvertipProfile(RocketProfile):
                                                            nmea_baud_rate=nmea_baud_rate),
         }
 
-    def construct_sim_connection(sel, nmea_serial_port: str, nmea_baud_rate: int):
+    def construct_sim_connection(sel):
         # Assemble HW here
 
         rocket_sim = RocketSim('Silvertip-01-05-2022.ork')
@@ -126,7 +126,7 @@ class SilvertipProfile(RocketProfile):
         hwsim = HWSim(rocket_sim, hw_sim_sensors, hw_sim_ignitors)
 
         return {
-            'SILVERTIP_CONNECTION': SimConnection("Silvertip", "0013A20041678FC0", hwsim, nmea_serial_port, nmea_baud_rate),
+            'SILVERTIP_CONNECTION': SimConnection("Silvertip", "0013A20041678FC0", hwsim),
         }
 
     def construct_app(self, connections):

@@ -82,7 +82,7 @@ class ComWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         elif connection == 'Debug':
             self.chosen_connection = self.chosen_rocket.construct_debug_connection(nmea_serial, nmea_baud_rate)
         elif connection == 'SIM':
-            self.chosen_connection = self.chosen_rocket.construct_sim_connection()
+            self.chosen_connection = self.chosen_rocket.construct_sim_connection(nmea_serial, nmea_baud_rate)
         else:
             raise Exception("Unknown connection")
 

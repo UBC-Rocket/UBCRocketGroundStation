@@ -56,10 +56,10 @@ mkdir test_reports
 mkdir test_coverage
 
 # Unit
-# coverage run --omit '.venv/*' -m pytest --durations=0 --junitxml=test_reports/unit-test-results.xml --ignore=tests/integration_tests tests
-# coverage report --omit '.venv/*'
-# coverage xml -o test_coverage/unit-test-coverage.xml
-# head test_coverage/unit-test-coverage.xml
+coverage run --omit '.venv/*' -m pytest --durations=0 --junitxml=test_reports/unit-test-results.xml --ignore=tests/integration_tests tests
+coverage report --omit '.venv/*'
+coverage xml -o test_coverage/unit-test-coverage.xml
+head test_coverage/unit-test-coverage.xml
 
 # Integration
 coverage run --omit '.venv/*' -m pytest --durations=0 --junitxml=test_reports/integ-test-results.xml tests/integration_tests

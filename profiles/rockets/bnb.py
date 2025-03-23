@@ -275,8 +275,8 @@ class BNBProfile(RocketProfile):
                               hw_sim_ignitors_stage_2)
 
         return {
-            'BNB_STAGE_1_CONNECTION': SimConnection("BNBStage1", "0013A20041678FC0", hwsim_stage_1),
-            'BNB_STAGE_2_CONNECTION': SimConnection("BNBStage2", "0013A20041678FC0", hwsim_stage_2),
+            'BNB_STAGE_1_CONNECTION': SimConnection("BNBStage1", "0013A20041678FC0", hwsim_stage_1, nmea_serial_port, nmea_baud_rate),
+            'BNB_STAGE_2_CONNECTION': SimConnection("BNBStage2", "0013A20041678FC0", hwsim_stage_2, nmea_serial_port, nmea_baud_rate),
         }
 
     def construct_app(self, connections):

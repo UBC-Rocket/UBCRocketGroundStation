@@ -26,9 +26,25 @@ from main_window.competition.comp_packet_parser import (
 from util.event_stats import get_event_stats_snapshot
 from util.detail import REQUIRED_FLARE
 
-# update this with a script to get a random com for windows or mac or linux so the tests app on each, works rn for macos
-_nmea_serial_port = "/dev/tty.Bluetooth-Incoming-Port"
+from util.detail import LOGGER
+
+import serial
+from serial.tools.list_ports import comports
+
+_nmea_serial_port = None
 _nmea_baud_rate = 9600
+
+ports = comports()
+
+for port in ports:
+    try:
+        p = serial.Serial(port.device)
+        p.close()
+        _nmea_serial_port = port.device
+        LOGGER.debug(f"Selected NMEA serial port: {_nmea_serial_port}")
+        break
+    except (OSError, serial.SerialException):
+        pass
 
 @pytest.fixture(scope="function")
 def single_connection_bnb(test_app):

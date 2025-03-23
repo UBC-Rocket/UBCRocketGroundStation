@@ -22,18 +22,33 @@ from main_window.packet_parser import (
 )
 
 from util.event_stats import get_event_stats_snapshot
+from util.detail import LOGGER
+
+import serial
+from serial.tools.list_ports import comports
 
 S_TO_MS = int(1e3)
 
-# command for not launching a kiss_server
-_kiss_address = 'nd'
+_nmea_serial_port = None
+_nmea_baud_rate = 9600
 
+ports = comports()
+
+for port in ports:
+    try:
+        p = serial.Serial(port.device)
+        p.close()
+        _nmea_serial_port = port.device
+        LOGGER.debug(f"Selected NMEA serial port: {_nmea_serial_port}")
+        break
+    except (OSError, serial.SerialException):
+        pass
 
 @pytest.fixture(scope="function")
 def sim_app(test_app, request) -> CompApp:
     profile = request.param
     try:
-        connections = profile.construct_sim_connection(kiss_address=_kiss_address)
+        connections = profile.construct_sim_connection(nmea_serial_port=_nmea_serial_port, nmea_baud_rate=_nmea_baud_rate)
     except FirmwareNotFound:
         pytest.skip("Firmware not found")
         return

@@ -110,7 +110,7 @@ class HollyburnProfile(RocketProfile):
                                                                 nmea_baud_rate=nmea_baud_rate),
         }
 
-    def construct_sim_connection(self):
+    def construct_sim_connection(self, nmea_serial_port: str, nmea_baud_rate: int):
         # Assemble HW here
 
         '''
@@ -159,7 +159,7 @@ class HollyburnProfile(RocketProfile):
         '''
 
         return {
-            'HOLLYBURN_BODY_CONNECTION': SimConnection("Hollyburn", "0013A20041678FC0", hwsim_body),
+            'HOLLYBURN_BODY_CONNECTION': SimConnection("Hollyburn", "0013A20041678FC0", hwsim_body, nmea_serial_port=nmea_serial_port, nmea_baud_rate=nmea_baud_rate),
             # 'HOLLYBURN_NOSE_CONNECTION': SimConnection("Hollyburn", "0013A20041678FC0", hwsim_nose),
         }
 

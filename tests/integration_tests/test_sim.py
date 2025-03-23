@@ -25,11 +25,14 @@ from util.event_stats import get_event_stats_snapshot
 
 S_TO_MS = int(1e3)
 
+_nmea_serial_port = None
+_nmea_baud_rate = 9600
+
 @pytest.fixture(scope="function")
 def sim_app(test_app, request) -> CompApp:
     profile = request.param
     try:
-        connections = profile.construct_sim_connection()
+        connections = profile.construct_sim_connection(_nmea_serial_port, _nmea_baud_rate)
     except FirmwareNotFound:
         pytest.skip("Firmware not found")
         return

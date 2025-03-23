@@ -108,7 +108,7 @@ class TantalusProfile(RocketProfile):
                                                            nmea_baud_rate=nmea_baud_rate),
         }
 
-    def construct_sim_connection(self):
+    def construct_sim_connection(self, nmea_serial_port: str, nmea_baud_rate: int):
         # Assemble HW here
 
         '''
@@ -154,8 +154,8 @@ class TantalusProfile(RocketProfile):
         hwsim_stage_2 = HWSim(rocket_sim_stage_2, hw_sim_sensors_stage_2, hw_sim_ignitors_stage_2)
 
         return {
-            'TANTALUS_STAGE_1_CONNECTION': SimConnection("TantalusStage1", "0013A20041678FC0", hwsim_stage_1, stage=1),
-            'TANTALUS_STAGE_2_CONNECTION': SimConnection("TantalusStage2", "0013A20041678FC0", hwsim_stage_2, stage=2),
+            'TANTALUS_STAGE_1_CONNECTION': SimConnection("TantalusStage1", "0013A20041678FC0", hwsim_stage_1, stage=1, nmea_serial_port=nmea_serial_port, nmea_baud_rate=nmea_baud_rate),
+            'TANTALUS_STAGE_2_CONNECTION': SimConnection("TantalusStage2", "0013A20041678FC0", hwsim_stage_2, stage=2, nmea_serial_port=nmea_serial_port, nmea_baud_rate=nmea_baud_rate),
         }
 
     def construct_app(self, connections):

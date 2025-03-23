@@ -54,7 +54,7 @@ class WbProfile(RocketProfile):
                                                            nmea_baud_rate=nmea_baud_rate)
         }
 
-    def construct_sim_connection(self):
+    def construct_sim_connection(self, nmea_serial_port: str, nmea_baud_rate: int):
         return None
 
     def construct_app(self, connections):

@@ -159,7 +159,7 @@ class HollyburnProfile(RocketProfile):
         '''
 
         return {
-            'HOLLYBURN_BODY_CONNECTION': SimConnection("Hollyburn", "0013A20041678FC0", hwsim_body, nmea_serial_port, nmea_baud_rate),
+            'HOLLYBURN_BODY_CONNECTION': SimConnection("Hollyburn", "0013A20041678FC0", hwsim_body),
             # 'HOLLYBURN_NOSE_CONNECTION': SimConnection("Hollyburn", "0013A20041678FC0", hwsim_nose),
         }
 

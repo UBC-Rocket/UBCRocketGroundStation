@@ -22,27 +22,8 @@ from main_window.packet_parser import (
 )
 
 from util.event_stats import get_event_stats_snapshot
-from util.detail import LOGGER
-
-import serial
-from serial.tools.list_ports import comports
 
 S_TO_MS = int(1e3)
-
-_nmea_serial_port = None
-_nmea_baud_rate = 9600
-
-ports = comports()
-
-for port in ports:
-    try:
-        p = serial.Serial(port.device)
-        p.close()
-        _nmea_serial_port = port.device
-        LOGGER.debug(f"Selected NMEA serial port: {_nmea_serial_port}")
-        break
-    except (OSError, serial.SerialException):
-        pass
 
 @pytest.fixture(scope="function")
 def sim_app(test_app, request) -> CompApp:

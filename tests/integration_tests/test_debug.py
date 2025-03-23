@@ -28,30 +28,16 @@ from util.detail import REQUIRED_FLARE
 
 from util.detail import LOGGER
 
-import serial
-from serial.tools.list_ports import comports
-
 _nmea_serial_port = None
 _nmea_baud_rate = 9600
-
-# ports = comports()
-
-# for port in ports:
-#     try:
-#         p = serial.Serial(port.device)
-#         p.close()
-#         _nmea_serial_port = port.device
-#         LOGGER.debug(f"Selected NMEA serial port: {_nmea_serial_port}")
-#         break
-#     except (OSError, serial.SerialException):
-#         pass
 
 @pytest.fixture(scope="function")
 def single_connection_bnb(test_app):
     yield test_app(BNBProfile(), {
         'DEBUG_CONNECTION': DebugConnection('BNB_STAGE_1_ADDRESS',
                                             DEVICE_TYPE_TO_ID[DeviceType.BNB_STAGE_1_FLARE],
-                                            generate_radio_packets=False, nmea_serial_port=_nmea_serial_port, nmea_baud_rate=_nmea_baud_rate)
+                                            generate_radio_packets=False, nmea_serial_port=_nmea_serial_port, 
+                                            nmea_baud_rate=_nmea_baud_rate)
     }, num_devices=1)
 
 def test_arm_signal(qtbot, single_connection_bnb):

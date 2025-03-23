@@ -52,17 +52,18 @@ class NMEAThread(QtCore.QThread):
         """TODO Description"""
         LOGGER.debug("NMEA thread started")
         
-        ser = serial.Serial(self.serial_port, self.baudrate, timeout=5.0)
-        sio = io.TextIOWrapper(io.BufferedRWPair(ser, ser))
-        
-        try:
-            while self.is_thread_running:
-                nmea_sentence = sio.readline()
-                if nmea_sentence.startswith("$GNRMC"):
-                    self.handle_nmea_sentence(nmea_sentence)
-
-        except serial.SerialException as e:
-            print('Failed to open serial port with error: {}'.format(e))
+        if self.serial_port and isinstance(self.serial_port, str):
+             ser = serial.Serial(self.serial_port, self.baudrate, timeout=5.0)
+             sio = io.TextIOWrapper(io.BufferedRWPair(ser, ser))
+             
+             try:
+                 while self.is_thread_running:
+                     nmea_sentence = sio.readline()
+                     if nmea_sentence.startswith("$GNRMC"):
+                         self.handle_nmea_sentence(nmea_sentence)
+ 
+             except serial.SerialException as e:
+                 print('Failed to open serial port with error: {}'.format(e))
 
         LOGGER.warning("NMEA thread shut down")
             

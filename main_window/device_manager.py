@@ -18,6 +18,7 @@ class DeviceType(Enum):
     HOLLYBURN_BODY_FLARE = auto()
     HOLLYBURN_NOSE_FLARE = auto()
     SILVERTIP_FLARE = auto()
+    SUNBURST_FLARE = auto()
 
 
 _FLARE_DEVICE_TYPES = [
@@ -27,6 +28,7 @@ _FLARE_DEVICE_TYPES = [
     DeviceType.HOLLYBURN_BODY_FLARE,
     DeviceType.HOLLYBURN_NOSE_FLARE,
     DeviceType.SILVERTIP_FLARE,
+    DeviceType.SUNBURST_FLARE,
 ]
 
 

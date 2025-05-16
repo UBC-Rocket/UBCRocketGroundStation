@@ -46,3 +46,11 @@ class SerialConnection(Connection):
 
     def isFloatBigEndian(self):
         return False
+    
+        # Get the KISS server address
+    def getKissAddress(self) -> str:
+        return self.kiss_address
+    
+    # Get the Stage number
+    def getStage(self) -> int:
+        return self.stage

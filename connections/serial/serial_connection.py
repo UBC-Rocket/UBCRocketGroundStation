@@ -113,3 +113,9 @@ class SerialConnection(Connection):
 
     def getStage(self) -> int:
         return self.stage
+
+    def getNMEASerialPort(self) -> str:
+        return self.nmea_serial_port
+
+    def getNMEABaudRate(self) -> int:
+        return self.nmea_baud_rate

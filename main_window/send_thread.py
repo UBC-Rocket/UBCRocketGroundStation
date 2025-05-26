@@ -3,7 +3,6 @@ from enum import Enum
 from threading import RLock
 from typing import Dict
 
-from digi.xbee.exception import TimeoutException
 from PyQt5 import QtCore
 
 from util.detail import LOGGER
@@ -90,7 +89,7 @@ class SendThread(QtCore.QThread):
                 LOGGER.info("Sent command!")
                 COMMAND_SENT_EVENT.increment()
 
-            except TimeoutException:  # TODO: Connection should have converted this to a generic exception for decoupling
+            except TimeoutError:  # TODO: Connection should have converted this to a generic exception for decoupling
                 LOGGER.error("Message timed-out!")
 
             except queue.Empty:

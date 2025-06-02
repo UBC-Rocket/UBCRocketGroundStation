@@ -53,7 +53,7 @@ class SerialConnection(Connection):
             packet_size = self.buffer[0]
 
             # Check if we have a complete packet
-            if len(self.buffer) < packet_size:  # +1 for the size byte
+            if len(self.buffer) < packet_size:
                 return  # Not enough data yet
 
             # Extract the packet data (excluding the size byte)
@@ -72,9 +72,8 @@ class SerialConnection(Connection):
             for byte in data:
                 print(byte, end=" ")
             print()
-            # Since we don't have XBee device addresses, use the KISS address as the device address
             message = ConnectionMessage(
-                device_address=self.kiss_address,
+                device_address=None,
                 connection=self,
                 data=data)
 

@@ -21,7 +21,6 @@ dependencies = [
     "sortedcontainers==2.4.0",
     "pyqt5-qt5==5.15.15 ; platform_system != 'Windows'",
     "pyqt5-qt5==5.15.2 ; platform_system == 'Windows'",
-    "digi-xbee",
     "wheel==0.41.2",
     "aprslib==0.7.2",
     "kiss",
@@ -30,7 +29,6 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-digi-xbee = { git = "https://github.com/digidotcom/xbee-python", rev = "1.4.1" }
 kiss = { path = "extra_dependencies/kiss-7.0.0.tar.gz" }
 aprs = { path = "extra_dependencies/aprs-7.0.0.tar.gz" }
 orhelper = { git = "https://github.com/jasonkwok475/orhelper", rev = "d809b3958deda9ad542119812f664a9e91a56c6b" }

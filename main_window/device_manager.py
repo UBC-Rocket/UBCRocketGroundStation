@@ -111,15 +111,15 @@ class DeviceManager:
             if full_address not in self._full_address_to_device:
                 return None
             return self._full_address_to_device[full_address].device_type
-        
+
     def list_full_addresses(self) -> List[FullAddress]:
         with self._lock:
             return list(self._full_address_to_device.keys())
-        
+
     def list_device_types(self) -> List[DeviceType]:
         with self._lock:
             return list(self._device_type_to_device.keys())
-        
+
     def connection_name_to_full_address(self, connection_name: str) -> FullAddress:
         with self._lock:
             for full_address in self._full_address_to_device:

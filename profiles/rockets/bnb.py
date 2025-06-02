@@ -205,7 +205,7 @@ class BNBProfile(RocketProfile):
 
     def construct_serial_connection(self, com_port: str, baud_rate: int, kiss_address: str):
         return {
-            "XBEE_RADIO": SerialConnection(com_port, baud_rate),
+            "XBEE_RADIO": SerialConnection(com_port, baud_rate, kiss_address),
         }
 
     def construct_debug_connection(self, kiss_address: str):

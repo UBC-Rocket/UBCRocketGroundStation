@@ -8,6 +8,7 @@ from .rockets.tantalus import TantalusProfile
 from .rockets.co_pilot import CoPilotProfile
 from .rockets.hollyburn import HollyburnProfile
 from .rockets.whistler_blackcomb import WbProfile
+from .rockets.sunburst import SunburstProfile
 
 ROCKET_PROFILES: List[RocketProfile] = [
     BNBProfile(),
@@ -16,4 +17,5 @@ ROCKET_PROFILES: List[RocketProfile] = [
     CoPilotProfile(),
     HollyburnProfile(),
     WbProfile(),
+    SunburstProfile(),
 ]

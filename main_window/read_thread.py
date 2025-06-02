@@ -92,12 +92,12 @@ class ReadThread(QtCore.QThread):
                     self.packet_parser.set_endianness(connection.isIntBigEndian(), connection.isFloatBigEndian())
                     parsed_data: Dict[DataEntryIds, any] = self.packet_parser.extract(byte_stream)
 
-                    if DataEntryIds.DEVICE_TYPE in parsed_data and DataEntryIds.VERSION_ID in parsed_data:
-                        self.device_manager.register_device(parsed_data[DataEntryIds.DEVICE_TYPE], parsed_data[DataEntryIds.VERSION_ID], full_address)
-                    elif DataEntryIds.DEVICE_TYPE in parsed_data:
-                        LOGGER.warning('Received DEVICE_TYPE but not VERSION_ID')
-                    elif DataEntryIds.VERSION_ID in parsed_data:
-                        LOGGER.warning('Received VERSION_ID but not DEVICE_TYPE')
+                    # if DataEntryIds.DEVICE_TYPE in parsed_data and DataEntryIds.VERSION_ID in parsed_data:
+                    #     self.device_manager.register_device(parsed_data[DataEntryIds.DEVICE_TYPE], parsed_data[DataEntryIds.VERSION_ID], full_address)
+                    # elif DataEntryIds.DEVICE_TYPE in parsed_data:
+                    #     LOGGER.warning('Received DEVICE_TYPE but not VERSION_ID')
+                    # elif DataEntryIds.VERSION_ID in parsed_data:
+                    #     LOGGER.warning('Received VERSION_ID but not DEVICE_TYPE')
 
                     self.rocket_data.add_bundle(full_address, parsed_data)
 

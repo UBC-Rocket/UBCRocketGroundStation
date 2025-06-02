@@ -13,7 +13,7 @@ from main_window.read_thread import ReadThread
 from main_window.rocket_data import RocketData
 from main_window.send_thread import SendThread
 from main_window.aprs_thread import APRSThread
-from main_window.device_manager import DeviceManager
+from main_window.device_manager import DeviceManager, FullAddress
 from main_window.command_parser import CommandParser
 
 
@@ -43,6 +43,16 @@ class MainApp(QtWidgets.QMainWindow):
         self.device_manager = DeviceManager(self.rocket_profile.expected_devices,
                                             self.rocket_profile.required_device_versions,
                                             strict_versions=False)
+        # TODO: HACK!!!!!!!!!
+        # Force register all expected devices!
+        for connection_name, connection in self.connections.items():
+            for device_name, device_version in self.rocket_profile.required_device_versions.items():
+                self.device_manager.register_device(
+                    device_name,
+                    device_version,
+                    FullAddress(connection_name, None)
+                )
+
         self.rocket_data = RocketData(self.device_manager)
         self.command_parser = CommandParser(self.device_manager)
 
@@ -53,6 +63,8 @@ class MainApp(QtWidgets.QMainWindow):
                                      self.rocket_data,
                                      packet_parser,
                                      self.device_manager)
+        # TODO: HACK
+        # Force init radio
         self.ReadThread.sig_received.connect(self.receive_data)
         self.ReadThread.start()
 

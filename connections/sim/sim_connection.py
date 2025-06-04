@@ -45,7 +45,14 @@ ID_TO_SENSOR = {
 
 
 class SimConnection(Connection):
-    def __init__(self, executable_name: str, gs_address: str, hw_sim: HWSim, nmea_serial_port: str, nmea_baud_rate: int, stage: int = 1):
+    def __init__(
+            self,
+            executable_name: str,
+            gs_address: str, hw_sim: HWSim,
+            nmea_serial_port: Optional[str] = None,
+            nmea_baud_rate: Optional[int] = None,
+            stage: int = 1
+        ):
         self._find_executable(executable_name)
 
         self.device_address = executable_name + '_SIM_DEVICE_ADDR'

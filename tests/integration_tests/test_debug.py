@@ -34,7 +34,7 @@ def single_connection_bnb(test_app):
     yield test_app(BNBProfile(), {
         'DEBUG_CONNECTION': DebugConnection('BNB_STAGE_1_ADDRESS',
                                             DEVICE_TYPE_TO_ID[DeviceType.BNB_STAGE_1_FLARE],
-                                            generate_radio_packets=False, nmea_serial_port=_nmea_serial_port, 
+                                            generate_radio_packets=False, nmea_serial_port=_nmea_serial_port,
                                             nmea_baud_rate=_nmea_baud_rate)
     }, num_devices=1)
 

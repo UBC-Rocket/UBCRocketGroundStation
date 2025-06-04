@@ -1,5 +1,7 @@
 """Profile for Silvertip"""
 
+from typing import Optional
+
 from connections.debug.debug_connection import DebugConnection
 from connections.serial.serial_connection import SerialConnection
 from connections.sim.hw.hw_sim import HWSim
@@ -90,12 +92,12 @@ class SilvertipProfile(RocketProfile):
             altitude_tolerance=50
         )
 
-    def construct_serial_connection(self, com_port: str, baud_rate: int, nmea_serial_port: str, nmea_baud_rate: int):
+    def construct_serial_connection(self, com_port: str, baud_rate: int, nmea_serial_port: Optional[str], nmea_baud_rate: Optional[int]):
         return {
-            'XBEE_RADIO': SerialConnection(com_port, baud_rate, nmea_serial_port, nmea_baud_rate),
+            'XBEE_RADIO': SerialConnection(com_port, baud_rate, nmea_serial_port=nmea_serial_port, nmea_baud_rate=nmea_baud_rate),
         }
 
-    def construct_debug_connection(self, nmea_serial_port: str, nmea_baud_rate: int):
+    def construct_debug_connection(self, nmea_serial_port: Optional[str], nmea_baud_rate: Optional[int]):
         return {
             'SILVERTIP_FLARE_CONNECTION': DebugConnection('SILVERTIP_FLARE_RADIO_ADDRESS',
                                                            DEVICE_TYPE_TO_ID[DeviceType.SILVERTIP_FLARE],
@@ -104,7 +106,7 @@ class SilvertipProfile(RocketProfile):
                                                            nmea_baud_rate=nmea_baud_rate),
         }
 
-    def construct_sim_connection(self, nmea_serial_port: str, nmea_baud_rate: int):
+    def construct_sim_connection(self, nmea_serial_port: Optional[str], nmea_baud_rate: Optional[int]):
         # Assemble HW here
 
         rocket_sim = RocketSim('Silvertip-01-05-2022.ork')

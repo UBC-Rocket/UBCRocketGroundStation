@@ -55,7 +55,7 @@ class ComWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         comlist = list(map(lambda x: x.device, serial.tools.list_ports.comports()))
         self.comBox.addItems(comlist)
 
-        self.nmeaSerial.addItems(comlist)
+        self.nmeaSerial.addItems([""] + comlist)
 
         self.resize(self.sizeHint())
         self.setFixedSize(self.size())
@@ -68,8 +68,8 @@ class ComWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         connection = self.typeBox.currentText()
         baud_rate = int(self.baudBox.currentText())
         com_port = self.comBox.currentText()
-        nmea_serial_port = self.nmeaSerial.currentText()
-        nmea_baud_rate = int(self.nmeaBaud.currentText())
+        nmea_serial_port = self.nmeaSerial.currentText() if self.nmeaSerial.currentText() != "" else None
+        nmea_baud_rate = int(self.nmeaBaud.currentText()) if self.nmeaBaud.currentText() != "" else None
 
         # Fun little known feature with f-strings. Using {var=} will print
         # the variable name as well as the value, such as `var=1`

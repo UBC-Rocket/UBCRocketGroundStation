@@ -1,5 +1,7 @@
 """Profile for Whistler Blackcomb"""
 
+from typing import Optional
+
 from connections.debug.debug_connection import DebugConnection
 from main_window.competition.comp_packet_parser import CompPacketParser
 from main_window.device_manager import DeviceType
@@ -42,10 +44,10 @@ class WbProfile(RocketProfile):
     def expected_main_deploy_point(self):
         return None
 
-    def construct_serial_connection(self, com_port: str, baud_rate: int, nmea_serial_port: str, nmea_baud_rate: int):
+    def construct_serial_connection(self, com_port: str, baud_rate: int, nmea_serial_port: Optional[str], nmea_baud_rate: Optional[int]):
         return None
 
-    def construct_debug_connection(self, nmea_serial_port: str, nmea_baud_rate: int):
+    def construct_debug_connection(self, nmea_serial_port: Optional[str], nmea_baud_rate: Optional[int]):
         return {
             'TANTALUS_STAGE_1_CONNECTION': DebugConnection('TANTALUS_STAGE_1_RADIO_ADDRESS',
                                                            DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1_FLARE],
@@ -54,7 +56,7 @@ class WbProfile(RocketProfile):
                                                            nmea_baud_rate=nmea_baud_rate)
         }
 
-    def construct_sim_connection(self, nmea_serial_port: str, nmea_baud_rate: int):
+    def construct_sim_connection(self, nmea_serial_port: Optional[str], nmea_baud_rate: Optional[int]):
         return None
 
     def construct_app(self, connections):

@@ -18,6 +18,8 @@ class SerialConnection(Connection):
         ):
         self.device = serial.Serial(comPort, baudRate, timeout=1)
         self.stage = stage
+
+        self.kiss_address = None
         self.nmea_serial_port = nmea_serial_port
         self.nmea_baud_rate = nmea_baud_rate
 

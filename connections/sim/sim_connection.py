@@ -59,6 +59,7 @@ class SimConnection(Connection):
         self.callback = None
         self.stage = stage
 
+        self.kiss_address = None
         self.nmea_serial_port = nmea_serial_port
         self.nmea_baud_rate = nmea_baud_rate
 
@@ -305,7 +306,7 @@ class SimConnection(Connection):
     # Returns the stage number of the connection
     def getStage(self) -> int:
         return self.stage
-    
+
     def getNMEASerialPort(self) -> Optional[str]:
         return self.nmea_serial_port
 

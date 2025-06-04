@@ -58,7 +58,9 @@ ID_TO_DEVICE_TYPE = {
         0x03: DeviceType.HOLLYBURN_BODY_FLARE,
         0x04: DeviceType.HOLLYBURN_NOSE_FLARE,
         0x05: DeviceType.SILVERTIP_FLARE,
-        0x06: DeviceType.SUNBURST_FLARE,
+        0x06: DeviceType.TANTALUS_STAGE_1_FLARE,
+        0x07: DeviceType.TANTALUS_STAGE_2_FLARE,
+        0x08: DeviceType.SUNBURST_FLARE,
 }
 DEVICE_TYPE_TO_ID = {y: x for (x, y) in ID_TO_DEVICE_TYPE.items()}
 

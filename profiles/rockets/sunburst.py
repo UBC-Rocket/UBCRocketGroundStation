@@ -1,5 +1,7 @@
 """Profile for Sunburst"""
 
+from typing import Optional
+
 from connections.debug.debug_connection import DebugConnection
 from connections.serial.serial_connection import SerialConnection
 from connections.sim.hw.hw_sim import HWSim
@@ -92,20 +94,21 @@ class SunburstProfile(RocketProfile):
         #     altitude_tolerance=50
         # )
 
-    def construct_serial_connection(self, com_port: str, baud_rate: int, kiss_address: str):
+    def construct_serial_connection(self, com_port: str, baud_rate: int, nmea_serial_port: Optional[str], nmea_baud_rate: Optional[int]):
         return {
-            'XBEE_RADIO': SerialConnection(com_port, baud_rate, kiss_address),
+            'XBEE_RADIO': SerialConnection(com_port, baud_rate, nmea_serial_port=nmea_serial_port, nmea_baud_rate=nmea_baud_rate),
         }
 
-    def construct_debug_connection(self, kiss_address: str):
+    def construct_debug_connection(self, nmea_serial_port: Optional[str], nmea_baud_rate: Optional[int]):
         return {
             'SUNBURST_FLARE_CONNECTION': DebugConnection('SUNBURST_FLARE_RADIO_ADDRESS',
                                                            DEVICE_TYPE_TO_ID[DeviceType.SUNBURST_FLARE],
                                                            generate_radio_packets=True,
-                                                           kiss_address=kiss_address),
+                                                           nmea_serial_port=nmea_serial_port,
+                                                           nmea_baud_rate=nmea_baud_rate),
         }
 
-    def construct_sim_connection(self,kiss_address: str ):
+    def construct_sim_connection(self, nmea_serial_port: Optional[str], nmea_baud_rate: Optional[int]):
         # Assemble HW here
 
         rocket_sim = RocketSim('Sunburst - Dec 8.ork')
@@ -127,7 +130,7 @@ class SunburstProfile(RocketProfile):
         hwsim = HWSim(rocket_sim, hw_sim_sensors, hw_sim_ignitors)
 
         return {
-            'SUNBURST_CONNECTION': SimConnection("Sunburst", "0013A20041678FC0", hwsim,kiss_address=kiss_address),
+            'SUNBURST_CONNECTION': SimConnection("Sunburst", "0013A20041678FC0", hwsim, nmea_serial_port=nmea_serial_port, nmea_baud_rate=nmea_baud_rate),
         }
 
     def construct_app(self, connections):

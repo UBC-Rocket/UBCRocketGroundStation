@@ -54,3 +54,11 @@ class Connection(ABC):
     @abstractmethod
     def getStage(self) -> int:
         pass
+
+    @abstractmethod
+    def getNMEASerialPort(self) -> Optional[str]:
+        pass
+
+    @abstractmethod
+    def getNMEABaudRate(self) -> Optional[int]:
+        pass

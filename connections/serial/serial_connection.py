@@ -8,10 +8,19 @@ from ..connection import Connection, ConnectionMessage
 
 class SerialConnection(Connection):
 
-    def __init__(self, comPort: str, baudRate: int, kiss_address: str, stage: int = 1):
+    def __init__(
+            self,
+            comPort: str,
+            baudRate: int,
+            stage: int = 1,
+            nmea_serial_port: Optional[str] = None,
+            nmea_baud_rate: Optional[int] = None
+        ):
         self.device = serial.Serial(comPort, baudRate, timeout=1)
-        self.kiss_address = kiss_address
         self.stage = stage
+        self.nmea_serial_port = nmea_serial_port
+        self.nmea_baud_rate = nmea_baud_rate
+
         self.callback = None
         self.running = True
         self.buffer = bytearray()
@@ -106,8 +115,14 @@ class SerialConnection(Connection):
     def isFloatBigEndian(self):
         return False
 
-    def getKissAddress(self) -> str:
-        return self.kiss_address
-
     def getStage(self) -> int:
         return self.stage
+
+    def getKissAddress(self) -> Optional[str]:
+        return self.kiss_address
+
+    def getNMEASerialPort(self) -> Optional[str]:
+        return self.nmea_serial_port
+
+    def getNMEABaudRate(self) -> Optional[int]:
+        return self.nmea_baud_rate

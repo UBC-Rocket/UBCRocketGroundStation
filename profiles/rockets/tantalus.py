@@ -1,3 +1,5 @@
+from typing import Optional
+
 from ..label import (
     Label,
     update_acceleration,
@@ -6,8 +8,9 @@ from ..label import (
     update_max_altitude,
     update_pressure,
     update_state,
-    update_aprs,
+    update_nmea
 )
+
 from ..mpl_funcs import receive_map
 from ..rocket_profile import RocketProfile, FlightPoint
 from connections.serial.serial_connection import SerialConnection
@@ -53,7 +56,7 @@ class TantalusProfile(RocketProfile):
             Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Pressure", update_pressure),
             Label(DeviceType.TANTALUS_STAGE_1_FLARE, "Acceleration", update_acceleration),
             Label(DeviceType.TANTALUS_STAGE_2_FLARE, "Stage2State", update_state, "Stage 2 State"),
-            Label(DeviceType.TANTALUS_STAGE_2_FLARE, "DEBUG_APRS_STATE", update_aprs, "DEBUG APRS STATE"),
+            Label(DeviceType.TANTALUS_STAGE_2_FLARE, "DEBUG_NMEA_STATE", update_nmea, "DEBUG NMEA STATE"),
         ]
 
     @property
@@ -85,27 +88,29 @@ class TantalusProfile(RocketProfile):
     def expected_main_deploy_point(self):
         return None
 
-    def construct_serial_connection(self, com_port: str, baud_rate: int, kiss_address: str):
+    def construct_serial_connection(self, com_port: str, baud_rate: int, nmea_serial_port: Optional[str], nmea_baud_rate: Optional[int]):
         return {
-            'XBEE_RADIO': SerialConnection(com_port, baud_rate, kiss_address),
+            'XBEE_RADIO': SerialConnection(com_port, baud_rate, nmea_serial_port=nmea_serial_port, nmea_baud_rate=nmea_baud_rate)
         }
 
-    def construct_debug_connection(self, kiss_address: str):
+    def construct_debug_connection(self, nmea_serial_port: Optional[str], nmea_baud_rate: Optional[int]):
         return {
             'TANTALUS_STAGE_1_CONNECTION': DebugConnection('TANTALUS_STAGE_1_RADIO_ADDRESS',
                                                            DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_1_FLARE],
                                                            stage=1,
                                                            generate_radio_packets=True,
-                                                           kiss_address=kiss_address),
+                                                           nmea_serial_port=nmea_serial_port,
+                                                           nmea_baud_rate=nmea_baud_rate),
 
             'TANTALUS_STAGE_2_CONNECTION': DebugConnection('TANTALUS_STAGE_2_RADIO_ADDRESS',
                                                            DEVICE_TYPE_TO_ID[DeviceType.TANTALUS_STAGE_2_FLARE],
                                                            stage=2,
                                                            generate_radio_packets=True,
-                                                           kiss_address=kiss_address),
+                                                           nmea_serial_port=nmea_serial_port,
+                                                           nmea_baud_rate=nmea_baud_rate),
         }
 
-    def construct_sim_connection(self,kiss_address: str):
+    def construct_sim_connection(self, nmea_serial_port: Optional[str], nmea_baud_rate: Optional[int]):
         # Assemble HW here
 
         '''
@@ -151,10 +156,8 @@ class TantalusProfile(RocketProfile):
         hwsim_stage_2 = HWSim(rocket_sim_stage_2, hw_sim_sensors_stage_2, hw_sim_ignitors_stage_2)
 
         return {
-            'TANTALUS_STAGE_1_CONNECTION': SimConnection("TantalusStage1", "0013A20041678FC0", hwsim_stage_1, stage=1,
-                                                         kiss_address=kiss_address),
-            'TANTALUS_STAGE_2_CONNECTION': SimConnection("TantalusStage2", "0013A20041678FC0", hwsim_stage_2, stage=2,
-                                                         kiss_address=kiss_address),
+            'TANTALUS_STAGE_1_CONNECTION': SimConnection("TantalusStage1", "0013A20041678FC0", hwsim_stage_1, stage=1, nmea_serial_port=nmea_serial_port, nmea_baud_rate=nmea_baud_rate),
+            'TANTALUS_STAGE_2_CONNECTION': SimConnection("TantalusStage2", "0013A20041678FC0", hwsim_stage_2, stage=2, nmea_serial_port=nmea_serial_port, nmea_baud_rate=nmea_baud_rate),
         }
 
     def construct_app(self, connections):

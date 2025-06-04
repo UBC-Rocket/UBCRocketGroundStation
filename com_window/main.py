@@ -18,12 +18,12 @@ qtCreatorFile = os.path.join(BUNDLED_DATA, "qt_files", "com_window.ui")
 
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
-ConnectionRequirements = namedtuple('ConnectionRequirements', ['com_port', 'baud_rate', 'kiss_address'])
+ConnectionRequirements = namedtuple('ConnectionRequirements', ['com_port', 'baud_rate', 'nmea_serial_port', 'nmea_baud_rate'])
 
 CONNECTIONS = {
-    'Serial': ConnectionRequirements(com_port=True, baud_rate=True, kiss_address=True),
-    'Debug': ConnectionRequirements(com_port=False, baud_rate=False, kiss_address=True),
-    'SIM': ConnectionRequirements(com_port=False, baud_rate=False, kiss_address=False),
+    'Serial': ConnectionRequirements(com_port=True, baud_rate=True, nmea_serial_port=True, nmea_baud_rate=True),
+    'Debug': ConnectionRequirements(com_port=False, baud_rate=False, nmea_serial_port=True, nmea_baud_rate=True),
+    'SIM': ConnectionRequirements(com_port=False, baud_rate=False, nmea_serial_port=False, nmea_baud_rate=False),
 }
 
 class ComWindow(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -55,6 +55,8 @@ class ComWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         comlist = list(map(lambda x: x.device, serial.tools.list_ports.comports()))
         self.comBox.addItems(comlist)
 
+        self.nmeaSerial.addItems([""] + comlist)
+
         self.resize(self.sizeHint())
         self.setFixedSize(self.size())
 
@@ -66,20 +68,21 @@ class ComWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         connection = self.typeBox.currentText()
         baud_rate = int(self.baudBox.currentText())
         com_port = self.comBox.currentText()
-        kiss_address = self.kissAddress.text().strip()
+        nmea_serial_port = self.nmeaSerial.currentText() if self.nmeaSerial.currentText() != "" else None
+        nmea_baud_rate = int(self.nmeaBaud.currentText()) if self.nmeaBaud.currentText() != "" else None
 
         # Fun little known feature with f-strings. Using {var=} will print
         # the variable name as well as the value, such as `var=1`
-        LOGGER.debug(f"User has selected {rocket=}, {connection=}, {com_port=}, {baud_rate=}, {kiss_address=}")
+        LOGGER.debug(f"User has selected {rocket=}, {connection=}, {com_port=}, {baud_rate=}, {nmea_serial_port=}, {nmea_baud_rate=}")
 
         self.chosen_rocket = self.RocketProfiles[rocket]
 
         if connection == 'Serial':
-            self.chosen_connection = self.chosen_rocket.construct_serial_connection(com_port, baud_rate, kiss_address)
+            self.chosen_connection = self.chosen_rocket.construct_serial_connection(com_port, baud_rate, nmea_serial_port, nmea_baud_rate)
         elif connection == 'Debug':
-            self.chosen_connection = self.chosen_rocket.construct_debug_connection(kiss_address)
+            self.chosen_connection = self.chosen_rocket.construct_debug_connection(nmea_serial_port, nmea_baud_rate)
         elif connection == 'SIM':
-            self.chosen_connection = self.chosen_rocket.construct_sim_connection(kiss_address)
+            self.chosen_connection = self.chosen_rocket.construct_sim_connection(nmea_serial_port, nmea_baud_rate)
         else:
             raise Exception("Unknown connection")
 
@@ -94,4 +97,5 @@ class ComWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.comBox.setEnabled(requirements.com_port)
         self.baudBox.setEnabled(requirements.baud_rate)
-        self.kissAddress.setEnabled(requirements.kiss_address)
+        self.nmeaSerial.setEnabled(requirements.nmea_serial_port)
+        self.nmeaBaud.setEnabled(requirements.nmea_baud_rate)

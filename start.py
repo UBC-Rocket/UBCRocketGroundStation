@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     else:
         rocket = BNBProfile()
-        connection = rocket.construct_debug_connection(kiss_address='nd')
+        connection = rocket.construct_debug_connection(nmea_serial_port = None, nmea_baud_rate = 9600)
         main_window = rocket.construct_app(connection)
         test = SelfTest(main_window)
         test.start()

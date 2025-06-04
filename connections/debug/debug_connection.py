@@ -33,6 +33,7 @@ class DebugConnection(Connection):
         self.device_address = device_address
         self.device_id = device_id
         self.stage = stage
+        self.kiss_address = None
         self.nmea_serial_port = nmea_serial_port
         self.nmea_baud_rate = nmea_baud_rate
         self.start_time = time.time()

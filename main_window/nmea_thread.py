@@ -14,7 +14,7 @@ from main_window.nmea_gps_status import NMEAGpsStatus
 import pynmea2
 import io
 import serial
-
+import traceback
 CONNECTION_MESSAGE_READ_EVENT = Event('connection_message_read')
 
 class NMEAThread(QtCore.QThread):
@@ -62,8 +62,8 @@ class NMEAThread(QtCore.QThread):
                                 dsrdtr=False
                             )
 
-            try:
-                while self.is_thread_running:
+            while self.is_thread_running:
+                try:
                     try:
                         raw_bytes = ser.readline()
                     except serial.SerialException as e:
@@ -90,10 +90,12 @@ class NMEAThread(QtCore.QThread):
 
                     if msg.sentence_type == "GGA":
                         self.handle_nmea_sentence(msg)
+                except Exception as e:
+                    LOGGER.error(f"Error in NMEA thread: {e}")
+                    traceback.print_exc()
 
-            finally:
-                ser.close()
-                LOGGER.warning("NMEA thread shut down")
+            ser.close()
+            LOGGER.warning("NMEA thread shut down")
 
     def handle_nmea_sentence(self, nmea_sentence: pynmea2.GGA):
         if nmea_sentence.is_valid:

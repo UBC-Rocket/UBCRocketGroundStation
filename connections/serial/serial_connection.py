@@ -51,6 +51,8 @@ class SerialConnection(Connection):
                 time.sleep(0.01)
             except Exception as e:
                 print(f"Serial read error: {e}")
+                self.buffer = bytearray()
+                time.sleep(0.5)
 
     def _process_buffer(self):
         """Process complete packets from the buffer"""

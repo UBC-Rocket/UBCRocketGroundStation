@@ -58,8 +58,8 @@ class NMEAThread(QtCore.QThread):
                                 parity=serial.PARITY_NONE,
                                 stopbits=serial.STOPBITS_ONE,
                                 xonxoff=False,
-                                rtscts=False,
-                                dsrdtr=False
+                                rtscts=True,
+                                dsrdtr=True
                             )
 
             while self.is_thread_running:

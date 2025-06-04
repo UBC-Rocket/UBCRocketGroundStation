@@ -21,7 +21,7 @@ class DebugConnection(Connection):
         """
 
         """
-        
+
         # Set Base Class Variables
         self.device_address = device_address
         self.device_id = device_id
@@ -83,7 +83,7 @@ class DebugConnection(Connection):
         :return:
         :rtype: bytearray
         """
-        
+
         return radio_packets.bulk_sensor(self._current_millis(),
                                          random.uniform(0, 1e6),
                                          random.uniform(0, 1e6),
@@ -178,11 +178,16 @@ class DebugConnection(Connection):
     def registerCallback(self, fn) -> None:
         with self.lock:
             self.callback = fn
-            
+
+
+    # Get the device address
+    def getDeviceAddress(self) -> Optional[str]:
+        return self.device_address
+
     # Get the KISS server address
-    def getKissAddress(self) -> str:
+    def getKissAddress(self) -> Optional[str]:
         return self.kiss_address
-    
+
     # Get the Stage number
     def getStage(self) -> int:
         return self.stage

@@ -1,6 +1,7 @@
 import serial
 import threading
 import time
+from typing import Optional
 
 from ..connection import Connection, ConnectionMessage
 
@@ -95,6 +96,9 @@ class SerialConnection(Connection):
         if self.read_thread.is_alive():
             self.read_thread.join(timeout=1)
         self.device.close()
+
+    def getDeviceAddress(self) -> Optional[str]:
+        return None
 
     def isIntBigEndian(self):
         return False

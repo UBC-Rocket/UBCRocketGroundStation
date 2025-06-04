@@ -286,6 +286,9 @@ class SimConnection(Connection):
         self.executablePath = os.path.join(path, executable_name)
         self.firmwareDir = path
 
+    def getDeviceAddress(self) -> Optional[str]:
+        return self.device_address
+
     # Returns the KISS protocol connection address
     def getKissAddress(self) -> Optional[str]:
         return self.kiss_address

@@ -45,12 +45,19 @@ class MainApp(QtWidgets.QMainWindow):
                                             strict_versions=False)
         # TODO: HACK!!!!!!!!!
         # Force register all expected devices!
+        registered_connections = set()
+        registered_devices = set()
         for connection_name, connection in self.connections.items():
             for device_name, device_version in self.rocket_profile.required_device_versions.items():
+                if connection_name in registered_connections or device_name in registered_devices:
+                    continue
+                registered_connections.add(connection_name)
+                registered_devices.add(device_name)
+
                 self.device_manager.register_device(
                     device_name,
                     device_version,
-                    FullAddress(connection_name, None)
+                    FullAddress(connection_name, connection.getDeviceAddress())
                 )
 
         self.rocket_data = RocketData(self.device_manager)

@@ -38,11 +38,6 @@ class SerialConnection(Connection):
                 if self.device.in_waiting > 0:
                     new_data = self.device.read(self.device.in_waiting)
                     self.buffer.extend(new_data)
-                    # Print each byte in base 10
-                    print("Received new_data (base 10):", end=" ")
-                    for byte in new_data:
-                        print(byte, end=" ")
-                    print()
 
                 # Process complete packets from the buffer
                 self._process_buffer()
@@ -79,11 +74,6 @@ class SerialConnection(Connection):
 
     def _newData(self, data):
         if self.callback:
-            # Print each byte in base 10
-            print("[!!!] Received data (base 10):", end=" ")
-            for byte in data:
-                print(byte, end=" ")
-            print()
             message = ConnectionMessage(
                 device_address=None,
                 connection=self,

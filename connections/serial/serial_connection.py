@@ -81,13 +81,13 @@ class SerialConnection(Connection):
 
             #######################################
             # Okay this is a giga-hacky way to get the rocket to work with the new packet format.
-            # Just for sunburst, the packet was shortened from 44 bytes down to 10 bytes.
+            # Just for sunburst, the packet was shortened from 44 bytes down to 11 bytes.
 
             # This was the original packet:
             # [size: 1 byte] [packet_id: 1 byte] [time: 4 bytes] [altitude: 4 bytes] [accelerometer: 12 bytes] [imu: 12 bytes] [gps: 8 bytes] [state: 2 bytes]
 
             # This is the new packet:
-            # [time: 4 bytes] [altitude: 4 bytes] [state: 2 bytes]
+            # [header (CONSTANT 0xFF): 1 byte] [time: 4 bytes] [altitude: 4 bytes] [state: 2 bytes]
 
             # As a quick hack, we are just going to translate the new packet to the old packet.
             # This just makes it so that the packet parser can still work.
@@ -95,17 +95,21 @@ class SerialConnection(Connection):
             # TODO: Remove this once the rocket is updated to use the new packet format.
 
             # Need at least 10 bytes to process the packet
-            if len(self.buffer) < 10:
+            if len(self.buffer) < 11:
                 return
 
             # Get the packet data
-            data = self.buffer[:10]
+            data = self.buffer[:11]
+
+            # Check if the header is 0xFF
+            if data[0] != 0xFF:
+                raise Exception(f"Invalid header! Expected 0xFF, got {data[0]}. Skipping packet!")
 
             # Translate the new packet to the old packet
-            old_data = bytearray([0x30]) + data[0:4] + data[4:8] + bytearray(12 + 12 + 8) + data[8:10]
+            old_data = bytearray([0x30]) + data[1:5] + data[5:9] + bytearray(12 + 12 + 8) + data[9:11]
 
             # Remove the processed packet from the buffer
-            self.buffer = self.buffer[10:]
+            self.buffer = self.buffer[11:]
 
             # Process the packet
             self._newData(bytes(old_data))

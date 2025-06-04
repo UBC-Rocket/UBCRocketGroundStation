@@ -39,12 +39,17 @@ class Connection(ABC):
     @abstractmethod
     def isFloatBigEndian(self) -> bool:
         pass
-    
+
+    # Returns the device address of the connection
+    @abstractmethod
+    def getDeviceAddress(self) -> Optional[str]:
+        pass
+
     # Returns the KISS protocol connection address
     @abstractmethod
     def getKissAddress(self) -> Optional[str]:
         pass
-    
+
     # Returns the stage number of the connection
     @abstractmethod
     def getStage(self) -> int:

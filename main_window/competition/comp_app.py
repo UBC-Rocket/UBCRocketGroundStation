@@ -61,13 +61,13 @@ class CompApp(MainApp, Ui_MainWindow):
         self.actionSave.triggered.connect(self.save_file)
         self.actionSave.setShortcut("Ctrl+S")
         self.actionReset.triggered.connect(self.reset_view)
-        
+
         # Attach function for 'Srad GPS' action
         self.actionSRADGPS.triggered.connect(self.set_srad_gps)
 
         # Attach function for 'COTS GPS' action
         self.actionCOTSGPS.triggered.connect(self.set_cots_gps)
-        
+
         # Hook into some of commandEdit's events
         qtHook(self.commandEdit, 'focusNextPrevChild', lambda _: False,
                override_return=True)  # Prevents tab from changing focus
@@ -211,11 +211,12 @@ class CompApp(MainApp, Ui_MainWindow):
         Update map and data plots
         """
         # plot in main window
-        if "GPS" in self.selected_label.name:
-            MAP_UPDATED_EVENT.increment()
-            self.selected_label.map_fn(self)
-        else:
-            self.selected_label.map_fn(self, self.plot_widget, self.selected_label)
+        if self.selected_label and self.selected_label.map_fn:
+            if "GPS" in self.selected_label.name:
+                MAP_UPDATED_EVENT.increment()
+                self.selected_label.map_fn(self)
+            else:
+                self.selected_label.map_fn(self, self.plot_widget, self.selected_label)
 
         # plot in other open windows
         for label in self.label_windows:
@@ -288,7 +289,7 @@ class CompApp(MainApp, Ui_MainWindow):
 
         self.zoom_in_button.clicked.connect(self.slider_dec)
         self.zoom_out_button.clicked.connect(self.slider_inc)
-        
+
     def receive_data(self) -> None:
         """
         This is called when new data is available to be displayed.
@@ -502,10 +503,10 @@ class CompApp(MainApp, Ui_MainWindow):
         :type event:
         """
         self.MappingThread.setDesiredMapSize(event.width, event.height)
-        
+
     def set_srad_gps(self):
         self.MappingThread.setDataSource(map_data.MapDataSource.SRAD)
-    
+
     def set_cots_gps(self):
         self.MappingThread.setDataSource(map_data.MapDataSource.COTS)
 

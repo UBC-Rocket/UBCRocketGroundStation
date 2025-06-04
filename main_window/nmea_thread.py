@@ -99,8 +99,10 @@ class NMEAThread(QtCore.QThread):
         if nmea_sentence.is_valid:
             latitude, longitude, altitude = nmea_sentence.latitude, nmea_sentence.longitude, nmea_sentence.altitude
 
-        LOGGER.debug(f"Received GPS Data {latitude=} {longitude=} {altitude=}")
-        self.new_gps_coordinate(NMEAGpsStatus.GPS_VALID, float(latitude), float(longitude), float(altitude))
+            LOGGER.debug(f"Received GPS Data {latitude=} {longitude=} {altitude=}")
+            self.new_gps_coordinate(NMEAGpsStatus.GPS_VALID, float(latitude), float(longitude), float(altitude))
+        else:
+            raise ValueError(f"Received GPS Data {nmea_sentence.sentence_type} is invalid")
 
     def new_gps_coordinate(self, status: NMEAGpsStatus, latitude: float, longitude: float, altitude: float):
         stage: int = 1

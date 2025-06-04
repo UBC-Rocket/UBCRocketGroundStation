@@ -55,25 +55,58 @@ class SerialConnection(Connection):
     def _process_buffer(self):
         """Process complete packets from the buffer"""
         while len(self.buffer) > 0:
-            # Need at least 1 byte for the size
-            if len(self.buffer) < 1:
+            # # Need at least 1 byte for the size
+            # if len(self.buffer) < 1:
+            #     return
+
+            # # Get the packet size
+            # packet_size = self.buffer[0]
+
+            # # Check if we have a complete packet
+            # if len(self.buffer) < packet_size:
+            #     return  # Not enough data yet
+
+            # # Extract the packet data (excluding the size byte)
+            # data = self.buffer[1:packet_size]
+
+            # # Remove the processed packet from the buffer
+            # self.buffer = self.buffer[packet_size:]
+
+            # # Process the packet
+            # self._newData(bytes(data))
+
+            #######################################
+            # Okay this is a giga-hacky way to get the rocket to work with the new packet format.
+            # Just for sunburst, the packet was shortened from 44 bytes down to 10 bytes.
+
+            # This was the original packet:
+            # [size: 1 byte] [packet_id: 1 byte] [time: 4 bytes] [altitude: 4 bytes] [accelerometer: 12 bytes] [imu: 12 bytes] [gps: 8 bytes] [state: 2 bytes]
+
+            # This is the new packet:
+            # [time: 4 bytes] [altitude: 4 bytes] [state: 2 bytes]
+
+            # As a quick hack, we are just going to translate the new packet to the old packet.
+            # This just makes it so that the packet parser can still work.
+
+            # TODO: Remove this once the rocket is updated to use the new packet format.
+
+            # Need at least 10 bytes to process the packet
+            if len(self.buffer) < 10:
                 return
 
-            # Get the packet size
-            packet_size = self.buffer[0]
+            # Get the packet data
+            data = self.buffer[:10]
 
-            # Check if we have a complete packet
-            if len(self.buffer) < packet_size:
-                return  # Not enough data yet
-
-            # Extract the packet data (excluding the size byte)
-            data = self.buffer[1:packet_size]
+            # Translate the new packet to the old packet
+            old_data = bytearray([0x30]) + data[0:4] + data[4:8] + bytearray(12 + 12 + 8) + data[8:10]
 
             # Remove the processed packet from the buffer
-            self.buffer = self.buffer[packet_size:]
+            self.buffer = self.buffer[10:]
 
             # Process the packet
-            self._newData(bytes(data))
+            self._newData(bytes(old_data))
+
+            #######################################
 
     def _newData(self, data):
         if self.callback:

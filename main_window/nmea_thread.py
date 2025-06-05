@@ -1,5 +1,7 @@
-from typing import Dict
+from typing import Dict, Optional
 from datetime import datetime
+import csv
+import os
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
@@ -46,6 +48,43 @@ class NMEAThread(QtCore.QThread):
         self.baudrate = temp_connection.getNMEABaudRate()
         self.is_thread_running = True
 
+        # Setup CSV logging
+        self._setup_csv_logging()
+
+    def _setup_csv_logging(self):
+        """Initialize CSV logging with unique filename per instance"""
+        # Create logs directory if it doesn't exist
+        os.makedirs('logs', exist_ok=True)
+
+        # Create unique filename based on current timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.csv_filename = f'logs/nmea_log_{timestamp}.csv'
+
+        # Create CSV file with header
+        with open(self.csv_filename, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(['timestamp', 'status', 'latitude', 'longitude', 'altitude'])
+
+        LOGGER.info(f"NMEA CSV logging initialized: {self.csv_filename}")
+
+    def _log_to_csv(self, status: NMEAGpsStatus, latitude: Optional[float] = None,
+                   longitude: Optional[float] = None, altitude: Optional[float] = None):
+        """Log GPS data to CSV file"""
+        try:
+            timestamp = datetime.now().isoformat()
+
+            with open(self.csv_filename, 'a', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow([
+                    timestamp,
+                    status.name if hasattr(status, 'name') else str(status),
+                    latitude if latitude is not None else '',
+                    longitude if longitude is not None else '',
+                    altitude if altitude is not None else ''
+                ])
+        except Exception as e:
+            LOGGER.error(f"Failed to log NMEA data to CSV: {e}")
+
     def run(self):
         """TODO Description"""
         LOGGER.debug("NMEA thread started")
@@ -85,7 +124,7 @@ class NMEAThread(QtCore.QThread):
                         parsed_error = str(e)
 
                         LOGGER.debug(f"Received GPS Data {status=} {parsed_error=}")
-                        self.new_gps_coordinate(NMEAGpsStatus.GPS_INVALID, None, None, None)
+                        self.new_gps_coordinate(NMEAGpsStatus.GPS_INVALID)
                         continue
 
                     if msg.sentence_type == "GGA":
@@ -97,16 +136,34 @@ class NMEAThread(QtCore.QThread):
             ser.close()
             LOGGER.warning("NMEA thread shut down")
 
-    def handle_nmea_sentence(self, nmea_sentence: pynmea2.GGA):
-        if nmea_sentence.is_valid:
-            latitude, longitude, altitude = nmea_sentence.latitude, nmea_sentence.longitude, nmea_sentence.altitude
+    def handle_nmea_sentence(self, nmea_sentence):
+        """Handle NMEA GGA sentence"""
+        if hasattr(nmea_sentence, 'is_valid') and nmea_sentence.is_valid:
+            latitude = nmea_sentence.latitude
+            longitude = nmea_sentence.longitude
+            altitude = nmea_sentence.altitude
 
-            LOGGER.debug(f"Received GPS Data {latitude=} {longitude=} {altitude=}")
-            self.new_gps_coordinate(NMEAGpsStatus.GPS_VALID, float(latitude), float(longitude), float(altitude))
+            # Check if coordinates are valid (not None and not empty)
+            if latitude is not None and longitude is not None and altitude is not None:
+                try:
+                    lat_float = float(latitude)
+                    lon_float = float(longitude)
+                    alt_float = float(altitude)
+
+                    LOGGER.debug(f"Received GPS Data {latitude=} {longitude=} {altitude=}")
+                    self.new_gps_coordinate(NMEAGpsStatus.GPS_VALID, lat_float, lon_float, alt_float)
+                except (ValueError, TypeError) as e:
+                    LOGGER.error(f"Failed to convert GPS coordinates to float: {e}")
+                    self.new_gps_coordinate(NMEAGpsStatus.GPS_INVALID)
+            else:
+                LOGGER.warning("Received GPS Data with missing coordinates")
+                self.new_gps_coordinate(NMEAGpsStatus.GPS_INVALID)
         else:
-            raise ValueError(f"Received GPS Data {nmea_sentence.sentence_type} is invalid")
+            LOGGER.warning(f"Received invalid GPS Data {nmea_sentence.sentence_type}")
+            self.new_gps_coordinate(NMEAGpsStatus.GPS_INVALID)
 
-    def new_gps_coordinate(self, status: NMEAGpsStatus, latitude: float, longitude: float, altitude: float):
+    def new_gps_coordinate(self, status: NMEAGpsStatus, latitude: Optional[float] = None,
+                          longitude: Optional[float] = None, altitude: Optional[float] = None):
         stage: int = 1
 
         connection_name = self.stage_to_connection_name[stage]
@@ -115,6 +172,9 @@ class NMEAThread(QtCore.QThread):
         if full_address is None:
             LOGGER.error(f"Could not find device for stage {stage}!")
             return
+
+        # Log to CSV file regardless of status
+        self._log_to_csv(status, latitude, longitude, altitude)
 
         if status == NMEAGpsStatus.GPS_INVALID:
             self.rocket_data.add_bundle(full_address, {DataEntryIds.NMEA_STATUS: status})

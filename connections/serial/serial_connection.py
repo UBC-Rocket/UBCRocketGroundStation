@@ -94,19 +94,24 @@ class SerialConnection(Connection):
 
             # TODO: Remove this once the rocket is updated to use the new packet format.
 
-            # Need at least 10 bytes to process the packet
+            # Need at least 11 bytes to process the packet
             if len(self.buffer) < 11:
                 return
 
-            # Get the packet data
-            data = self.buffer[:11]
+            # Get the packet checksum
+            checksum = self.buffer[0]
 
-            # Check if the header is 0xFF
-            if data[0] != 0xFF:
-                raise Exception(f"Invalid header! Expected 0xFF, got {data[0]}. Skipping packet!")
+            # Get the packet data
+            data = self.buffer[1:11]
+
+            # Calculate the checksum
+            calculated_checksum = sum(data) % 256
+            if calculated_checksum != checksum:
+                raise Exception(f"Checksum mismatch: {calculated_checksum} != {checksum}")
+            print(f"Checksum: {checksum} (calculated: {calculated_checksum})")
 
             # Translate the new packet to the old packet
-            old_data = bytearray([0x30]) + data[1:5] + data[5:9] + bytearray(12 + 12 + 8) + data[9:11]
+            old_data = bytearray([0x30]) + data[0:4] + data[4:8] + bytearray(12 + 12 + 8) + data[8:10]
 
             # Remove the processed packet from the buffer
             self.buffer = self.buffer[11:]
